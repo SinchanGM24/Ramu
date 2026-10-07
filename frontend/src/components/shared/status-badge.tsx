@@ -1,0 +1,2 @@
+import { cn } from "@/lib/utils";
+export function StatusBadge({ children, tone = "green" }: { children: React.ReactNode; tone?: "green" | "amber" | "slate" }) { return <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", { "bg-emerald-50 text-emerald-700": tone === "green", "bg-amber-50 text-amber-700": tone === "amber", "bg-slate-100 text-slate-600": tone === "slate" })}>{children}</span>; }

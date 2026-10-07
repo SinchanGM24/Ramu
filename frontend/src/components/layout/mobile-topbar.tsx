@@ -1,0 +1,2 @@
+import { Bell, GraduationCap } from "lucide-react";
+export function MobileTopbar(){return <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-100 bg-white/95 px-4 backdrop-blur lg:hidden"><div className="flex items-center gap-2 font-bold text-slate-900"><span className="grid size-9 place-items-center rounded-lg bg-brand-600 text-white"><GraduationCap size={19}/></span>RAMU</div><button aria-label="Notifikasi" className="rounded-lg p-2 text-slate-500"><Bell size={20}/></button></header>}
