@@ -5,6 +5,7 @@ import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import { assertReportAccess } from "./report-authorization";
 
 const narrativeSchema = z.object({ content: z.string().max(5000) });
 
@@ -19,6 +20,7 @@ export class ReportWorkspaceController {
       const report = (await client.query(`SELECT r.id,r.status,s.id AS student_id,s.name AS student_name,s.nickname,s.student_number,s.birth_date,s.birth_place,s.gender,s.religion,s.child_order,s.address,grouping.name AS class_name,sem.id AS semester_id,sem.name AS semester_name,ay.name AS academic_year_name
         FROM reports r JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id JOIN academic_years ay ON ay.id=sem.academic_year_id WHERE r.id=$1`, [id])).rows[0];
       if (!report) return null;
+      await assertReportAccess(client, actor, id);
       const scales = (await client.query(`SELECT o.id,o.code,o.label,o.position FROM assessment_scale_options o JOIN assessment_frameworks f ON f.scale_id=o.scale_id WHERE f.name=$1 AND f.is_active ORDER BY o.position`, [DEFAULT_TK_TEMPLATE_NAME])).rows;
       const rows = (await client.query(`SELECT da.id AS area_id,da.name AS area_name,da.position AS area_position,rn.content AS narrative,sa.id AS sub_area_id,sa.name AS sub_area_name,sa.position AS sub_area_position,i.id AS indicator_id,i.description,i.position AS indicator_position,assessment.scale_option_id,option.code AS scale_code
         FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sa ON sa.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sa.id
@@ -48,6 +50,7 @@ export class ReportWorkspaceController {
     return this.db.transaction(async (client) => {
       const report = (await client.query<{ status: string }>("SELECT status FROM reports WHERE id=$1", [id])).rows[0];
       if (!report) throw new Error("Rapor tidak ditemukan");
+      await assertReportAccess(client, actor, id);
       if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status)) throw new Error("Rapor tidak dapat diubah pada status saat ini");
       const validArea = await client.query(`SELECT 1 FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id WHERE da.id=$1 AND f.name=$2 AND f.is_active`, [areaId, DEFAULT_TK_TEMPLATE_NAME]);
       if (!validArea.rowCount) throw new Error("Area perkembangan tidak valid");
@@ -70,6 +73,7 @@ export class ReportWorkspaceController {
     return this.db.transaction(async (client) => {
       const report = (await client.query<{ student_id: string; semester_id: string; status: string; student_name: string }>(`SELECT r.student_id,r.semester_id,r.status,s.name AS student_name FROM reports r JOIN students s ON s.id=r.student_id WHERE r.id=$1`, [id])).rows[0];
       if (!report) throw new Error("Rapor tidak ditemukan");
+      await assertReportAccess(client, actor, id);
       if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status)) throw new Error("Rapor tidak dapat diubah pada status saat ini");
       const rows = (await client.query<{ description: string; code: string | null }>(`SELECT i.description,option.code
         FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sa ON sa.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sa.id
@@ -97,6 +101,7 @@ export class ReportWorkspaceController {
     return this.db.transaction(async (client) => {
       const report = (await client.query<{ student_id: string; semester_id: string; status: string }>("SELECT student_id,semester_id,status FROM reports WHERE id=$1", [id])).rows[0];
       if (!report) throw new Error("Rapor tidak ditemukan");
+      await assertReportAccess(client, actor, id);
       if (report.status !== "DRAFT") throw new Error("Hanya rapor draf yang dapat dikirim");
       const missing = (await client.query<{ count: number }>(`SELECT
         (SELECT count(*) FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2 WHERE f.name=$3 AND f.is_active AND assessment.id IS NULL)

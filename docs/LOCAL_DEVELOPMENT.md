@@ -20,13 +20,13 @@ npm run dev
 - API health check: `http://localhost:4000/api/health`
 - MinIO Console: `http://localhost:9011`
 
-Setelah `npm run db:seed`, gunakan akun development berikut (hanya lokal): `admin@ramu.test` (Admin Sekolah), `guru@ramu.test` (Guru), dan `kepsek@ramu.test` (Kepala Sekolah). Semuanya memakai kata sandi `pass1234`, atau nilai `SEED_DEMO_PASSWORD` dari `backend/.env`.
+Setelah `npm run db:seed`, gunakan akun development berikut (hanya lokal): `admin@ramu.test` (Admin Sekolah), `guru.aisyah@ramu.test`, `guru.budi@ramu.test`, `guru.citra@ramu.test` (Guru), dan `kepsek@ramu.test` (Kepala Sekolah). Semuanya memakai kata sandi `pass1234`, atau nilai `SEED_DEMO_PASSWORD` dari `backend/.env`.
 
 ## Keamanan lokal
 
 PostgreSQL menerapkan RLS pada semua data milik tenant. API memakai role non-superuser `ramu_app`, sedangkan role `ramu` hanya untuk bootstrap/migration lokal; backend menetapkan `app.school_id` di dalam tiap transaksi tenant dan tetap menjalankan pemeriksaan peran di server. Jangan gunakan akun/password contoh atau MinIO lokal untuk deployment produksi.
 
-Jika sebelumnya sudah menjalankan Compose sebelum role aplikasi ditambahkan, hapus volume lokal yang dapat dibuat ulang lalu jalankan kembali `docker compose up -d`: `docker compose down -v`. Perintah ini menghapus data development lokal.
+Untuk mereset **hanya** PostgreSQL development dan memakai fixture akademik/staf terbaru, hentikan API dan PostgreSQL, hapus volume `ramu_postgres_data`, lalu jalankan kembali PostgreSQL/API, `npm run db:migrate`, dan `npm run db:seed`. Jangan jadikan seed bagian dari `npm run dev` atau startup API.
 
 Untuk memeriksa source code, jalankan `npm run build` dan `npm test`.
 
