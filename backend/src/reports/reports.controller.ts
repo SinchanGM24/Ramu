@@ -6,8 +6,10 @@ import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { ReportPdfService } from "../files/report-pdf.service";
+import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
 
 const transition = z.object({ action: z.enum(["submit", "review", "revision", "approve"]), note: z.string().max(1000).optional() });
+const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
 
 @Controller("reports")
 export class ReportsController {
@@ -21,6 +23,22 @@ export class ReportsController {
 
   @Post("students/:studentId/draft")
   async draft(@Req() request: FastifyRequest, @Param("studentId") studentId: string, @Body() body: unknown) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]); const input = z.object({ semesterId: z.string().uuid() }).parse(body); return this.db.transaction(async (client) => { const result = await client.query("INSERT INTO reports(school_id,student_id,semester_id) SELECT $1,$2,$3 WHERE EXISTS(SELECT 1 FROM students WHERE id=$2) AND EXISTS(SELECT 1 FROM semesters WHERE id=$3) ON CONFLICT(student_id,semester_id) DO UPDATE SET updated_at=now() RETURNING *", [actor.schoolId, studentId, input.semesterId]); if (!result.rowCount) throw new Error("Siswa atau semester tidak ditemukan"); await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report.draft_created", entityType: "report", entityId: result.rows[0].id }, client); return result.rows[0]; }, actor.schoolId); }
+
+  @Put(":id/assessments/:indicatorId")
+  async saveAssessment(@Req() request: FastifyRequest, @Param("id") id: string, @Param("indicatorId") indicatorId: string, @Body() body: unknown) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    const input = reportAssessment.parse(body);
+    return this.db.transaction(async (client) => {
+      const report = (await client.query<{ student_id: string; semester_id: string; status: string }>("SELECT student_id,semester_id,status FROM reports WHERE id=$1", [id])).rows[0];
+      if (!report) throw new Error("Rapor tidak ditemukan");
+      if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status)) throw new Error("Rapor tidak dapat diubah pada status saat ini");
+      const valid = await client.query(`SELECT 1 FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options o ON o.scale_id=f.scale_id WHERE i.id=$1 AND o.id=$2 AND f.name=$3 AND f.is_active`, [indicatorId, input.scaleOptionId, DEFAULT_TK_TEMPLATE_NAME]);
+      if (!valid.rowCount) throw new Error("Indikator atau skala tidak valid");
+      const saved = (await client.query(`INSERT INTO student_assessments(school_id,student_id,semester_id,indicator_id,scale_option_id,assessed_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(student_id,semester_id,indicator_id) DO UPDATE SET scale_option_id=EXCLUDED.scale_option_id,assessed_by=EXCLUDED.assessed_by,assessed_at=now() RETURNING *`, [actor.schoolId, report.student_id, report.semester_id, indicatorId, input.scaleOptionId, actor.userId])).rows[0];
+      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report_assessment.saved", entityType: "student_assessment", entityId: saved.id, metadata: { reportId: id } }, client);
+      return saved;
+    }, actor.schoolId);
+  }
 
   @Post(":id/transition")
   async move(@Req() request: FastifyRequest, @Param("id") id: string, @Body() body: unknown) { const actor = this.auth.require(request); const input = transition.parse(body); return this.db.transaction(async (client) => { const report = (await client.query<{ status: string; student_id: string; semester_id: string }>("SELECT status,student_id,semester_id FROM reports WHERE id=$1", [id])).rows[0]; if (!report) throw new Error("Rapor tidak ditemukan"); const rules: Record<string, [string, string[]]> = { submit: ["SUBMITTED", ["DRAFT"]], review: ["IN_REVIEW", ["SUBMITTED"]], revision: ["REVISION_REQUIRED", ["IN_REVIEW"]], approve: ["APPROVED", ["IN_REVIEW"]] }; const [to, from] = rules[input.action]; if (!from.includes(report.status)) throw new Error("Perubahan status tidak valid"); if (input.action === "submit") { if (!(["SCHOOL_ADMIN", "TEACHER"] as string[]).includes(actor.role)) throw new Error("Akses ditolak"); const complete = (await client.query<{ missing: number }>(`SELECT (SELECT count(*)-count(sa.id) FROM indicators i LEFT JOIN student_assessments sa ON sa.indicator_id=i.id AND sa.student_id=$1 AND sa.semester_id=$2)+(SELECT count(*)-count(n.id) FROM development_areas da LEFT JOIN report_narratives n ON n.development_area_id=da.id AND n.report_id=$3)+CASE WHEN EXISTS(SELECT 1 FROM growth_records WHERE student_id=$1 AND semester_id=$2) AND EXISTS(SELECT 1 FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2) THEN 0 ELSE 1 END AS missing`, [report.student_id, report.semester_id, id])).rows[0]; if (Number(complete.missing)) throw new Error("Rapor belum lengkap. Lengkapi penilaian, narasi, pertumbuhan, dan kehadiran."); } if (["review", "revision", "approve"].includes(input.action) && !(["SCHOOL_ADMIN", "PRINCIPAL"] as string[]).includes(actor.role)) throw new Error("Akses ditolak"); const updated = (await client.query("UPDATE reports SET status=$1,submitted_at=CASE WHEN $1='SUBMITTED' THEN now() ELSE submitted_at END,approved_at=CASE WHEN $1='APPROVED' THEN now() ELSE approved_at END,updated_at=now() WHERE id=$2 RETURNING *", [to, id])).rows[0]; await client.query("INSERT INTO report_approvals(school_id,report_id,actor_user_id,action,note) VALUES($1,$2,$3,$4,$5)", [actor.schoolId, id, actor.userId, input.action, input.note ?? null]); await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: `report.${input.action}`, entityType: "report", entityId: id }, client); return updated; }, actor.schoolId); }
