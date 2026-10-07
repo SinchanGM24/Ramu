@@ -8,7 +8,7 @@ import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 
-const transition = z.object({ action: z.enum(["submit", "review", "revision", "approve"]), note: z.string().max(1000).optional() });
+const transition = z.object({ action: z.enum(["submit", "review", "revision", "approve"]), note: z.string().max(1000).optional() }).refine((input) => input.action !== "submit", { message: "Gunakan pemeriksaan kelengkapan rapor sebelum mengirim" });
 const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
 
 @Controller("reports")
