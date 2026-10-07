@@ -3,13 +3,14 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { createHash, randomBytes } from "crypto";
 import { z } from "zod";
 import { DatabaseService } from "../database/database.service";
+import { ReportPdfService } from "../files/report-pdf.service";
 
 const sessionCookieName = "ramu_parent_session";
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
 @Controller("parent")
 export class ParentController {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(private readonly db: DatabaseService, private readonly pdf: ReportPdfService) {}
 
   @Post("verify")
   async verify(@Body() body: unknown, @Res({ passthrough: true }) reply: FastifyReply) {
@@ -34,5 +35,18 @@ export class ParentController {
     const result = await this.db.query<{ snapshot: unknown }>(`SELECT rv.snapshot FROM parent_report_sessions session JOIN report_versions rv ON rv.id = session.report_version_id WHERE session.token_hash=$1 AND session.expires_at > now()`, [hash(rawSession)]);
     if (!result.rows[0]) throw new Error("Sesi akses wali tidak valid atau telah berakhir");
     return { report: result.rows[0].snapshot };
+  }
+
+  @Get("report-pdf")
+  async reportPdf(@Req() request: FastifyRequest, @Res() reply: FastifyReply) {
+    const rawSession = request.cookies?.[sessionCookieName];
+    if (!rawSession) throw new Error("Sesi akses wali tidak valid atau telah berakhir");
+    const result = await this.db.query<{ pdf_storage_key: string | null }>(`SELECT rv.pdf_storage_key FROM parent_report_sessions session JOIN report_versions rv ON rv.id = session.report_version_id WHERE session.token_hash=$1 AND session.expires_at > now()`, [hash(rawSession)]);
+    const storageKey = result.rows[0]?.pdf_storage_key;
+    if (!storageKey) throw new Error("File PDF rapor belum tersedia");
+    const pdf = await this.pdf.readPublishedReport(storageKey);
+    reply.header("Content-Type", "application/pdf");
+    reply.header("Content-Disposition", "attachment; filename=rapor-anak.pdf");
+    return reply.send(pdf);
   }
 }

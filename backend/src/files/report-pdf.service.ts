@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { CreateBucketCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import PDFDocument from "pdfkit";
 
 type Snapshot = { report?: { id?: string }; student?: { name?: string; student_number?: string | null }; semester?: { name?: string }; assessments?: { description?: string; code?: string }[]; narratives?: { name?: string; content?: string }[]; growth?: { weight_kg?: number | string; height_cm?: number | string } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null };
@@ -19,6 +19,12 @@ export class ReportPdfService {
     await this.ensureBucket();
     await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: await this.render(input.snapshot), ContentType: "application/pdf", ContentDisposition: `attachment; filename="rapor-v${input.versionNumber}.pdf"` }));
     return key;
+  }
+
+  async readPublishedReport(storageKey: string) {
+    const object = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: storageKey }));
+    if (!object.Body) throw new Error("File PDF rapor tidak tersedia");
+    return Buffer.from(await object.Body.transformToByteArray());
   }
 
   private async ensureBucket() {
