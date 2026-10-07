@@ -10,7 +10,9 @@ Perubahan demo hanya berlaku selama tab browser terbuka dan akan kembali ke data
 
 1. Buka **Settings → Pages** pada repositori GitHub.
 2. Pilih **GitHub Actions** sebagai sumber deployment.
-3. Push ke `main` atau jalankan workflow **Deploy RAMU demo to GitHub Pages** secara manual.
+3. Push ke branch `demo` atau jalankan workflow **Deploy RAMU demo to GitHub Pages** secara manual.
+
+Branch `main` menyimpan aplikasi RAMU yang sebenarnya. Branch `demo` khusus untuk pengalaman publik GitHub Pages dan tidak memuat data sekolah atau akses backend nyata.
 
 Untuk repositori `SinchanGM24/Ramu`, demo memakai base path `/Ramu` dan akan tersedia di `https://sinchangm24.github.io/Ramu/` setelah workflow berhasil.
 
