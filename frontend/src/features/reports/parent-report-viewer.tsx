@@ -1,67 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, Download, Printer } from "lucide-react";
 import { api } from "@/lib/api";
 
-type ParentReport = { assessments?: { description: string; code: string }[]; narratives?: { name: string; content: string }[]; extracurricular?: { activity_name: string; grade: string }[]; portfolio?: { original_filename: string; caption?: string | null }[] };
+type Assessment = { area_name?: string; sub_area_name?: string; description: string; code: string };
+type ParentReport = { student?: { name?: string; nickname?: string | null; student_number?: string | null; class_name?: string | null }; semester?: { name?: string; academic_year_name?: string }; assessments?: Assessment[]; narratives?: { name: string; content: string }[]; growth?: { weight_kg?: string | number; height_cm?: string | number } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null; extracurricular?: { activity_name: string; grade: string }[] };
 
 export function ParentReportViewer({ token }: { token: string }) {
-  const [pin, setPin] = useState("");
-  const [data, setData] = useState<ParentReport>();
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-
-  async function loadSession() {
-    const result = await api<{ report: ParentReport }>("/parent/report");
-    setData(result.report);
-  }
-
+  const [pin, setPin] = useState(""); const [data, setData] = useState<ParentReport>(); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  async function loadSession() { const result = await api<{ report: ParentReport }>("/parent/report"); setData(result.report); }
   useEffect(() => { loadSession().catch(() => undefined); }, []);
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await api("/parent/verify", { method: "POST", body: JSON.stringify({ token, pin }) });
-      await loadSession();
-    } catch {
-      setError("PIN atau tautan tidak valid.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function downloadPdf() {
-    setError("");
-    if (demoMode) {
-      window.print();
-      return;
-    }
-    setDownloading(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/parent/report-pdf`, { credentials: "include" });
-      if (!response.ok) throw new Error();
-      const url = URL.createObjectURL(await response.blob());
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "rapor-anak.pdf";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      setError("PDF rapor belum dapat diunduh. Silakan coba lagi.");
-    } finally {
-      setDownloading(false);
-    }
-  }
-
-  if (data) return <main className="min-h-screen bg-brand-50 p-5"><article className="mx-auto max-w-3xl rounded-2xl bg-white p-6 shadow-soft"><div className="flex justify-between gap-4"><h1 className="text-xl font-bold">Laporan Perkembangan Anak Didik</h1><div className="flex gap-3"><button className="text-sm font-semibold text-brand-700" disabled={downloading} onClick={downloadPdf}>{downloading ? "Menyiapkan PDF…" : "Unduh PDF"}</button><button className="text-sm font-semibold text-brand-700" onClick={() => window.print()}>Cetak</button></div></div>{error && <p className="mt-4 text-sm text-red-700">{error}</p>}<section className="mt-6 space-y-2">{data.assessments?.map((item, index) => <div key={index} className="flex justify-between border-b py-2 text-sm"><span>{item.description}</span><strong>{item.code}</strong></div>)}</section><section className="mt-6 space-y-4">{data.narratives?.map((item, index) => <div key={index}><h2 className="font-bold">{item.name}</h2><p className="text-sm">{item.content}</p></div>)}</section><ReportList title="Ekstrakurikuler" items={data.extracurricular?.map((item) => `${item.activity_name} · ${item.grade}`)} empty="Belum ada kegiatan ekstrakurikuler." /><ReportList title="Portfolio perkembangan" items={data.portfolio?.map((item) => item.caption || item.original_filename)} empty="Belum ada portfolio yang disertakan." /></article></main>;
-
-  return <main className="grid min-h-screen place-items-center bg-brand-50 p-5"><form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-soft"><p className="text-sm font-bold text-brand-700">RAMU · AKSES WALI</p><h1 className="mt-1 text-xl font-bold">Rapor murid</h1><p className="mt-2 text-sm leading-6 text-slate-600">Masukkan PIN yang diberikan oleh sekolah untuk membuka rapor ini.</p>{demoMode && <p className="mt-3 rounded-xl bg-brand-50 px-3 py-2 text-xs font-medium text-brand-800">Demo: gunakan PIN <strong>123456</strong>.</p>}<label className="mt-6 block text-sm font-semibold">PIN enam digit<input required value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" className="mt-2 w-full rounded-xl border p-3 text-center text-xl tracking-[.4em]" /></label>{error && <p className="mt-3 text-sm text-red-700">{error}</p>}<button disabled={loading} className="mt-4 w-full rounded-xl bg-brand-600 py-3 font-semibold text-white disabled:opacity-50">{loading ? "Memeriksa akses…" : "Buka rapor"}</button></form></main>;
+  async function submit(event: React.FormEvent) { event.preventDefault(); setError(""); setLoading(true); try { await api("/parent/verify", { method: "POST", body: JSON.stringify({ token, pin }) }); await loadSession(); } catch { setError("PIN atau tautan tidak valid."); } finally { setLoading(false); } }
+  async function downloadPdf() { if (demoMode) { window.print(); return; } setError("PDF rapor belum dapat diunduh. Silakan coba lagi."); }
+  if (!data) return <main className="grid min-h-screen place-items-center bg-brand-50 p-5"><form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-soft"><p className="text-sm font-bold text-brand-700">RAMU · AKSES WALI</p><h1 className="mt-1 text-xl font-bold">Rapor murid</h1><p className="mt-2 text-sm leading-6 text-slate-600">Masukkan PIN yang diberikan oleh sekolah untuk membuka rapor ini.</p>{demoMode && <p className="mt-3 rounded-xl bg-brand-50 px-3 py-2 text-xs font-medium text-brand-800">Demo: gunakan PIN <strong>123456</strong>.</p>}<label className="mt-6 block text-sm font-semibold">PIN enam digit<input required value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" className="mt-2 w-full rounded-xl border p-3 text-center text-xl tracking-[.4em]" /></label>{error && <p className="mt-3 text-sm text-red-700">{error}</p>}<button disabled={loading} className="mt-4 w-full rounded-xl bg-brand-600 py-3 font-semibold text-white disabled:opacity-50">{loading ? "Memeriksa akses…" : "Buka rapor"}</button></form></main>;
+  return <ParentReportContent report={data} error={error} onDownload={downloadPdf} />;
 }
 
-function ReportList({ title, items, empty }: { title: string; items?: string[]; empty: string }) {
-  return <section className="mt-6"><h2 className="font-bold">{title}</h2>{items?.length ? <ul className="mt-2 space-y-2 text-sm">{items.map((item, index) => <li key={index} className="border-b py-2">{item}</li>)}</ul> : <p className="mt-2 text-sm text-slate-500">{empty}</p>}</section>;
+function ParentReportContent({ report, error, onDownload }: { report: ParentReport; error: string; onDownload: () => void }) {
+  const grouped = useMemo(() => { const areas = new Map<string, Map<string, Assessment[]>>(); for (const item of report.assessments || []) { const area = item.area_name || "Perkembangan Anak Didik"; const subArea = item.sub_area_name || "Indikator"; if (!areas.has(area)) areas.set(area, new Map()); const subAreas = areas.get(area)!; if (!subAreas.has(subArea)) subAreas.set(subArea, []); subAreas.get(subArea)!.push(item); } return [...areas.entries()]; }, [report.assessments]);
+  const narratives = new Map((report.narratives || []).map((item) => [item.name, item.content]));
+  return <main className="min-h-screen bg-brand-50"><header className="sticky top-0 z-10 border-b border-brand-100 bg-white/95 px-4 py-3 print:hidden"><div className="mx-auto flex max-w-3xl items-center justify-between"><div><p className="text-xs font-bold text-brand-700">RAMU · RAPOR WALI</p><p className="text-sm font-semibold">{report.student?.name || "Anak didik"}</p></div><div className="flex gap-2"><button aria-label="Unduh PDF" onClick={onDownload} className="rounded-lg p-2 text-brand-700"><Download size={19} /></button><button aria-label="Cetak rapor" onClick={() => window.print()} className="rounded-lg p-2 text-brand-700"><Printer size={19} /></button></div></div></header><article className="mx-auto max-w-3xl space-y-5 p-4 pb-10 sm:p-6"><section className="rounded-2xl bg-brand-700 p-6 text-white"><p className="text-sm font-semibold text-brand-100">Laporan Perkembangan Anak Didik</p><h1 className="mt-2 text-2xl font-bold">{report.student?.name || "Anak didik"}</h1><p className="mt-2 text-sm text-brand-100">{report.student?.class_name || "Kelompok belum diatur"} · {report.semester?.name || "Semester"} · {report.semester?.academic_year_name || "Tahun pelajaran"}</p></section><section className="rounded-2xl bg-white p-5 shadow-soft"><h2 className="font-bold">Ringkasan rapor</h2><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><Info label="Nomor induk" value={report.student?.student_number || "Belum diisi"} /><Info label="Nama panggilan" value={report.student?.nickname || "Belum diisi"} /><Info label="Berat badan" value={report.growth?.weight_kg !== undefined ? `${report.growth.weight_kg} kg` : "Belum diisi"} /><Info label="Tinggi badan" value={report.growth?.height_cm !== undefined ? `${report.growth.height_cm} cm` : "Belum diisi"} /></dl></section>{error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}<section className="space-y-3"><h2 className="px-1 text-lg font-bold">Perkembangan anak</h2>{grouped.map(([area, subAreas], index) => <details key={area} open={index === 0} className="rounded-2xl bg-white shadow-soft"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5 font-bold">{area}<ChevronDown className="size-5 text-brand-700" /></summary><div className="border-t border-slate-100 p-5"><p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{narratives.get(area) || "Narasi perkembangan belum tersedia."}</p><div className="mt-5 space-y-4">{[...subAreas.entries()].map(([subArea, items]) => <section key={subArea}><h3 className="text-sm font-bold text-brand-700">{subArea}</h3><div className="mt-2 divide-y divide-slate-100">{items.map((item, itemIndex) => <div key={`${item.description}-${itemIndex}`} className="flex gap-4 py-3 text-sm"><span className="min-w-0 flex-1 text-slate-700">{item.description}</span><strong className="shrink-0 text-brand-700">{item.code}</strong></div>)}</div></section>)}</div></div></details>)}</section><section className="grid gap-4 sm:grid-cols-2"><DataCard title="Kehadiran" items={[["Sakit", report.attendance?.sick_days], ["Izin", report.attendance?.permission_days], ["Tanpa keterangan", report.attendance?.unexcused_days]]} suffix="hari" /><DataCard title="Ekstrakurikuler" items={(report.extracurricular || []).map((item) => [item.activity_name, item.grade])} /></section></article></main>;
 }
+function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-xl bg-slate-50 p-3"><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 font-semibold text-slate-800">{value}</dd></div>; }
+function DataCard({ title, items, suffix = "" }: { title: string; items: Array<[string, string | number | null | undefined]>; suffix?: string }) { return <section className="rounded-2xl bg-white p-5 shadow-soft"><h2 className="font-bold">{title}</h2><dl className="mt-3 space-y-2 text-sm">{items.length ? items.map(([label, value]) => <div key={label} className="flex justify-between gap-3"><dt className="text-slate-600">{label}</dt><dd className="font-semibold">{value ?? "Belum diisi"}{value !== undefined && value !== null && suffix ? ` ${suffix}` : ""}</dd></div>) : <p className="text-sm text-slate-500">Belum ada data.</p>}</dl></section>; }

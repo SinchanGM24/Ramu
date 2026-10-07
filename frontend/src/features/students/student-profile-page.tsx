@@ -1,0 +1,49 @@
+"use client";
+
+import Link from "next/link";
+import { FormEvent, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Plus } from "lucide-react";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/shared/page-header";
+
+type ClassRoom = { id: string; name: string };
+type Guardian = { id: string; name: string; relationship: string; phone: string; occupation?: string | null; is_primary: boolean };
+type Student = { id: string; name: string; student_number?: string | null; class_id?: string | null; birth_date?: string | null; birth_place?: string | null; nickname?: string | null; gender?: "MALE" | "FEMALE" | null; religion?: string | null; child_order?: number | null; address?: string | null; guardians: Guardian[] };
+
+const inputClass = "mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500";
+
+export function StudentProfilePage({ id }: { id: string }) {
+  const queryClient = useQueryClient();
+  const [notice, setNotice] = useState("");
+  const student = useQuery({ queryKey: ["student", id], queryFn: () => api<Student | null>(`/students/${id}`) });
+  const classes = useQuery({ queryKey: ["academic", "classes"], queryFn: () => api<ClassRoom[]>("/academic/classes") });
+  const update = useMutation({ mutationFn: (body: unknown) => api(`/students/${id}`, { method: "PATCH", body: JSON.stringify(body) }), onSuccess: () => { setNotice("Profil murid tersimpan."); queryClient.invalidateQueries({ queryKey: ["student", id] }); queryClient.invalidateQueries({ queryKey: ["students"] }); }, onError: (error) => setNotice(error instanceof Error ? error.message : "Profil murid belum tersimpan.") });
+
+  if (student.isLoading) return <Card>Memuat profil murid…</Card>;
+  if (!student.data) return <Card><h1 className="font-bold">Murid tidak ditemukan</h1><Link href="/app/academic/students" className="mt-3 inline-block text-sm font-semibold text-brand-700">Kembali ke data murid</Link></Card>;
+
+  const value = student.data;
+  return <>
+    <PageHeader eyebrow="Data murid" title={`Profil ${value.name}`} description="Data ini tampil sebagai identitas baca-saja pada editor, pratinjau, dan rapor terbit." action={<Link href="/app/academic/students"><Button variant="secondary"><ArrowLeft className="mr-1 size-4" />Kembali</Button></Link>} />
+    {notice && <p className={`mb-5 rounded-xl p-3 text-sm ${notice.endsWith("tersimpan.") ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{notice}</p>}
+    <div className="space-y-6"><StudentForm student={value} classes={classes.data ?? []} pending={update.isPending} onSubmit={(body) => update.mutate(body)} /><Guardians studentId={id} guardians={value.guardians} /></div>
+  </>;
+}
+
+function StudentForm({ student, classes, pending, onSubmit }: { student: Student; classes: ClassRoom[]; pending: boolean; onSubmit: (body: unknown) => void }) {
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); onSubmit({ name: form.get("name"), nickname: form.get("nickname") || null, studentNumber: form.get("studentNumber") || null, classId: form.get("classId") || null, birthPlace: form.get("birthPlace") || null, birthDate: form.get("birthDate") || null, gender: form.get("gender") || null, religion: form.get("religion") || null, childOrder: form.get("childOrder") ? Number(form.get("childOrder")) : null, address: form.get("address") || null }); }
+  return <Card><h2 className="text-lg font-bold">Keterangan anak didik</h2><p className="mt-1 text-sm text-slate-500">Lengkapi identitas sesuai data sekolah. Data penilaian tidak diubah dari halaman ini.</p><form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2"><Field label="Nama anak didik"><input required name="name" defaultValue={student.name} className={inputClass} /></Field><Field label="Nama panggilan"><input name="nickname" defaultValue={student.nickname ?? ""} className={inputClass} /></Field><Field label="Nomor induk"><input name="studentNumber" defaultValue={student.student_number ?? ""} className={inputClass} /></Field><Field label="Kelas"><select name="classId" defaultValue={student.class_id ?? ""} className={inputClass}><option value="">Belum ditempatkan di kelas</option>{classes.map((classRoom) => <option key={classRoom.id} value={classRoom.id}>{classRoom.name}</option>)}</select></Field><Field label="Tempat lahir"><input name="birthPlace" defaultValue={student.birth_place ?? ""} className={inputClass} /></Field><Field label="Tanggal lahir"><input name="birthDate" type="date" defaultValue={student.birth_date?.slice(0, 10) ?? ""} className={inputClass} /></Field><Field label="Jenis kelamin"><select name="gender" defaultValue={student.gender ?? ""} className={inputClass}><option value="">Belum diisi</option><option value="MALE">Laki-laki</option><option value="FEMALE">Perempuan</option></select></Field><Field label="Agama"><input name="religion" defaultValue={student.religion ?? ""} className={inputClass} /></Field><Field label="Anak ke"><input name="childOrder" type="number" min="1" defaultValue={student.child_order ?? ""} className={inputClass} /></Field><Field label="Alamat" wide><textarea name="address" defaultValue={student.address ?? ""} className={`${inputClass} min-h-24`} /></Field><div className="md:col-span-2"><Button disabled={pending}>{pending ? "Menyimpan…" : "Simpan profil murid"}</Button></div></form></Card>;
+}
+
+function Guardians({ studentId, guardians }: { studentId: string; guardians: Guardian[] }) {
+  const queryClient = useQueryClient(); const [editing, setEditing] = useState<Guardian | null>(null); const [adding, setAdding] = useState(false); const [notice, setNotice] = useState("");
+  const save = useMutation({ mutationFn: ({ guardianId, body }: { guardianId?: string; body: unknown }) => api(guardianId ? `/students/${studentId}/guardians/${guardianId}` : `/students/${studentId}/guardians`, { method: guardianId ? "PATCH" : "POST", body: JSON.stringify(body) }), onSuccess: () => { setNotice("Data orang tua/wali tersimpan."); setAdding(false); setEditing(null); queryClient.invalidateQueries({ queryKey: ["student", studentId] }); }, onError: (error) => setNotice(error instanceof Error ? error.message : "Data orang tua/wali belum tersimpan.") });
+  return <Card><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Orang tua/wali</h2><p className="mt-1 text-sm text-slate-500">Tandai satu kontak utama untuk distribusi rapor.</p></div><Button variant="secondary" onClick={() => { setAdding(true); setEditing(null); }}><Plus className="mr-1 size-4" />Tambah kontak</Button></div>{notice && <p className="mt-4 text-sm text-slate-600">{notice}</p>}<div className="mt-4 space-y-3">{guardians.length ? guardians.map((guardian) => <button type="button" key={guardian.id} onClick={() => { setEditing(guardian); setAdding(false); }} className="flex w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left hover:border-brand-300"><span><span className="block font-semibold text-slate-900">{guardian.name}{guardian.is_primary && <span className="ml-2 rounded-full bg-brand-50 px-2 py-1 text-xs text-brand-700">Kontak utama</span>}</span><span className="mt-1 block text-sm text-slate-600">{guardian.relationship} · {guardian.phone}{guardian.occupation ? ` · ${guardian.occupation}` : ""}</span></span><span className="text-sm font-semibold text-brand-700">Ubah</span></button>) : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Belum ada data orang tua/wali.</p>}</div>{(adding || editing) && <GuardianForm key={editing?.id ?? "baru"} guardian={editing} pending={save.isPending} onCancel={() => { setAdding(false); setEditing(null); }} onSubmit={(body) => save.mutate({ guardianId: editing?.id, body })} />}</Card>;
+}
+
+function GuardianForm({ guardian, pending, onCancel, onSubmit }: { guardian: Guardian | null; pending: boolean; onCancel: () => void; onSubmit: (body: unknown) => void }) { function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); onSubmit({ name: form.get("name"), relationship: form.get("relationship"), phone: form.get("phone"), occupation: form.get("occupation") || null, isPrimary: form.get("isPrimary") === "on" }); } return <form onSubmit={submit} className="mt-5 grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-2"><Field label="Nama orang tua/wali"><input required name="name" defaultValue={guardian?.name ?? ""} className={inputClass} /></Field><Field label="Hubungan"><input required name="relationship" defaultValue={guardian?.relationship ?? ""} placeholder="Contoh: Ibu" className={inputClass} /></Field><Field label="Nomor telepon"><input required name="phone" defaultValue={guardian?.phone ?? ""} className={inputClass} /></Field><Field label="Pekerjaan"><input name="occupation" defaultValue={guardian?.occupation ?? ""} className={inputClass} /></Field><label className="flex items-center gap-2 text-sm font-medium text-slate-700 md:col-span-2"><input name="isPrimary" type="checkbox" defaultChecked={guardian?.is_primary ?? guardiansAreEmpty(guardian)} />Jadikan kontak utama</label><div className="flex gap-2 md:col-span-2"><Button disabled={pending}>{pending ? "Menyimpan…" : "Simpan kontak"}</Button><Button type="button" variant="ghost" onClick={onCancel}>Batal</Button></div></form>; }
+function guardiansAreEmpty(guardian: Guardian | null) { return guardian === null; }
+function Field({ label, children, wide = false }: { label: string; children: React.ReactNode; wide?: boolean }) { return <label className={`block text-sm font-medium text-slate-700 ${wide ? "md:col-span-2" : ""}`}>{label}{children}</label>; }
