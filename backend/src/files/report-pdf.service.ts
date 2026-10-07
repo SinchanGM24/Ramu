@@ -3,7 +3,7 @@ import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectComm
 import PDFDocument from "pdfkit";
 import { DatabaseService } from "../database/database.service";
 
-type Snapshot = { report?: { id?: string }; student?: { name?: string; student_number?: string | null }; semester?: { name?: string }; assessments?: { description?: string; code?: string }[]; narratives?: { name?: string; content?: string }[]; extracurricular?: { activity_name?: string; grade?: string }[]; portfolio?: { original_filename?: string; caption?: string | null }[]; growth?: { weight_kg?: number | string; height_cm?: number | string } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null };
+type Snapshot = { report?: { id?: string }; student?: { name?: string; student_number?: string | null; class_name?: string | null; nickname?: string | null }; semester?: { name?: string; academic_year_name?: string | null }; assessments?: { area_name?: string; sub_area_name?: string; description?: string; code?: string }[]; narratives?: { name?: string; content?: string }[]; extracurricular?: { activity_name?: string; grade?: string }[]; portfolio?: { original_filename?: string; caption?: string | null }[]; growth?: { weight_kg?: number | string; height_cm?: number | string } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null };
 
 @Injectable()
 export class ReportPdfService {
