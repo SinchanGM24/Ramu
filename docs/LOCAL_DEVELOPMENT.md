@@ -18,7 +18,7 @@ npm run dev
 - API health check: `http://localhost:4000/api/health`
 - MinIO Console: `http://localhost:9001`
 
-Gunakan nilai `SEED_ADMIN_EMAIL` dan `SEED_ADMIN_PASSWORD` dari `backend/.env` untuk akun demo. Seed tidak menyimpan kredensial tetap di kode sumber.
+Setelah `npm run db:seed`, gunakan akun development berikut (hanya lokal): `admin@ramu.test` (Admin Sekolah), `guru@ramu.test` (Guru), dan `kepsek@ramu.test` (Kepala Sekolah). Semuanya memakai kata sandi `pass1234`, atau nilai `SEED_DEMO_PASSWORD` dari `backend/.env`.
 
 ## Keamanan lokal
 
