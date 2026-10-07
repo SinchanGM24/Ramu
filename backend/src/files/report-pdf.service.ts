@@ -30,6 +30,14 @@ export class ReportPdfService {
     return Buffer.from(await object.Body.transformToByteArray());
   }
 
+  async storePortfolioImage(input: { schoolId: string; reportId: string; filename: string; contentType: string; body: Buffer }) {
+    const extension = input.contentType === "image/png" ? "png" : input.contentType === "image/webp" ? "webp" : "jpg";
+    const key = `schools/${input.schoolId}/reports/${input.reportId}/portfolio/${crypto.randomUUID()}.${extension}`;
+    await this.ensureBucket();
+    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: input.body, ContentType: input.contentType }));
+    return key;
+  }
+
   private async ensureBucket() {
     try { await this.client.send(new HeadBucketCommand({ Bucket: this.bucket })); }
     catch { await this.client.send(new CreateBucketCommand({ Bucket: this.bucket })); }
