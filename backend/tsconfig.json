@@ -5,11 +5,12 @@
     "moduleResolution": "node",
     "strict": true,
     "declaration": true,
+    "rootDir": "src",
     "outDir": "dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }
