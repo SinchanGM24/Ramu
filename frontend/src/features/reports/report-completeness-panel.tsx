@@ -11,7 +11,7 @@ type Completeness = { complete: boolean; missingAssessments: string[]; missingNa
 export function ReportCompletenessPanel({ reportId }: { reportId: string }) {
   const queryClient = useQueryClient();
   const completeness = useQuery({ queryKey: ["report-completeness", reportId], queryFn: () => api<Completeness>(`/reports/${reportId}/completeness`) });
-  const submit = useMutation({ mutationFn: () => api(`/reports/${reportId}/transition`, { method: "POST", body: JSON.stringify({ action: "submit" }) }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["report-completeness", reportId] }); queryClient.invalidateQueries({ queryKey: ["report-editor", reportId] }); } });
+  const submit = useMutation({ mutationFn: () => api(`/reports/${reportId}/workspace/submit`, { method: "POST" }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["report-completeness", reportId] }); queryClient.invalidateQueries({ queryKey: ["report-workspace", reportId] }); } });
   if (completeness.isLoading) return <Card className="mb-4 text-sm text-slate-500">Memeriksa kelengkapan rapor…</Card>;
   if (completeness.isError || !completeness.data) return null;
   const data = completeness.data;
