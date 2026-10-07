@@ -10,7 +10,9 @@ const accounts = [
 
 async function seed() {
   if (process.env.NODE_ENV === "production") throw new Error("Seed akun demo tidak boleh dijalankan di production");
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const connectionString = process.env.DATABASE_SEED_URL || process.env.DATABASE_MIGRATION_URL || process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("DATABASE_SEED_URL, DATABASE_MIGRATION_URL, atau DATABASE_URL harus diatur");
+  const pool = new Pool({ connectionString });
   const password = process.env.SEED_DEMO_PASSWORD || "pass1234";
   const client = await pool.connect();
   try {
