@@ -3,6 +3,7 @@ import type { FastifyRequest } from "fastify";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import { assertReportAccess } from "./report-authorization";
 
 @Controller("reports")
 export class ReportWorkflowController {
@@ -12,6 +13,7 @@ export class ReportWorkflowController {
   async resumeRevision(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
+      await assertReportAccess(client, actor, id);
       const report = (await client.query("UPDATE reports SET status='DRAFT',updated_at=now() WHERE id=$1 AND school_id=$2 AND status='REVISION_REQUIRED' RETURNING *", [id, actor.schoolId])).rows[0];
       if (!report) throw new Error("Rapor yang perlu direvisi tidak ditemukan");
       await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report.revision_resumed", entityType: "report", entityId: id }, client);

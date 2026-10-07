@@ -3,6 +3,7 @@ import type { FastifyRequest } from "fastify";
 import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import { assertReportAccess } from "./report-authorization";
 
 @Controller("reports")
 export class ReportCompletenessController {
@@ -14,6 +15,7 @@ export class ReportCompletenessController {
     return this.db.transaction(async (client) => {
       const report = (await client.query<{ student_id: string; semester_id: string }>("SELECT student_id,semester_id FROM reports WHERE id=$1 AND school_id=$2", [id, actor.schoolId])).rows[0];
       if (!report) throw new Error("Rapor tidak ditemukan");
+      await assertReportAccess(client, actor, id);
       const missingAssessments = (await client.query<{ description: string }>(`SELECT i.description FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id
         LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2
         WHERE f.name=$3 AND f.is_active AND assessment.id IS NULL ORDER BY da.position,sa.position,i.position`, [report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME])).rows.map((row) => row.description);

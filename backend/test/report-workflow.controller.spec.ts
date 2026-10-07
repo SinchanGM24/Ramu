@@ -12,7 +12,7 @@ describe("ReportWorkflowController", () => {
     const db = { transaction: async (callback: (client: { query: (sql: string, values: unknown[]) => Promise<{ rows: Array<{ id: string }> }> }) => Promise<unknown>) => callback({ query: async (sql, values) => { queries.push({ sql, values }); return { rows: [{ id: "report-1" }] }; } }) };
     const controller = new ReportWorkflowController(new AuthService({} as never), db as never, audit as never);
 
-    await expect(controller.resumeRevision(request("TEACHER"), "report-1")).resolves.toEqual({ id: "report-1" });
+    await expect(controller.resumeRevision(request("SCHOOL_ADMIN"), "report-1")).resolves.toEqual({ id: "report-1" });
     expect(queries[0].sql).toContain("school_id=$2");
     expect(queries[0].values).toEqual(["report-1", "school-1"]);
   });
