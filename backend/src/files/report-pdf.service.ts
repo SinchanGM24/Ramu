@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import PDFDocument from "pdfkit";
+import { DatabaseService } from "../database/database.service";
 
-type Snapshot = { report?: { id?: string }; student?: { name?: string; student_number?: string | null }; semester?: { name?: string }; assessments?: { description?: string; code?: string }[]; narratives?: { name?: string; content?: string }[]; growth?: { weight_kg?: number | string; height_cm?: number | string } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null };
+type Snapshot = { report?: { id?: string }; student?: { name?: string; student_number?: string | null }; semester?: { name?: string }; assessments?: { description?: string; code?: string }[]; narratives?: { name?: string; content?: string }[]; extracurricular?: { activity_name?: string; grade?: string }[]; growth?: { weight_kg?: number | string; height_cm?: number | string } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null };
 
 @Injectable()
 export class ReportPdfService {
+  constructor(private readonly db: DatabaseService) {}
   private readonly bucket = process.env.OBJECT_STORAGE_BUCKET || "ramu-private";
   private readonly client = new S3Client({
     region: process.env.OBJECT_STORAGE_REGION || "us-east-1",
@@ -16,8 +18,9 @@ export class ReportPdfService {
 
   async storePublishedReport(input: { schoolId: string; reportId: string; versionNumber: number; snapshot: Snapshot }) {
     const key = `schools/${input.schoolId}/reports/${input.reportId}/versions/${input.versionNumber}.pdf`;
+    const extracurricular = await this.db.transaction(async (client) => (await client.query<{ activity_name: string; grade: string }>(`SELECT e.activity_name,e.grade FROM extracurricular_records e JOIN reports r ON r.student_id=e.student_id AND r.semester_id=e.semester_id WHERE r.id=$1 ORDER BY e.activity_name`, [input.reportId])).rows, input.schoolId);
     await this.ensureBucket();
-    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: await this.render(input.snapshot), ContentType: "application/pdf", ContentDisposition: `attachment; filename="rapor-v${input.versionNumber}.pdf"` }));
+    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: await this.render({ ...input.snapshot, extracurricular }), ContentType: "application/pdf", ContentDisposition: `attachment; filename="rapor-v${input.versionNumber}.pdf"` }));
     return key;
   }
 
@@ -50,6 +53,9 @@ export class ReportPdfService {
       document.moveDown().font("Helvetica-Bold").text("Data Akhir Semester").font("Helvetica");
       document.text(`Pertumbuhan: ${snapshot.growth?.weight_kg ?? "-"} kg, ${snapshot.growth?.height_cm ?? "-"} cm`);
       document.text(`Kehadiran: sakit ${snapshot.attendance?.sick_days ?? "-"} hari, izin ${snapshot.attendance?.permission_days ?? "-"} hari, tanpa keterangan ${snapshot.attendance?.unexcused_days ?? "-"} hari`);
+      document.moveDown().font("Helvetica-Bold").text("Ekstrakurikuler").font("Helvetica");
+      if (snapshot.extracurricular?.length) for (const activity of snapshot.extracurricular) document.text(`${activity.activity_name || "Kegiatan"}: ${activity.grade || "-"}`);
+      else document.text("Belum ada kegiatan ekstrakurikuler.");
       document.moveDown(3).text("Guru kelas", { align: "left" });
       document.end();
     });

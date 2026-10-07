@@ -32,6 +32,7 @@ type ReportEditorData = {
     unexcused_days: number;
   } | null;
 };
+type Extracurricular = { id: string; activity_name: string; grade: string };
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Draf",
@@ -52,6 +53,7 @@ export function ReportPreviewPage({ id }: { id: string }) {
     queryKey: ["report-preview", id],
     queryFn: () => api<ReportEditorData | null>(`/reports/${id}/editor`),
   });
+  const extracurricularQuery = useQuery({ queryKey: ["report-extracurricular", id], queryFn: () => api<Extracurricular[]>(`/reports/${id}/extracurricular`) });
 
   if (reportQuery.isLoading) {
     return <p className="text-sm text-slate-500">Memuat pratinjau rapor…</p>;
@@ -62,6 +64,7 @@ export function ReportPreviewPage({ id }: { id: string }) {
   }
 
   const { report, areas, assessments, growth, attendance } = reportQuery.data;
+  const extracurricular = extracurricularQuery.data ?? [];
 
   return <div className="print:mx-0">
     <div className="print:hidden">
@@ -108,6 +111,11 @@ export function ReportPreviewPage({ id }: { id: string }) {
           <SummaryCard title="Pertumbuhan"><SummaryRow label="Berat badan" value={`${formatNumber(growth?.weight_kg)}${growth ? " kg" : ""}`} /><SummaryRow label="Tinggi badan" value={`${formatNumber(growth?.height_cm)}${growth ? " cm" : ""}`} />{growth?.head_circumference_cm !== null && growth?.head_circumference_cm !== undefined && <SummaryRow label="Lingkar kepala" value={`${formatNumber(growth.head_circumference_cm)} cm`} />}</SummaryCard>
           <SummaryCard title="Kehadiran"><SummaryRow label="Sakit" value={`${attendance?.sick_days ?? "Belum diisi"}${attendance ? " hari" : ""}`} /><SummaryRow label="Izin" value={`${attendance?.permission_days ?? "Belum diisi"}${attendance ? " hari" : ""}`} /><SummaryRow label="Tanpa keterangan" value={`${attendance?.unexcused_days ?? "Belum diisi"}${attendance ? " hari" : ""}`} /></SummaryCard>
         </div>
+      </section>
+
+      <section aria-labelledby="ekstrakurikuler-title">
+        <h2 id="ekstrakurikuler-title" className="text-lg font-bold text-slate-900">Ekstrakurikuler</h2>
+        {extracurricular.length ? <div className="mt-3 overflow-hidden rounded-xl border border-slate-200"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-slate-700"><tr><th className="px-4 py-3 font-semibold">Kegiatan</th><th className="px-4 py-3 text-right font-semibold">Nilai</th></tr></thead><tbody>{extracurricular.map((item) => <tr key={item.id} className="border-t border-slate-200"><td className="px-4 py-3">{item.activity_name}</td><td className="px-4 py-3 text-right font-bold text-brand-700">{item.grade}</td></tr>)}</tbody></table></div> : <p className="mt-2 text-sm text-slate-500">Belum ada kegiatan ekstrakurikuler.</p>}
       </section>
 
       <section className="grid gap-8 border-t border-slate-200 pt-8 text-center sm:grid-cols-2" aria-label="Pengesahan">
