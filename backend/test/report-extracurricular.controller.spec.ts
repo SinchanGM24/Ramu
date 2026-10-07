@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { AuthService } from "../src/auth/auth.service";
 import { ReportExtracurricularController } from "../src/reports/report-extracurricular.controller";
 
-const request = { auth: { userId: "user-1", schoolId: "school-1", role: "TEACHER", email: "guru@example.test", sessionId: "session-1" } } as never;
+const request = { auth: { userId: "user-1", schoolId: "school-1", role: "SCHOOL_ADMIN", email: "admin@example.test", sessionId: "session-1" } } as never;
 
 describe("ReportExtracurricularController", () => {
   it("lists extracurricular records only through the authenticated school scope", async () => {
