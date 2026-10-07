@@ -1,4 +1,5 @@
 import { ReportPreviewPage } from "@/features/reports/report-preview-page";
+export function generateStaticParams(){return [{id:"demo-report"}]}
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

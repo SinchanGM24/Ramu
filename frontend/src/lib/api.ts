@@ -1,8 +1,13 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 export class ApiError extends Error { constructor(message: string, public status: number) { super(message); } }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if (demoMode) {
+    const { demoResponse } = await import("./demo-api");
+    return demoResponse(path, options) as T;
+  }
   const response = await fetch(`${API_URL}/api${path}`, { ...options, credentials: "include", headers: { "Content-Type": "application/json", ...options.headers } });
   if (!response.ok) {
     const body = await response.json().catch(() => ({ message: "Terjadi kesalahan" }));

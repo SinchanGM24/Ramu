@@ -23,7 +23,7 @@ export function ReportPortfolioPage({ reportId }: { reportId: string }) {
   async function upload() {
     if (!file) return;
     setSaving(true); setError("");
-    try { const form = new FormData(); form.append("file", file); form.append("caption", caption); form.append("includedInReport", String(include)); const response = await fetch(`${apiUrl}/api/reports/${reportId}/portfolio`, { method: "POST", credentials: "include", body: form }); if (!response.ok) throw new Error(); setFile(undefined); setCaption(""); await queryClient.invalidateQueries({ queryKey: ["report-portfolio", reportId] }); }
+    try { if (process.env.NEXT_PUBLIC_DEMO_MODE !== "true") { const form = new FormData(); form.append("file", file); form.append("caption", caption); form.append("includedInReport", String(include)); const response = await fetch(`${apiUrl}/api/reports/${reportId}/portfolio`, { method: "POST", credentials: "include", body: form }); if (!response.ok) throw new Error(); } setFile(undefined); setCaption(""); await queryClient.invalidateQueries({ queryKey: ["report-portfolio", reportId] }); }
     catch { setError("Foto portfolio tidak dapat diunggah. Gunakan JPG, PNG, atau WebP dengan ukuran maksimal 5 MB."); }
     finally { setSaving(false); }
   }
