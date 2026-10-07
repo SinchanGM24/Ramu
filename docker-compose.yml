@@ -56,6 +56,11 @@ services:
       DATABASE_URL: postgresql://ramu_app:${POSTGRES_APP_PASSWORD:-ramu_app_local_password}@postgres:5432/${POSTGRES_DB:-ramu}
       SESSION_COOKIE_NAME: ramu_session
       SESSION_TTL_DAYS: 7
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_BUCKET: ramu-private
+      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-ramu_minio}
+      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-ramu_minio_password}
     ports:
       - "4000:4000"
     depends_on:

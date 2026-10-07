@@ -5,10 +5,11 @@ import { AuditModule } from "./audit/audit.module";
 import { AuthModule } from "./auth/auth.module";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
+import { FilesModule } from "./files/files.module";
 import { MessagingModule } from "./messaging/messaging.module";
 import { SchoolsModule } from "./schools/schools.module";
 import { StudentsModule } from "./students/students.module";
 import { ReportsModule } from "./reports/reports.module";
 
-@Module({ imports: [DatabaseModule, AuditModule, AuthModule, HealthModule, SchoolsModule, AcademicModule, StudentsModule, AssessmentModule, ReportsModule, MessagingModule] })
+@Module({ imports: [DatabaseModule, AuditModule, AuthModule, HealthModule, FilesModule, SchoolsModule, AcademicModule, StudentsModule, AssessmentModule, ReportsModule, MessagingModule] })
 export class AppModule {}
