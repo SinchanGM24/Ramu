@@ -14,6 +14,8 @@ Perubahan demo hanya berlaku selama tab browser terbuka dan akan kembali ke data
 
 Branch `main` menyimpan aplikasi RAMU yang sebenarnya. Branch `demo` menyimpan pengalaman publik dengan persona Admin Sekolah, Guru, dan Kepala Sekolah; tidak ada akun, data sekolah, atau akses backend yang nyata.
 
+Pada halaman masuk demo, akses wali tersedia terpisah dari persona staf. Ia menggunakan tautan laporan contoh dan PIN demo `123456`, mengikuti pola akses wali berbasis tautan + PIN tanpa membuat akun wali.
+
 Untuk repositori `SinchanGM24/Ramu`, demo memakai base path `/Ramu` dan akan tersedia di `https://sinchangm24.github.io/Ramu/` setelah workflow berhasil.
 
 Jangan masukkan rahasia, URL database, token, atau data murid asli ke frontend demo karena GitHub Pages bersifat publik.
