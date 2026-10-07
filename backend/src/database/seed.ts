@@ -27,6 +27,8 @@ async function seed() {
       await client.query(`INSERT INTO school_memberships(user_id,school_id,role) VALUES($1,$2,$3) ON CONFLICT(user_id,school_id) DO UPDATE SET role=EXCLUDED.role`, [user.rows[0].id, schoolId, account.role]);
     }
     const year = await client.query<{ id: string }>("INSERT INTO academic_years(school_id,name,starts_on,ends_on) VALUES ($1,'2026/2027','2026-07-01','2027-06-30') ON CONFLICT(school_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id", [schoolId]);
+    await client.query("INSERT INTO semesters(school_id,academic_year_id,name,starts_on,ends_on) VALUES ($1,$2,'Semester I','2026-07-01','2026-12-31') ON CONFLICT(school_id,academic_year_id,name) DO UPDATE SET starts_on=EXCLUDED.starts_on,ends_on=EXCLUDED.ends_on", [schoolId, year.rows[0].id]);
+    await client.query("INSERT INTO semesters(school_id,academic_year_id,name,starts_on,ends_on) VALUES ($1,$2,'Semester II','2027-01-01','2027-06-30') ON CONFLICT(school_id,academic_year_id,name) DO UPDATE SET starts_on=EXCLUDED.starts_on,ends_on=EXCLUDED.ends_on", [schoolId, year.rows[0].id]);
     const classRow = await client.query<{ id: string }>("INSERT INTO classes(school_id,academic_year_id,name) VALUES ($1,$2,'Kelompok A') ON CONFLICT(school_id,academic_year_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id", [schoolId, year.rows[0].id]);
     await client.query("INSERT INTO students(school_id,class_id,name,student_number,gender) VALUES ($1,$2,'Alya Putri','TK-001','FEMALE') ON CONFLICT(school_id,student_number) DO NOTHING", [schoolId, classRow.rows[0].id]);
     await client.query("COMMIT"); console.log(`Seed akun development selesai: ${accounts.map((account) => account.email).join(", ")}`);
