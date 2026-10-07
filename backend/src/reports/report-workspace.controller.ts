@@ -64,6 +64,33 @@ export class ReportWorkspaceController {
     }, actor.schoolId);
   }
 
+  @Post(":id/workspace/narratives/:areaId/generate")
+  async generateNarrative(@Req() request: FastifyRequest, @Param("id") id: string, @Param("areaId") areaId: string) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    return this.db.transaction(async (client) => {
+      const report = (await client.query<{ student_id: string; semester_id: string; status: string; student_name: string }>(`SELECT r.student_id,r.semester_id,r.status,s.name AS student_name FROM reports r JOIN students s ON s.id=r.student_id WHERE r.id=$1`, [id])).rows[0];
+      if (!report) throw new Error("Rapor tidak ditemukan");
+      if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status)) throw new Error("Rapor tidak dapat diubah pada status saat ini");
+      const rows = (await client.query<{ description: string; code: string | null }>(`SELECT i.description,option.code
+        FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sa ON sa.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sa.id
+        LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2
+        LEFT JOIN assessment_scale_options option ON option.id=assessment.scale_option_id
+        WHERE da.id=$3 AND f.name=$4 AND f.is_active ORDER BY sa.position,i.position`, [report.student_id, report.semester_id, areaId, DEFAULT_TK_TEMPLATE_NAME])).rows;
+      if (!rows.length) throw new Error("Area perkembangan tidak valid");
+      if (rows.some((row) => !row.code)) throw new Error("Lengkapi semua indikator pada area ini sebelum membuat draf narasi");
+      const byScale = new Map<string, string[]>();
+      for (const row of rows) byScale.set(row.code!, [...(byScale.get(row.code!) || []), row.description]);
+      const phrases: Record<string, string> = { BB: "masih perlu mendapat pendampingan pada", MB: "mulai berkembang dalam", BSH: "berkembang sesuai harapan dalam", BSB: "berkembang sangat baik dalam" };
+      const parts = ["BB", "MB", "BSH", "BSB"].flatMap((code) => byScale.get(code)?.length ? [`Ananda ${report.student_name} ${phrases[code]} ${byScale.get(code)!.join(", ")}.`] : []);
+      const scaleSummary = ["BB", "MB", "BSH", "BSB"].filter((code) => byScale.has(code)).map((code) => ({ BB: "belum berkembang", MB: "mulai berkembang", BSH: "berkembang sesuai harapan", BSB: "berkembang sangat baik" })[code]).join(", ");
+      const content = `Tingkat pencapaian Ananda ${report.student_name} pada aspek perkembangan ini mencakup ${scaleSummary}. ${parts.join(" ")}`.trim();
+      const saved = (await client.query(`INSERT INTO report_narratives(school_id,report_id,development_area_id,content,updated_by) VALUES($1,$2,$3,$4,$5)
+        ON CONFLICT(report_id,development_area_id) DO UPDATE SET content=EXCLUDED.content,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING *`, [actor.schoolId, id, areaId, content, actor.userId])).rows[0];
+      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report_narrative.generated", entityType: "report_narrative", entityId: saved.id, metadata: { areaId } }, client);
+      return { content };
+    }, actor.schoolId);
+  }
+
   @Post(":id/workspace/submit")
   async submit(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
