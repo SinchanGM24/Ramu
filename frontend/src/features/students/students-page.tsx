@@ -20,10 +20,11 @@ export function StudentsPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
-    const form = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const values = new FormData(form);
     try {
-      await api("/students", { method: "POST", body: JSON.stringify({ name: form.get("name"), studentNumber: form.get("studentNumber") || undefined, classId: form.get("classId") || undefined, gender: form.get("gender") || undefined }) });
-      event.currentTarget.reset(); queryClient.invalidateQueries({ queryKey: ["students"] });
+      await api("/students", { method: "POST", body: JSON.stringify({ name: values.get("name"), studentNumber: values.get("studentNumber") || undefined, classId: values.get("classId") || undefined, gender: values.get("gender") || undefined }) });
+      form.reset(); queryClient.invalidateQueries({ queryKey: ["students"] });
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Tidak dapat menyimpan data murid"); }
   }
 
