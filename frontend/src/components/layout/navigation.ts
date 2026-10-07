@@ -5,4 +5,4 @@ export const navigation = [
   { href: "/app/reports/progress", label: "Rapor", icon: ClipboardList },
   { href: "/app/settings/school", label: "Menu", icon: Settings },
 ];
-export const secondaryNavigation = [{ href: "/app/academic/students", label: "Murid", icon: Users }];
+export const secondaryNavigation = [{ href: "/app/academic/students", label: "Murid", icon: Users }, { href: "/app/settings/staff", label: "Staf", icon: Users }];

@@ -1,71 +1,44 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Post, Req } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Param, Post, Query, Req } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 
-const yearSchema = z.object({ name: z.string().regex(/^\d{4}\/\d{4}$/), startsOn: z.string().date(), endsOn: z.string().date() }).refine((x) => x.startsOn < x.endsOn, { message: "Rentang tanggal tidak valid" });
-const semesterSchema = z.object({ academicYearId: z.string().uuid(), name: z.string().min(2).max(50), startsOn: z.string().date(), endsOn: z.string().date() });
-const classSchema = z.object({ name: z.string().min(2).max(100), academicYearId: z.string().uuid() });
+const yearSchema = z.object({ name: z.string().regex(/^\d{4}\/\d{4}$/) });
+const levelSchema = z.object({ name: z.string().trim().min(2).max(80), code: z.string().trim().min(1).max(40), position: z.number().int().min(1), nextLevelId: z.string().uuid().nullable().optional() });
+const classPeriodSchema = z.object({ name: z.string().trim().min(2).max(100), academicYearId: z.string().uuid(), educationLevelId: z.string().uuid() });
+const enrollmentSchema = z.object({ studentId: z.string().uuid(), academicYearId: z.string().uuid(), classPeriodId: z.string().uuid().nullable() });
+const promotionSchema = z.object({ sourceYearId: z.string().uuid(), targetYearId: z.string().uuid(), items: z.array(z.object({ enrollmentId: z.string().uuid(), outcome: z.enum(["PROMOTED", "REPEATED", "GRADUATED", "TRANSFERRED", "WITHDRAWN"]), targetClassPeriodId: z.string().uuid().nullable() })), overrideIncompleteReports: z.boolean().default(false) });
 
-function isUniqueViolation(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
-}
+function unique(error: unknown) { return typeof error === "object" && error !== null && "code" in error && error.code === "23505"; }
+function dates(name: string) { const [start, end] = name.split("/").map(Number); if (end !== start + 1) throw new BadRequestException("Format tahun ajaran harus berurutan, misalnya 2026/2027."); return { startsOn: `${start}-07-01`, endsOn: `${end}-06-30`, semesterOneEnd: `${start}-12-31`, semesterTwoStart: `${end}-01-01` }; }
 
 @Controller("academic")
 export class AcademicController {
   constructor(private readonly auth: AuthService, private readonly db: DatabaseService, private readonly audit: AuditService) {}
-  @Get("years") listYears(@Req() request: FastifyRequest) { const a = this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT * FROM academic_years ORDER BY starts_on DESC", [])).rows, a.schoolId); }
+
+  @Get("years") listYears(@Req() request: FastifyRequest) { const actor = this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT id,name,is_active FROM academic_years ORDER BY starts_on DESC")).rows, actor.schoolId); }
   @Post("years") async createYear(@Req() request: FastifyRequest, @Body() body: unknown) {
-    const a = this.auth.require(request, ["SCHOOL_ADMIN"]); const input = yearSchema.parse(body);
-    try {
-      return await this.db.transaction(async c => { const r = await c.query("INSERT INTO academic_years (school_id,name,starts_on,ends_on) VALUES ($1,$2,$3,$4) RETURNING *", [a.schoolId,input.name,input.startsOn,input.endsOn]); await this.audit.record({schoolId:a.schoolId,actorUserId:a.userId,action:"academic_year.created",entityType:"academic_year",entityId:r.rows[0].id},c); return r.rows[0]; }, a.schoolId);
-    } catch (error) {
-      if (isUniqueViolation(error)) throw new ConflictException("Tahun ajaran tersebut sudah ada.");
-      throw error;
-    }
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]); const input = yearSchema.parse(body); const period = dates(input.name);
+    try { return await this.db.transaction(async c => {
+      await c.query("UPDATE academic_years SET is_active=false WHERE school_id=$1", [actor.schoolId]);
+      const year = (await c.query("INSERT INTO academic_years(school_id,name,starts_on,ends_on,is_active) VALUES($1,$2,$3,$4,true) RETURNING *", [actor.schoolId, input.name, period.startsOn, period.endsOn])).rows[0];
+      await c.query("INSERT INTO semesters(school_id,academic_year_id,name,starts_on,ends_on) VALUES($1,$2,'Semester I',$3,$4),($1,$2,'Semester II',$5,$6)", [actor.schoolId, year.id, period.startsOn, period.semesterOneEnd, period.semesterTwoStart, period.endsOn]);
+      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "academic_year.created", entityType: "academic_year", entityId: year.id }, c); return year;
+    }, actor.schoolId); } catch (error) { if (unique(error)) throw new ConflictException("Tahun ajaran tersebut sudah ada."); throw error; }
   }
-  @Get("semesters") listSemesters(@Req() request: FastifyRequest) { const a = this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT sem.*,year.name AS academic_year_name FROM semesters sem JOIN academic_years year ON year.id=sem.academic_year_id ORDER BY sem.starts_on DESC", [])).rows, a.schoolId); }
-  @Post("semesters") async createSemester(@Req() request: FastifyRequest, @Body() body: unknown) {
-    const a = this.auth.require(request, ["SCHOOL_ADMIN"]);
-    const input = semesterSchema.parse(body);
-    try {
-      return await this.db.transaction(async c => {
-        const academicYear = (await c.query<{ starts_on: string; ends_on: string }>("SELECT starts_on,ends_on FROM academic_years WHERE id=$1", [input.academicYearId])).rows[0];
-        if (!academicYear) throw new NotFoundException("Tahun ajaran tidak ditemukan.");
-        if (input.startsOn < academicYear.starts_on || input.endsOn > academicYear.ends_on) {
-          throw new BadRequestException("Rentang semester harus berada di dalam rentang tahun ajaran.");
-        }
-        const result = await c.query(
-          "INSERT INTO semesters (school_id,academic_year_id,name,starts_on,ends_on) VALUES ($1,$2,$3,$4,$5) RETURNING *",
-          [a.schoolId, input.academicYearId, input.name, input.startsOn, input.endsOn],
-        );
-        await this.audit.record({ schoolId: a.schoolId, actorUserId: a.userId, action: "semester.created", entityType: "semester", entityId: result.rows[0].id }, c);
-        return result.rows[0];
-      }, a.schoolId);
-    } catch (error) {
-      if (isUniqueViolation(error)) throw new ConflictException("Semester dengan nama tersebut sudah ada pada tahun ajaran ini.");
-      throw error;
-    }
-  }
-  @Get("classes") listClasses(@Req() request: FastifyRequest) { const a=this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT c.*, ay.name AS academic_year_name FROM classes c JOIN academic_years ay ON ay.id=c.academic_year_id ORDER BY c.name",[])).rows,a.schoolId); }
-  @Post("classes") async createClass(@Req() request: FastifyRequest, @Body() body: unknown) {
-    const a = this.auth.require(request, ["SCHOOL_ADMIN"]);
-    const input = classSchema.parse(body);
-    try {
-      return await this.db.transaction(async c => {
-        const result = await c.query(
-          "INSERT INTO classes (school_id,academic_year_id,name) SELECT $1,$2,$3 WHERE EXISTS (SELECT 1 FROM academic_years WHERE id=$2) RETURNING *",
-          [a.schoolId, input.academicYearId, input.name],
-        );
-        if (!result.rowCount) throw new NotFoundException("Tahun ajaran tidak ditemukan.");
-        await this.audit.record({ schoolId: a.schoolId, actorUserId: a.userId, action: "class.created", entityType: "class", entityId: result.rows[0].id }, c);
-        return result.rows[0];
-      }, a.schoolId);
-    } catch (error) {
-      if (isUniqueViolation(error)) throw new ConflictException("Kelas dengan nama tersebut sudah ada pada tahun ajaran ini.");
-      throw error;
-    }
-  }
+  @Post("years/:id/activate") async activateYear(@Req() request: FastifyRequest, @Param("id") id: string) { const actor = this.auth.require(request, ["SCHOOL_ADMIN"]); return this.db.transaction(async c => { await c.query("UPDATE academic_years SET is_active=false WHERE school_id=$1", [actor.schoolId]); const year = (await c.query("UPDATE academic_years SET is_active=true WHERE id=$1 AND school_id=$2 RETURNING *", [id, actor.schoolId])).rows[0]; if (!year) throw new NotFoundException("Tahun ajaran tidak ditemukan."); await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "academic_year.activated", entityType: "academic_year", entityId: id }, c); return year; }, actor.schoolId); }
+  @Get("semesters") listSemesters(@Req() request: FastifyRequest) { const actor = this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT sem.id,sem.name,sem.academic_year_id,year.name AS academic_year_name FROM semesters sem JOIN academic_years year ON year.id=sem.academic_year_id ORDER BY year.starts_on DESC,sem.starts_on")).rows, actor.schoolId); }
+
+  @Get("levels") listLevels(@Req() request: FastifyRequest) { const actor = this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT level.*,next.name AS next_level_name FROM education_levels level LEFT JOIN education_levels next ON next.id=level.next_level_id ORDER BY level.position")).rows, actor.schoolId); }
+  @Post("levels") async createLevel(@Req() request: FastifyRequest, @Body() body: unknown) { const actor = this.auth.require(request, ["SCHOOL_ADMIN"]); const input = levelSchema.parse(body); try { return await this.db.transaction(async c => { const validNext = !input.nextLevelId || (await c.query("SELECT 1 FROM education_levels WHERE id=$1", [input.nextLevelId])).rowCount; if (!validNext) throw new NotFoundException("Tingkat tujuan tidak ditemukan."); const level = (await c.query("INSERT INTO education_levels(school_id,name,code,position,next_level_id) VALUES($1,$2,$3,$4,$5) RETURNING *", [actor.schoolId,input.name,input.code,input.position,input.nextLevelId ?? null])).rows[0]; await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "education_level.created", entityType: "education_level", entityId: level.id }, c); return level; }, actor.schoolId); } catch (error) { if (unique(error)) throw new ConflictException("Kode atau urutan tingkat sudah digunakan."); throw error; } }
+
+  @Get("class-periods") listClassPeriods(@Req() request: FastifyRequest, @Query("academicYearId") academicYearId?: string) { const actor = this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT period.id,grouping.name,period.academic_year_id,year.name AS academic_year_name,level.id AS education_level_id,level.name AS level_name,teacher.name AS homeroom_teacher_name FROM class_periods period JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN academic_years year ON year.id=period.academic_year_id JOIN education_levels level ON level.id=period.education_level_id LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=period.id AND assignment.ended_at IS NULL LEFT JOIN users teacher ON teacher.id=assignment.teacher_user_id WHERE ($1::uuid IS NULL OR period.academic_year_id=$1) ORDER BY level.position,grouping.name", [academicYearId ?? null])).rows, actor.schoolId); }
+  @Post("class-periods") async createClassPeriod(@Req() request: FastifyRequest, @Body() body: unknown) { const actor = this.auth.require(request, ["SCHOOL_ADMIN"]); const input = classPeriodSchema.parse(body); try { return await this.db.transaction(async c => { const references = await c.query("SELECT (SELECT 1 FROM academic_years WHERE id=$1) AS year_ok,(SELECT 1 FROM education_levels WHERE id=$2) AS level_ok", [input.academicYearId,input.educationLevelId]); if (!references.rows[0].year_ok || !references.rows[0].level_ok) throw new NotFoundException("Tahun ajaran atau tingkat tidak ditemukan."); const group = (await c.query("INSERT INTO class_groups(school_id,name) VALUES($1,$2) ON CONFLICT(school_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id", [actor.schoolId,input.name])).rows[0]; const period = (await c.query("INSERT INTO class_periods(school_id,class_group_id,academic_year_id,education_level_id) VALUES($1,$2,$3,$4) RETURNING *", [actor.schoolId,group.id,input.academicYearId,input.educationLevelId])).rows[0]; await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "class_period.created", entityType: "class_period", entityId: period.id }, c); return period; }, actor.schoolId); } catch (error) { if (unique(error)) throw new ConflictException("Kelas tersebut sudah ada pada tahun ajaran ini."); throw error; } }
+
+  @Get("enrollments") listEnrollments(@Req() request: FastifyRequest, @Query("academicYearId") yearId: string) { const actor = this.auth.require(request); return this.db.transaction(async c => (await c.query("SELECT enrollment.*,student.name AS student_name,grouping.name AS class_name,level.name AS level_name FROM student_enrollments enrollment JOIN students student ON student.id=enrollment.student_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id LEFT JOIN education_levels level ON level.id=period.education_level_id WHERE enrollment.academic_year_id=$1 ORDER BY student.name", [yearId])).rows, actor.schoolId); }
+  @Post("enrollments") async createEnrollment(@Req() request: FastifyRequest, @Body() body: unknown) { const actor = this.auth.require(request,["SCHOOL_ADMIN"]); const input = enrollmentSchema.parse(body); try { return await this.db.transaction(async c => { const saved=(await c.query("INSERT INTO student_enrollments(school_id,student_id,academic_year_id,class_period_id) SELECT $1,$2,$3,$4 WHERE EXISTS(SELECT 1 FROM students WHERE id=$2) AND EXISTS(SELECT 1 FROM academic_years WHERE id=$3) AND ($4::uuid IS NULL OR EXISTS(SELECT 1 FROM class_periods WHERE id=$4 AND academic_year_id=$3)) RETURNING *",[actor.schoolId,input.studentId,input.academicYearId,input.classPeriodId])).rows[0]; if(!saved) throw new NotFoundException("Murid, tahun ajaran, atau kelas tidak ditemukan."); await this.audit.record({schoolId:actor.schoolId,actorUserId:actor.userId,action:"student_enrollment.created",entityType:"student_enrollment",entityId:saved.id},c); return saved;},actor.schoolId); } catch(error) { if(unique(error)) throw new ConflictException("Murid sudah memiliki penempatan pada tahun ajaran ini."); throw error; } }
+
+  @Post("promotion") async promote(@Req() request: FastifyRequest,@Body() body:unknown) { const actor=this.auth.require(request,["SCHOOL_ADMIN"]);const input=promotionSchema.parse(body); return this.db.transaction(async c=>{ const incomplete=(await c.query("SELECT count(*)::int AS total FROM reports report JOIN semesters semester ON semester.id=report.semester_id WHERE semester.academic_year_id=$1 AND semester.name='Semester II' AND report.status<>'PUBLISHED'",[input.sourceYearId])).rows[0].total; if(incomplete>0&&!input.overrideIncompleteReports) throw new BadRequestException(`Masih ada ${incomplete} rapor Semester II yang belum diterbitkan.`); for(const item of input.items){const source=(await c.query("SELECT id,student_id FROM student_enrollments WHERE id=$1 AND academic_year_id=$2 AND status='ACTIVE'",[item.enrollmentId,input.sourceYearId])).rows[0];if(!source) throw new NotFoundException("Enrollment asal tidak ditemukan.");await c.query("UPDATE student_enrollments SET status=$2,ended_at=now() WHERE id=$1",[source.id,item.outcome]);if(["PROMOTED","REPEATED"].includes(item.outcome)){if(!item.targetClassPeriodId)throw new BadRequestException("Kelas tujuan wajib dipilih.");await c.query("INSERT INTO student_enrollments(school_id,student_id,academic_year_id,class_period_id,status) SELECT $1,$2,$3,$4,'ACTIVE' WHERE EXISTS(SELECT 1 FROM class_periods WHERE id=$4 AND academic_year_id=$3)",[actor.schoolId,source.student_id,input.targetYearId,item.targetClassPeriodId]);}}await this.audit.record({schoolId:actor.schoolId,actorUserId:actor.userId,action:"academic_promotion.processed",entityType:"academic_year",entityId:input.sourceYearId,metadata:{targetYearId:input.targetYearId,itemCount:input.items.length,overrideIncompleteReports:input.overrideIncompleteReports}},c);return {processed:input.items.length,incompleteReports:incomplete};},actor.schoolId); }
 }

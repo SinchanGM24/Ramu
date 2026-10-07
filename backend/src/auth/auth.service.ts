@@ -39,7 +39,7 @@ export class AuthService {
     const row = session.rows[0];
     if (!row) return;
     await this.db.transaction(async (client) => {
-      const membership = await client.query<{ role: Role }>("SELECT role FROM school_memberships WHERE user_id=$1 AND school_id=$2", [row.user_id, row.school_id]);
+      const membership = await client.query<{ role: Role }>("SELECT role FROM school_memberships WHERE user_id=$1 AND school_id=$2 AND is_active", [row.user_id, row.school_id]);
       if (membership.rows[0]) request.auth = { userId: row.user_id, schoolId: row.school_id, role: membership.rows[0].role, email: row.email, sessionId: row.session_id };
     }, row.school_id);
   }

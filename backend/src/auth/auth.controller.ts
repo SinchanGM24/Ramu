@@ -40,7 +40,7 @@ export class AuthController {
     if (!user || !(await this.auth.verifyPassword(user.password_hash, input.password))) return { message: "Email atau kata sandi salah" };
     const membership = await this.db.transaction(async (client) => {
       await client.query("SELECT set_config('app.user_id', $1, true)", [user.id]);
-      return (await client.query<{ school_id: string; role: string }>("SELECT school_id, role FROM school_memberships WHERE user_id=$1 ORDER BY created_at LIMIT 1", [user.id])).rows[0];
+      return (await client.query<{ school_id: string; role: string }>("SELECT school_id, role FROM school_memberships WHERE user_id=$1 AND is_active ORDER BY created_at LIMIT 1", [user.id])).rows[0];
     });
     if (!membership) return { message: "Akun tidak memiliki akses sekolah" };
     await this.auth.createSession(user.id, membership.school_id, reply);

@@ -10,6 +10,7 @@ import { MessagingModule } from "./messaging/messaging.module";
 import { SchoolsModule } from "./schools/schools.module";
 import { StudentsModule } from "./students/students.module";
 import { ReportsModule } from "./reports/reports.module";
+import { StaffModule } from "./staff/staff.module";
 
-@Module({ imports: [DatabaseModule, AuditModule, AuthModule, HealthModule, FilesModule, SchoolsModule, AcademicModule, StudentsModule, AssessmentModule, ReportsModule, MessagingModule] })
+@Module({ imports: [DatabaseModule, AuditModule, AuthModule, HealthModule, FilesModule, SchoolsModule, AcademicModule, StudentsModule, AssessmentModule, ReportsModule, MessagingModule, StaffModule] })
 export class AppModule {}

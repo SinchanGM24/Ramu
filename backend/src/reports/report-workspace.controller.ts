@@ -16,8 +16,8 @@ export class ReportWorkspaceController {
   async workspace(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
-      const report = (await client.query(`SELECT r.id,r.status,s.id AS student_id,s.name AS student_name,s.nickname,s.student_number,s.birth_date,s.birth_place,s.gender,s.religion,s.child_order,s.address,c.name AS class_name,sem.id AS semester_id,sem.name AS semester_name,ay.name AS academic_year_name
-        FROM reports r JOIN students s ON s.id=r.student_id LEFT JOIN classes c ON c.id=s.class_id JOIN semesters sem ON sem.id=r.semester_id JOIN academic_years ay ON ay.id=sem.academic_year_id WHERE r.id=$1`, [id])).rows[0];
+      const report = (await client.query(`SELECT r.id,r.status,s.id AS student_id,s.name AS student_name,s.nickname,s.student_number,s.birth_date,s.birth_place,s.gender,s.religion,s.child_order,s.address,grouping.name AS class_name,sem.id AS semester_id,sem.name AS semester_name,ay.name AS academic_year_name
+        FROM reports r JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id JOIN academic_years ay ON ay.id=sem.academic_year_id WHERE r.id=$1`, [id])).rows[0];
       if (!report) return null;
       const scales = (await client.query(`SELECT o.id,o.code,o.label,o.position FROM assessment_scale_options o JOIN assessment_frameworks f ON f.scale_id=o.scale_id WHERE f.name=$1 AND f.is_active ORDER BY o.position`, [DEFAULT_TK_TEMPLATE_NAME])).rows;
       const rows = (await client.query(`SELECT da.id AS area_id,da.name AS area_name,da.position AS area_position,rn.content AS narrative,sa.id AS sub_area_id,sa.name AS sub_area_name,sa.position AS sub_area_position,i.id AS indicator_id,i.description,i.position AS indicator_position,assessment.scale_option_id,option.code AS scale_code
