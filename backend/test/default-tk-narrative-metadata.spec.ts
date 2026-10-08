@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultTkIndicatorCount, defaultTkTemplate } from "../src/assessment/default-tk-template";
-import { defaultTkNarrativeMetadata } from "../src/assessment/default-tk-narrative-metadata";
+import { DEFAULT_TK_NARRATIVE_METADATA_VERSION, defaultTkNarrativeMetadata } from "../src/assessment/default-tk-narrative-metadata";
 
 describe("default TK narrative metadata", () => {
   it("covers every indicator in the default template", () => {
@@ -13,5 +13,8 @@ describe("default TK narrative metadata", () => {
     expect(defaultTkNarrativeMetadata({ areaPosition: 2, subAreaPosition: 1, indicatorPosition: 4, description: "Melempar sesuatu secara terarah" })).toMatchObject({ semanticGroup: "koordinasi-objek", recommendationTags: ["motorik-kasar"] });
     expect(defaultTkNarrativeMetadata({ areaPosition: 2, subAreaPosition: 3, indicatorPosition: 1, description: "Berat badan sesuai tingkat usia" })).toMatchObject({ observationType: "MEASUREMENT" });
     expect(defaultTkNarrativeMetadata({ areaPosition: 4, subAreaPosition: 2, indicatorPosition: 1, description: "Mengulang kalimat sederhana" })).toMatchObject({ semanticGroup: "bahasa-2", recommendationTags: ["bahasa"] });
+    expect(defaultTkNarrativeMetadata({ areaPosition: 4, subAreaPosition: 1, indicatorPosition: 2, description: "Mengerti dua perintah yang diberikan bersamaan" }).narrativeLabel).toBe("memahami dua arahan sederhana");
+    expect(defaultTkNarrativeMetadata({ areaPosition: 5, subAreaPosition: 3, indicatorPosition: 4, description: "Menunjukkan rasa empati" }).narrativeLabel).toBe("menunjukkan rasa empati");
+    expect(DEFAULT_TK_NARRATIVE_METADATA_VERSION).toBe(3);
   });
 });
