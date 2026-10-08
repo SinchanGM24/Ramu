@@ -1,15 +1,30 @@
 import { createHash } from "crypto";
 
-export const SMART_NARRATIVE_ENGINE_VERSION = "1.0.0";
+export const SMART_NARRATIVE_ENGINE_VERSION = "1.1.0";
 export type NarrativeRating = "BB" | "MB" | "BSH" | "BSB";
 export type NarrativeAssessment = { indicatorId: string; rating: NarrativeRating; description: string; semanticGroup?: string | null; narrativeLabel?: string | null; observationType?: "SKILL" | "SAFETY" | "MEASUREMENT" | null; recommendationTags?: string[] | null; metadataVersion?: number | null };
 export type NarrativeDraft = { content: string; signature: string; coveredIndicatorIds: string[]; omittedIndicatorIds: string[]; validationWarnings: string[] };
 
-const recommendationCopy: Record<string, string> = { "motorik-kasar": "bermain yang melibatkan gerak tubuh seperti melompat, berlari, dan permainan bola", "motorik-halus": "kegiatan menggambar, menjiplak, dan berkarya menggunakan beragam media", bahasa: "kegiatan bercerita, percakapan, dan membaca bersama", kognitif: "permainan mengelompokkan, menyusun pola, dan memecahkan masalah sederhana", sosial: "kegiatan bermain bersama yang melatih kemandirian, empati, dan kerja sama", seni: "kegiatan bernyanyi, bergerak mengikuti irama, dan berkarya seni", agama: "pembiasaan baik dan kegiatan ibadah sesuai tahap perkembangan anak", kesehatan: "pembiasaan menjaga kebersihan dan kemandirian diri", keselamatan: "percakapan dan permainan sederhana mengenai keselamatan di lingkungan sekitar" };
+const recommendationCopy: Record<string, string> = {
+  "motorik-kasar": "Berbagai permainan gerak seperti melompat, berlari, dan bermain bola",
+  "motorik-halus": "Kegiatan menggambar, menjiplak, dan berkarya dengan beragam media",
+  bahasa: "Kegiatan bercerita, bercakap-cakap, dan membaca bersama",
+  kognitif: "Permainan mengelompokkan benda, menyusun pola, dan mencari cara sederhana",
+  sosial: "Kegiatan bermain bersama yang menumbuhkan kemandirian, empati, dan kerja sama",
+  seni: "Kegiatan bernyanyi, bergerak mengikuti irama, dan berkarya seni",
+  agama: "Pembiasaan baik dan kegiatan ibadah yang sesuai tahap perkembangan anak",
+  kesehatan: "Pembiasaan menjaga kebersihan dan kemandirian diri",
+  keselamatan: "Percakapan dan permainan sederhana mengenai keselamatan di lingkungan sekitar",
+};
 const lowerFirst = (value: string) => value[0] && value[1]?.toLowerCase() === value[1] ? `${value[0].toLowerCase()}${value.slice(1)}` : value;
 const joinNaturally = (items: string[]) => items.length < 2 ? items[0] ?? "" : items.length === 2 ? `${items[0]} dan ${items[1]}` : `${items.slice(0, -1).join(", ")}, dan ${items.at(-1)}`;
 const displayName = (name: string, nickname?: string | null) => nickname?.trim() || name.trim().split(/\s+/)[0] || name;
-const groupContext: Record<string, string> = { "motorik-kasar": "kegiatan gerak tubuh", "koordinasi-objek": "kegiatan yang melibatkan koordinasi dengan benda", "motorik-halus": "kegiatan motorik halus", "kesehatan-dan-keselamatan": "pembiasaan kesehatan dan keselamatan" };
+const groupContext: Record<string, string> = {
+  "agama-dan-moral": "pembiasaan nilai agama dan moral", "motorik-kasar": "kegiatan gerak tubuh", "koordinasi-objek": "kegiatan yang melibatkan koordinasi dengan benda", "motorik-halus": "kegiatan motorik halus", "kesehatan-dan-keselamatan": "pembiasaan kesehatan dan keselamatan",
+  "kognitif-1": "kegiatan menemukan dan memecahkan masalah sederhana", "kognitif-2": "kegiatan berpikir logis", "kognitif-3": "kegiatan mengenal simbol dan bilangan",
+  "bahasa-1": "kegiatan menyimak dan memahami bahasa", "bahasa-2": "kegiatan berbahasa dan bercakap-cakap", "bahasa-3": "kegiatan keaksaraan awal",
+  "sosial-1": "kegiatan yang menumbuhkan kesadaran diri", "sosial-2": "kegiatan bersama yang menumbuhkan tanggung jawab", "sosial-3": "kegiatan bermain bersama", "seni-1": "kegiatan menikmati bunyi dan irama", "seni-2": "kegiatan berekspresi melalui seni",
+};
 
 function labels(items: NarrativeAssessment[], limit = 2) {
   return joinNaturally(items.slice(0, limit).map((item) => lowerFirst(item.narrativeLabel || item.description)));
@@ -39,16 +54,16 @@ export function buildNarrativeDraft(input: { studentId: string; semesterId: stri
   const emerging = byRating("MB");
   const support = byRating("BB");
   const lines: string[] = [];
-  if (veryStrong.length) lines.push(`Selama semester ini, Ananda ${name} menunjukkan kemampuan yang sangat baik dalam ${labels(veryStrong)}.`);
-  if (strong.length) lines.push(`${veryStrong.length ? "Selain itu," : "Selama semester ini,"} keterampilan Ananda ${name} dalam ${labels(strong)} telah berkembang sesuai harapan.`);
-  if (!veryStrong.length && !strong.length) lines.push(`Pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}, Ananda ${name} sedang bertumbuh melalui berbagai kesempatan belajar.`);
-  if (emerging.length) lines.push(`Sementara itu, pada ${contextFor(emerging)}, Ananda ${name} sedang mengembangkan kemampuan ${labels(emerging)}.`);
+  if (veryStrong.length) lines.push(`Selama semester ini, Ananda ${name} menunjukkan perkembangan yang sangat baik dalam ${labels(veryStrong)}.`);
+  if (strong.length) lines.push(`${veryStrong.length ? "Kemampuannya" : `Perkembangan Ananda ${name}`} dalam ${labels(strong)} juga telah berkembang sesuai harapan.`);
+  if (!veryStrong.length && !strong.length) lines.push(`Pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}, Ananda ${name} sedang menikmati proses bertumbuh melalui berbagai pengalaman bermain.`);
+  if (emerging.length) lines.push(`${veryStrong.length || strong.length ? "Dalam" : "Pada"} ${contextFor(emerging)}, Ananda ${name} mulai menunjukkan kemampuan ${labels(emerging)}.`);
   if (support.length) {
-    lines.push(`Untuk kemampuan ${labels(support)}, Ananda ${name} masih memerlukan kesempatan berlatih.`);
+    lines.push(`Pada ${contextFor(support)}, Ananda ${name} masih membutuhkan dukungan melalui kegiatan bermain yang menyenangkan untuk mengalami dan mengeksplorasi kegiatan ${labels(support)}.`);
     const tags = support.flatMap((item) => item.recommendationTags ?? []).filter((tag, index, all) => all.indexOf(tag) === index).map((tag) => recommendationCopy[tag]).filter(Boolean);
-    if (tags.length) lines.push(`Melalui ${joinNaturally(tags.slice(0, 2))}, Ananda ${name} dapat terus memperoleh kesempatan untuk berkembang.`);
+    if (tags.length) lines.push(`${joinNaturally(tags.slice(0, 2))} dapat menjadi kesempatan bagi Ananda ${name} untuk terus mengeksplorasi dan berkembang sesuai tahapannya.`);
   }
-  if (!emerging.length && !support.length && (veryStrong.length || strong.length)) lines.push(`Kegiatan yang serupa dapat terus diberikan agar kemampuan Ananda ${name} semakin mantap.`);
+  if (!emerging.length && !support.length && (veryStrong.length || strong.length)) lines.push(`Pengalaman bermain yang serupa dapat terus diberikan agar perkembangan Ananda ${name} semakin mantap.`);
   if (!usable.length) warnings.push("Tidak ada indikator keterampilan yang dapat dinarasikan pada area ini.");
   return { content: lines.join(" "), signature: signature(input), coveredIndicatorIds: usable.map((item) => item.indicatorId), omittedIndicatorIds: omitted.map((item) => item.indicatorId), validationWarnings: warnings };
 }
