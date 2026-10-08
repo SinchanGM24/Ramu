@@ -1,5 +1,6 @@
 import "reflect-metadata";
-import "dotenv/config";
+import * as dotenv from "dotenv";
+import { resolve } from "path";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
@@ -8,6 +9,8 @@ import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import { AppModule } from "./app.module";
 import { AuthService } from "./auth/auth.service";
+
+dotenv.config({ path: resolve(__dirname, "../.env") });
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ logger: process.env.NODE_ENV === "production" }));
