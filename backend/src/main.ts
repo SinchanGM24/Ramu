@@ -13,7 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter({ logger: process.env.NODE_ENV === "production" }));
   await app.register(cookie);
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
-  await app.register(cors, { origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000", credentials: true, methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"] });
+  await app.register(cors, { origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000", credentials: true, methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] });
   app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.getHttpAdapter().getInstance().addHook("onSend", async (_request: unknown, reply: import("fastify").FastifyReply) => {
