@@ -18,6 +18,7 @@ npm run dev
 
 - Frontend: `http://localhost:3001`
 - API health check: `http://localhost:4001/api/health`
+- PostgreSQL: `localhost:15432` (port `5432` dan `5433` di komputer Anda tidak dipakai RAMU)
 - MinIO Console: `http://localhost:9011`
 
 Setelah `npm run db:seed`, gunakan akun development berikut (hanya lokal): `admin@ramu.test` (Admin Sekolah), `guru.aisyah@ramu.test`, `guru.budi@ramu.test`, `guru.citra@ramu.test` (Guru), dan `kepsek@ramu.test` (Kepala Sekolah). Semuanya memakai kata sandi `pass1234`, atau nilai `SEED_DEMO_PASSWORD` dari `backend/.env`.

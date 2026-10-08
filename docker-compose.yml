@@ -6,7 +6,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ramu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ramu_local_password}
     ports:
-      - "5432:5432"
+      # 5432/5433 sering dipakai oleh PostgreSQL lokal. Port host RAMU dibuat
+      # eksplisit agar API development selalu terhubung ke container ini.
+      - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/src/database/init/001_app_role.sql:/docker-entrypoint-initdb.d/001_app_role.sql:ro
