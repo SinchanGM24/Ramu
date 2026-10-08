@@ -15,7 +15,7 @@ describe("buildNarrativeDraft", () => {
 
     expect(content.content).toContain("mengenal suara hewan dan benda di sekitarnya juga telah berkembang sesuai harapan");
     expect(content.content).toContain("mulai menunjukkan kemampuan menyimak perkataan orang lain");
-    expect(content.content).toContain("masih membutuhkan dukungan melalui kegiatan bermain yang menyenangkan");
+    expect(content.content).toContain("masih membutuhkan dukungan dan pendampingan melalui pengalaman bermain yang menyenangkan");
     expect(content.content).not.toContain("BSH");
   });
 
@@ -42,7 +42,9 @@ describe("buildNarrativeDraft", () => {
     });
     expect(content.content).toContain("menunjukkan perkembangan yang sangat baik");
     expect(content.content).toContain("Dalam kegiatan yang melibatkan koordinasi dengan benda");
-    expect(content.content).toContain("Berbagai permainan gerak seperti melompat, berlari, dan bermain bola");
+    expect(content.content).toContain("Adapun kemampuan melompat, meloncat, dan berlari secara terkoordinasi masih membutuhkan dukungan dan pendampingan");
+    expect(content.content).not.toContain("Pada kegiatan gerak tubuh");
+    expect(content.content).toContain("berbagai permainan gerak seperti melompat, berlari, dan bermain bola");
     expect(content.content).not.toContain("serta kemampuan terkait lainnya");
   });
 
@@ -58,7 +60,7 @@ describe("buildNarrativeDraft", () => {
       assessments: [{ indicatorId: "1", rating: "BB", semanticGroup, narrativeLabel, description: narrativeLabel, recommendationTags: [recommendationTag] }],
     });
     expect(content.content).toContain("Ananda Naya");
-    expect(content.content).toContain("kegiatan bermain yang menyenangkan");
+    expect(content.content).toContain("pengalaman bermain yang menyenangkan");
     expect(content.content).not.toMatch(/perlu berlatih|meningkatkan keterampilan|belum optimal|harus menguasai/i);
   });
 });

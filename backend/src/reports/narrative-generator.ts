@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 
-export const SMART_NARRATIVE_ENGINE_VERSION = "1.1.0";
+export const SMART_NARRATIVE_ENGINE_VERSION = "1.2.0";
 export type NarrativeRating = "BB" | "MB" | "BSH" | "BSB";
 export type NarrativeAssessment = { indicatorId: string; rating: NarrativeRating; description: string; semanticGroup?: string | null; narrativeLabel?: string | null; observationType?: "SKILL" | "SAFETY" | "MEASUREMENT" | null; recommendationTags?: string[] | null; metadataVersion?: number | null };
 export type NarrativeDraft = { content: string; signature: string; coveredIndicatorIds: string[]; omittedIndicatorIds: string[]; validationWarnings: string[] };
@@ -35,6 +35,16 @@ function contextFor(items: NarrativeAssessment[]) {
   return group && groupContext[group] ? groupContext[group] : "kegiatan pada aspek ini";
 }
 
+function topicFor(items: NarrativeAssessment[]) {
+  const group = items[0]?.semanticGroup ?? "";
+  if (["motorik-kasar", "koordinasi-objek"].includes(group)) return "gerak-tubuh";
+  if (group.startsWith("kognitif-")) return "kognitif";
+  if (group.startsWith("bahasa-")) return "bahasa";
+  if (group.startsWith("sosial-")) return "sosial";
+  if (group.startsWith("seni-")) return "seni";
+  return group;
+}
+
 function signature(input: { studentId: string; semesterId: string; areaId: string; assessments: NarrativeAssessment[] }) {
   const payload = input.assessments.map((item) => [item.indicatorId, item.rating, item.metadataVersion ?? 0] as const).sort((left, right) => left[0].localeCompare(right[0]));
   return createHash("sha256").update(JSON.stringify([SMART_NARRATIVE_ENGINE_VERSION, input.studentId, input.semesterId, input.areaId, payload])).digest("hex");
@@ -59,9 +69,11 @@ export function buildNarrativeDraft(input: { studentId: string; semesterId: stri
   if (!veryStrong.length && !strong.length) lines.push(`Pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}, Ananda ${name} sedang menikmati proses bertumbuh melalui berbagai pengalaman bermain.`);
   if (emerging.length) lines.push(`${veryStrong.length || strong.length ? "Dalam" : "Pada"} ${contextFor(emerging)}, Ananda ${name} mulai menunjukkan kemampuan ${labels(emerging)}.`);
   if (support.length) {
-    lines.push(`Pada ${contextFor(support)}, Ananda ${name} masih membutuhkan dukungan melalui kegiatan bermain yang menyenangkan untuk mengalami dan mengeksplorasi kegiatan ${labels(support)}.`);
+    const followsEmergingTopic = emerging.length > 0 && topicFor(emerging) === topicFor(support);
+    const supportLead = followsEmergingTopic ? "Adapun kemampuan" : `Pada ${contextFor(support)}, kemampuan`;
+    lines.push(`${supportLead} ${labels(support)} masih membutuhkan dukungan dan pendampingan melalui pengalaman bermain yang menyenangkan.`);
     const tags = support.flatMap((item) => item.recommendationTags ?? []).filter((tag, index, all) => all.indexOf(tag) === index).map((tag) => recommendationCopy[tag]).filter(Boolean);
-    if (tags.length) lines.push(`${joinNaturally(tags.slice(0, 2))} dapat menjadi kesempatan bagi Ananda ${name} untuk terus mengeksplorasi dan berkembang sesuai tahapannya.`);
+    if (tags.length) lines.push(`Untuk mendukung perkembangannya, ${lowerFirst(joinNaturally(tags.slice(0, 2)))} dapat menjadi pilihan kegiatan yang menyenangkan bagi Ananda ${name}.`);
   }
   if (!emerging.length && !support.length && (veryStrong.length || strong.length)) lines.push(`Pengalaman bermain yang serupa dapat terus diberikan agar perkembangan Ananda ${name} semakin mantap.`);
   if (!usable.length) warnings.push("Tidak ada indikator keterampilan yang dapat dinarasikan pada area ini.");
