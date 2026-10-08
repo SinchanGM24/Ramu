@@ -13,10 +13,10 @@ describe("buildNarrativeDraft", () => {
       ],
     });
 
-    expect(content.content).toContain("telah mampu mengenal suara hewan dan benda di sekitarnya");
+    expect(content.content).toContain("mengenal suara hewan dan benda di sekitarnya telah berkembang sesuai harapan");
     expect(content.content).toContain("sedang mengembangkan kemampuan menyimak perkataan orang lain");
-    expect(content.content).toContain("masih memerlukan kesempatan berlatih mengulang kalimat sederhana");
-    expect(content).not.toContain("BSH");
+    expect(content.content).toContain("Untuk kemampuan mengulang kalimat sederhana");
+    expect(content.content).not.toContain("BSH");
   });
 
   it("keeps all-strong narratives encouraging and limits long indicator lists", () => {
@@ -28,5 +28,21 @@ describe("buildNarrativeDraft", () => {
 
     expect(content.content).toContain("Kegiatan yang serupa dapat terus diberikan");
     expect(content.content).not.toContain("kemampuan 6");
+  });
+
+  it("uses semantic context and a supportive recommendation rather than a long mixed list", () => {
+    const content = buildNarrativeDraft({
+      studentId: "student", semesterId: "semester", areaId: "area", studentName: "Alya Putri", areaName: "Fisik Motorik",
+      assessments: [
+        { indicatorId: "1", rating: "BSB", semanticGroup: "motorik-halus", narrativeLabel: "membuat berbagai bentuk garis dan lingkaran", description: "x" },
+        { indicatorId: "2", rating: "BSH", semanticGroup: "motorik-halus", narrativeLabel: "menjiplak bentuk sederhana", description: "x" },
+        { indicatorId: "3", rating: "MB", semanticGroup: "koordinasi-objek", narrativeLabel: "melempar benda ke arah tujuan", description: "x" },
+        { indicatorId: "4", rating: "BB", semanticGroup: "motorik-kasar", narrativeLabel: "melompat, meloncat, dan berlari secara terkoordinasi", description: "x", recommendationTags: ["motorik-kasar"] },
+      ],
+    });
+    expect(content.content).toContain("menunjukkan kemampuan yang sangat baik");
+    expect(content.content).toContain("pada kegiatan yang melibatkan koordinasi dengan benda");
+    expect(content.content).toContain("Melalui bermain yang melibatkan gerak tubuh");
+    expect(content.content).not.toContain("serta kemampuan terkait lainnya");
   });
 });

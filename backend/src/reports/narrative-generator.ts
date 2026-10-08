@@ -9,6 +9,16 @@ const recommendationCopy: Record<string, string> = { "motorik-kasar": "bermain y
 const lowerFirst = (value: string) => value[0] && value[1]?.toLowerCase() === value[1] ? `${value[0].toLowerCase()}${value.slice(1)}` : value;
 const joinNaturally = (items: string[]) => items.length < 2 ? items[0] ?? "" : items.length === 2 ? `${items[0]} dan ${items[1]}` : `${items.slice(0, -1).join(", ")}, dan ${items.at(-1)}`;
 const displayName = (name: string, nickname?: string | null) => nickname?.trim() || name.trim().split(/\s+/)[0] || name;
+const groupContext: Record<string, string> = { "motorik-kasar": "kegiatan gerak tubuh", "koordinasi-objek": "kegiatan yang melibatkan koordinasi dengan benda", "motorik-halus": "kegiatan motorik halus", "kesehatan-dan-keselamatan": "pembiasaan kesehatan dan keselamatan" };
+
+function labels(items: NarrativeAssessment[], limit = 2) {
+  return joinNaturally(items.slice(0, limit).map((item) => lowerFirst(item.narrativeLabel || item.description)));
+}
+
+function contextFor(items: NarrativeAssessment[]) {
+  const group = items[0]?.semanticGroup;
+  return group && groupContext[group] ? groupContext[group] : "kegiatan pada aspek ini";
+}
 
 function signature(input: { studentId: string; semesterId: string; areaId: string; assessments: NarrativeAssessment[] }) {
   const payload = input.assessments.map((item) => [item.indicatorId, item.rating, item.metadataVersion ?? 0] as const).sort((left, right) => left[0].localeCompare(right[0]));
@@ -24,20 +34,21 @@ export function buildNarrativeDraft(input: { studentId: string; semesterId: stri
   if (missingMetadata.length) warnings.push("Sebagian indikator belum memiliki metadata narasi; draf menggunakan label indikator sebagai fallback.");
   const name = displayName(input.studentName, input.nickname);
   const byRating = (rating: NarrativeRating) => usable.filter((item) => item.rating === rating);
-  const phrase = (items: NarrativeAssessment[]) => joinNaturally(items.slice(0, 3).map((item) => lowerFirst(item.narrativeLabel || item.description)));
-  const strong = [...byRating("BSB"), ...byRating("BSH")];
+  const veryStrong = byRating("BSB");
+  const strong = byRating("BSH");
   const emerging = byRating("MB");
   const support = byRating("BB");
   const lines: string[] = [];
-  if (strong.length) lines.push(`Selama semester ini, Ananda ${name} menunjukkan capaian positif pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}. Ananda ${name} telah mampu ${phrase(strong)}.`);
-  else lines.push(`Pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}, Ananda ${name} sedang bertumbuh melalui berbagai kesempatan belajar.`);
-  if (emerging.length) lines.push(`Sementara itu, Ananda ${name} sedang mengembangkan kemampuan ${phrase(emerging)}.`);
+  if (veryStrong.length) lines.push(`Selama semester ini, Ananda ${name} menunjukkan kemampuan yang sangat baik dalam ${labels(veryStrong)}.`);
+  if (strong.length) lines.push(`${veryStrong.length ? "Selain itu," : "Selama semester ini,"} keterampilan Ananda ${name} dalam ${labels(strong)} telah berkembang sesuai harapan.`);
+  if (!veryStrong.length && !strong.length) lines.push(`Pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}, Ananda ${name} sedang bertumbuh melalui berbagai kesempatan belajar.`);
+  if (emerging.length) lines.push(`Sementara itu, pada ${contextFor(emerging)}, Ananda ${name} sedang mengembangkan kemampuan ${labels(emerging)}.`);
   if (support.length) {
-    lines.push(`Ananda ${name} masih memerlukan kesempatan berlatih ${phrase(support)}.`);
+    lines.push(`Untuk kemampuan ${labels(support)}, Ananda ${name} masih memerlukan kesempatan berlatih.`);
     const tags = support.flatMap((item) => item.recommendationTags ?? []).filter((tag, index, all) => all.indexOf(tag) === index).map((tag) => recommendationCopy[tag]).filter(Boolean);
-    if (tags.length) lines.push(`Ke depannya, Ananda ${name} dapat memperoleh stimulasi melalui ${joinNaturally(tags.slice(0, 2))}.`);
+    if (tags.length) lines.push(`Melalui ${joinNaturally(tags.slice(0, 2))}, Ananda ${name} dapat terus memperoleh kesempatan untuk berkembang.`);
   }
-  if (!emerging.length && !support.length && strong.length) lines.push(`Kegiatan yang serupa dapat terus diberikan agar kemampuan Ananda ${name} semakin mantap.`);
+  if (!emerging.length && !support.length && (veryStrong.length || strong.length)) lines.push(`Kegiatan yang serupa dapat terus diberikan agar kemampuan Ananda ${name} semakin mantap.`);
   if (!usable.length) warnings.push("Tidak ada indikator keterampilan yang dapat dinarasikan pada area ini.");
   return { content: lines.join(" "), signature: signature(input), coveredIndicatorIds: usable.map((item) => item.indicatorId), omittedIndicatorIds: omitted.map((item) => item.indicatorId), validationWarnings: warnings };
 }
