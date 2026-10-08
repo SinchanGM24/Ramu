@@ -16,8 +16,8 @@ npm run dev
 
 `DATABASE_URL` digunakan API dengan role terbatas `ramu_app`. Biarkan `DATABASE_MIGRATION_URL` dan `DATABASE_SEED_URL` di `backend/.env` memakai role bootstrap lokal `ramu`; keduanya hanya dibaca oleh perintah migrasi dan seed, bukan oleh API saat berjalan.
 
-- Frontend: `http://localhost:3000`
-- API health check: `http://localhost:4000/api/health`
+- Frontend: `http://localhost:3001`
+- API health check: `http://localhost:4001/api/health`
 - MinIO Console: `http://localhost:9011`
 
 Setelah `npm run db:seed`, gunakan akun development berikut (hanya lokal): `admin@ramu.test` (Admin Sekolah), `guru.aisyah@ramu.test`, `guru.budi@ramu.test`, `guru.citra@ramu.test` (Guru), dan `kepsek@ramu.test` (Kepala Sekolah). Semuanya memakai kata sandi `pass1234`, atau nilai `SEED_DEMO_PASSWORD` dari `backend/.env`.
@@ -30,4 +30,4 @@ Untuk mereset **hanya** PostgreSQL development dan memakai fixture akademik/staf
 
 Untuk memeriksa source code, jalankan `npm run build` dan `npm test`.
 
-Jika ingin menjalankan seluruh aplikasi dari container (bukan mode development di atas), gunakan `docker compose up -d --build`. Jangan menjalankan `npm run dev` bersamaan dengan service `api` atau `web` dari Compose karena keduanya memakai port `4000` dan `3000` yang sama.
+Jika ingin menjalankan seluruh aplikasi dari container (bukan mode development di atas), gunakan `docker compose up -d --build`. Untuk pengembangan harian, jalankan hanya `docker compose up -d postgres redis minio`, lalu `npm run dev`; frontend dan API akan memakai port `3001` dan `4001`.

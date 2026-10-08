@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 
 type PortfolioItem = { id: string; original_filename: string; content_type: string; byte_size: number; caption?: string | null; included_in_report: boolean; created_at: string };
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
 
 export function ReportPortfolioPage({ reportId }: { reportId: string }) {
   const queryClient = useQueryClient();

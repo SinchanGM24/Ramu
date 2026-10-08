@@ -52,7 +52,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4000
-      FRONTEND_ORIGIN: http://localhost:3000
+      FRONTEND_ORIGIN: http://localhost:3001
       DATABASE_URL: postgresql://ramu_app:${POSTGRES_APP_PASSWORD:-ramu_app_local_password}@postgres:5432/${POSTGRES_DB:-ramu}
       SESSION_COOKIE_NAME: ramu_session
       SESSION_TTL_DAYS: 7
@@ -62,7 +62,7 @@ services:
       OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-ramu_minio}
       OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-ramu_minio_password}
     ports:
-      - "4000:4000"
+      - "4001:4000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,9 +74,9 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4001
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - api
 
