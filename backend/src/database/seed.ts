@@ -2,6 +2,7 @@ import "dotenv/config";
 import * as argon2 from "argon2";
 import { Pool } from "pg";
 import { defaultTkTemplate, DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
+import { seedDefaultTkNarrativeMetadata } from "../assessment/seed-default-tk-narrative-metadata";
 
 const accounts = [
   { name: "Admin Sekolah", email: "admin@ramu.test", role: "SCHOOL_ADMIN" },
@@ -37,6 +38,7 @@ async function seed() {
       const framework = (await client.query<{ id: string }>("INSERT INTO assessment_frameworks(school_id,scale_id,name) VALUES($1,$2,$3) RETURNING id", [schoolId, scale.id, DEFAULT_TK_TEMPLATE_NAME])).rows[0];
       for (const [areaPosition, area] of defaultTkTemplate.entries()) { const savedArea = (await client.query<{ id: string }>("INSERT INTO development_areas(school_id,framework_id,name,position) VALUES($1,$2,$3,$4) RETURNING id", [schoolId, framework.id, area.name, areaPosition + 1])).rows[0]; for (const [subPosition, subArea] of area.subAreas.entries()) { const savedSubArea = (await client.query<{ id: string }>("INSERT INTO sub_areas(school_id,development_area_id,name,position) VALUES($1,$2,$3,$4) RETURNING id", [schoolId, savedArea.id, subArea.name, subPosition + 1])).rows[0]; for (const [indicatorPosition, description] of subArea.indicators.entries()) await client.query("INSERT INTO indicators(school_id,sub_area_id,description,position) VALUES($1,$2,$3,$4)", [schoolId, savedSubArea.id, description, indicatorPosition + 1]); } }
     }
+    await seedDefaultTkNarrativeMetadata(client, schoolId);
     await client.query("UPDATE academic_years SET is_active=false WHERE school_id=$1", [schoolId]);
     const previous = await client.query<{ id: string }>("INSERT INTO academic_years(school_id,name,starts_on,ends_on,is_active) VALUES ($1,'2025/2026','2025-07-01','2026-06-30',false) ON CONFLICT(school_id,name) DO UPDATE SET is_active=false RETURNING id", [schoolId]);
     const year = await client.query<{ id: string }>("INSERT INTO academic_years(school_id,name,starts_on,ends_on,is_active) VALUES ($1,'2026/2027','2026-07-01','2027-06-30',true) ON CONFLICT(school_id,name) DO UPDATE SET is_active=true RETURNING id", [schoolId]);

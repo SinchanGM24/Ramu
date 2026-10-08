@@ -5,6 +5,7 @@ import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { defaultTkIndicatorCount, defaultTkTemplate, DEFAULT_TK_TEMPLATE_NAME } from "./default-tk-template";
+import { seedDefaultTkNarrativeMetadata } from "./seed-default-tk-narrative-metadata";
 
 const scoreSchema = z.object({ semesterId: z.string().uuid(), indicatorId: z.string().uuid(), scaleOptionId: z.string().uuid() });
 
@@ -17,7 +18,10 @@ export class AssessmentController {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
     return this.db.transaction(async (client) => {
       const existing = await client.query<{ id: string }>("SELECT id FROM assessment_frameworks WHERE name=$1 AND is_active=true LIMIT 1", [DEFAULT_TK_TEMPLATE_NAME]);
-      if (existing.rowCount) return { id: existing.rows[0].id, created: false, indicatorCount: defaultTkIndicatorCount };
+      if (existing.rowCount) {
+        const metadata = await seedDefaultTkNarrativeMetadata(client, actor.schoolId);
+        return { id: existing.rows[0].id, created: false, indicatorCount: defaultTkIndicatorCount, narrativeMetadataCount: metadata.mapped };
+      }
 
       await client.query("UPDATE assessment_frameworks SET is_active=false WHERE name=$1", [DEFAULT_TK_TEMPLATE_NAME]);
       const scale = (await client.query<{ id: string }>("INSERT INTO assessment_scales(school_id,name) VALUES($1,$2) RETURNING id", [actor.schoolId, "Skala Perkembangan TK"])).rows[0];
@@ -36,8 +40,9 @@ export class AssessmentController {
         }
       }
 
-      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "assessment_framework.default_created", entityType: "assessment_framework", entityId: framework.id, metadata: { indicatorCount: defaultTkIndicatorCount } }, client);
-      return { id: framework.id, created: true, indicatorCount: defaultTkIndicatorCount };
+      const metadata = await seedDefaultTkNarrativeMetadata(client, actor.schoolId);
+      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "assessment_framework.default_created", entityType: "assessment_framework", entityId: framework.id, metadata: { indicatorCount: defaultTkIndicatorCount, narrativeMetadataCount: metadata.mapped } }, client);
+      return { id: framework.id, created: true, indicatorCount: defaultTkIndicatorCount, narrativeMetadataCount: metadata.mapped };
     }, actor.schoolId);
   }
 
