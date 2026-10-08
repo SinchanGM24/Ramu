@@ -72,24 +72,28 @@ export class ReportWorkspaceController {
   async generateNarrative(@Req() request: FastifyRequest, @Param("id") id: string, @Param("areaId") areaId: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
-      const report = (await client.query<{ student_id: string; semester_id: string; status: string; student_name: string }>(`SELECT r.student_id,r.semester_id,r.status,s.name AS student_name FROM reports r JOIN students s ON s.id=r.student_id WHERE r.id=$1`, [id])).rows[0];
+      const report = (await client.query<{ student_id: string; semester_id: string; status: string; student_name: string; nickname: string | null }>(`SELECT r.student_id,r.semester_id,r.status,s.name AS student_name,s.nickname FROM reports r JOIN students s ON s.id=r.student_id WHERE r.id=$1`, [id])).rows[0];
       if (!report) throw new Error("Rapor tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status)) throw new Error("Rapor tidak dapat diubah pada status saat ini");
       const area = (await client.query<{ name: string }>(`SELECT da.name FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id WHERE da.id=$1 AND f.name=$2 AND f.is_active`, [areaId, DEFAULT_TK_TEMPLATE_NAME])).rows[0];
       if (!area) throw new Error("Area perkembangan tidak valid");
-      const rows = (await client.query<{ description: string; code: string | null }>(`SELECT i.description,option.code
+      const rows = (await client.query<{ id: string; description: string; code: string | null; semantic_group: string | null; narrative_label: string | null; observation_type: "SKILL" | "SAFETY" | "MEASUREMENT" | null; recommendation_tags: string[] | null; metadata_version: number | null }>(`SELECT i.id,i.description,option.code,metadata.semantic_group,metadata.narrative_label,metadata.observation_type,metadata.recommendation_tags,metadata.metadata_version
         FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sa ON sa.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sa.id
         LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2
         LEFT JOIN assessment_scale_options option ON option.id=assessment.scale_option_id
+        LEFT JOIN indicator_narrative_metadata metadata ON metadata.indicator_id=i.id
         WHERE da.id=$3 AND f.name=$4 AND f.is_active ORDER BY sa.position,i.position`, [report.student_id, report.semester_id, areaId, DEFAULT_TK_TEMPLATE_NAME])).rows;
       if (!rows.length) throw new Error("Area perkembangan tidak memiliki indikator");
       if (rows.some((row) => !row.code)) throw new Error("Lengkapi semua indikator pada area ini sebelum membuat draf narasi");
-      const content = buildNarrativeDraft({ studentName: report.student_name, areaName: area.name, assessments: rows.map((row) => ({ description: row.description, code: row.code! })) });
+      const draft = buildNarrativeDraft({ studentId: report.student_id, semesterId: report.semester_id, areaId, studentName: report.student_name, nickname: report.nickname, areaName: area.name, assessments: rows.map((row) => ({ indicatorId: row.id, description: row.description, rating: row.code! as "BB" | "MB" | "BSH" | "BSB", semanticGroup: row.semantic_group, narrativeLabel: row.narrative_label, observationType: row.observation_type, recommendationTags: row.recommendation_tags, metadataVersion: row.metadata_version })) });
+      if (!draft.content) throw new Error("Draf narasi tidak dapat dibuat dari data saat ini");
+      const content = draft.content;
       const saved = (await client.query(`INSERT INTO report_narratives(school_id,report_id,development_area_id,content,updated_by) VALUES($1,$2,$3,$4,$5)
         ON CONFLICT(report_id,development_area_id) DO UPDATE SET content=EXCLUDED.content,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING *`, [actor.schoolId, id, areaId, content, actor.userId])).rows[0];
-      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report_narrative.generated", entityType: "report_narrative", entityId: saved.id, metadata: { areaId } }, client);
-      return { content };
+      const generation = (await client.query(`INSERT INTO report_narrative_generations(school_id,report_id,development_area_id,generated_by,engine_version,generation_signature,content,covered_indicator_ids,omitted_indicator_ids,validation_warnings) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, [actor.schoolId, id, areaId, actor.userId, "1.0.0", draft.signature, content, draft.coveredIndicatorIds, draft.omittedIndicatorIds, JSON.stringify(draft.validationWarnings)])).rows[0];
+      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report_narrative.generated", entityType: "report_narrative", entityId: saved.id, metadata: { areaId, generationId: generation.id, warnings: draft.validationWarnings } }, client);
+      return { content, generation: { id: generation.id, signature: draft.signature, warnings: draft.validationWarnings } };
     }, actor.schoolId);
   }
 

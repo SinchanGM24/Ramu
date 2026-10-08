@@ -4,30 +4,29 @@ import { buildNarrativeDraft } from "../src/reports/narrative-generator";
 describe("buildNarrativeDraft", () => {
   it("maps achievements, developing abilities, and practice needs into a natural parent-facing narrative", () => {
     const content = buildNarrativeDraft({
-      studentName: "Rizky",
+      studentId: "student", semesterId: "semester", areaId: "area", studentName: "Rizky",
       areaName: "Bahasa",
       assessments: [
-        { code: "BSH", description: "mengenal suara hewan dan benda di sekitarnya" },
-        { code: "MB", description: "menyimak perkataan orang lain" },
-        { code: "BB", description: "mengulang kalimat sederhana" },
+        { indicatorId: "1", rating: "BSH", semanticGroup: "keaksaraan", narrativeLabel: "mengenal suara hewan dan benda di sekitarnya", description: "mengenal suara hewan dan benda di sekitarnya" },
+        { indicatorId: "2", rating: "MB", semanticGroup: "memahami bahasa", narrativeLabel: "menyimak perkataan orang lain", description: "menyimak perkataan orang lain" },
+        { indicatorId: "3", rating: "BB", semanticGroup: "mengungkapkan bahasa", narrativeLabel: "mengulang kalimat sederhana", description: "mengulang kalimat sederhana", recommendationTags: ["bahasa"] },
       ],
     });
 
-    expect(content).toContain("telah mampu mengenal suara hewan dan benda di sekitarnya");
-    expect(content).toContain("mulai berkembang dalam menyimak perkataan orang lain");
-    expect(content).toContain("perlu dibiasakan untuk mengulang kalimat sederhana");
+    expect(content.content).toContain("telah mampu mengenal suara hewan dan benda di sekitarnya");
+    expect(content.content).toContain("sedang mengembangkan kemampuan menyimak perkataan orang lain");
+    expect(content.content).toContain("masih memerlukan kesempatan berlatih mengulang kalimat sederhana");
     expect(content).not.toContain("BSH");
   });
 
   it("keeps all-strong narratives encouraging and limits long indicator lists", () => {
     const content = buildNarrativeDraft({
-      studentName: "Alya",
+      studentId: "student", semesterId: "semester", areaId: "area", studentName: "Alya",
       areaName: "Fisik Motorik",
-      assessments: Array.from({ length: 6 }, (_, index) => ({ code: "BSH", description: `kemampuan ${index + 1}` })),
+      assessments: Array.from({ length: 6 }, (_, index) => ({ indicatorId: String(index), rating: "BSH" as const, semanticGroup: "motorik-halus", narrativeLabel: `kemampuan ${index + 1}`, description: `kemampuan ${index + 1}` })),
     });
 
-    expect(content).toContain("Kegiatan serupa dapat terus diberikan");
-    expect(content).toContain("kemampuan terkait lainnya");
-    expect(content).not.toContain("kemampuan 6");
+    expect(content.content).toContain("Kegiatan yang serupa dapat terus diberikan");
+    expect(content.content).not.toContain("kemampuan 6");
   });
 });
