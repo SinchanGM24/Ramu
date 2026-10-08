@@ -23,20 +23,29 @@ export class ReportWorkspaceController {
       if (!report) return null;
       await assertReportAccess(client, actor, id);
       const scales = (await client.query(`SELECT o.id,o.code,o.label,o.position FROM assessment_scale_options o JOIN assessment_frameworks f ON f.scale_id=o.scale_id WHERE f.name=$1 AND f.is_active ORDER BY o.position`, [DEFAULT_TK_TEMPLATE_NAME])).rows;
-      const rows = (await client.query(`SELECT da.id AS area_id,da.name AS area_name,da.position AS area_position,rn.content AS narrative,sa.id AS sub_area_id,sa.name AS sub_area_name,sa.position AS sub_area_position,i.id AS indicator_id,i.description,i.position AS indicator_position,assessment.scale_option_id,option.code AS scale_code
+      const rows = (await client.query(`SELECT da.id AS area_id,da.name AS area_name,da.position AS area_position,rn.content AS narrative,sa.id AS sub_area_id,sa.name AS sub_area_name,sa.position AS sub_area_position,i.id AS indicator_id,i.description,i.position AS indicator_position,assessment.scale_option_id,assessment.assessed_at,option.code AS scale_code
         FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sa ON sa.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sa.id
         LEFT JOIN report_narratives rn ON rn.report_id=$1 AND rn.development_area_id=da.id
         LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$2 AND assessment.semester_id=$3
         LEFT JOIN assessment_scale_options option ON option.id=assessment.scale_option_id
         WHERE f.name=$4 AND f.is_active ORDER BY da.position,sa.position,i.position`, [id, report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME])).rows;
+      const latestGenerations = (await client.query<{ development_area_id: string; content: string; created_at: string }>(`SELECT DISTINCT ON (development_area_id) development_area_id,content,created_at
+        FROM report_narrative_generations WHERE report_id=$1 ORDER BY development_area_id,created_at DESC`, [id])).rows;
+      const generationsByArea = new Map(latestGenerations.map((generation) => [generation.development_area_id, generation]));
       const areas = new Map<string, any>();
       for (const row of rows) {
-        if (!areas.has(row.area_id)) areas.set(row.area_id, { id: row.area_id, name: row.area_name, narrative: row.narrative ?? "", subAreas: new Map<string, any>() });
+        if (!areas.has(row.area_id)) areas.set(row.area_id, { id: row.area_id, name: row.area_name, narrative: row.narrative ?? "", latestAssessmentAt: row.assessed_at ?? null, subAreas: new Map<string, any>() });
         const area = areas.get(row.area_id);
+        if (row.assessed_at && (!area.latestAssessmentAt || new Date(row.assessed_at) > new Date(area.latestAssessmentAt))) area.latestAssessmentAt = row.assessed_at;
         if (!area.subAreas.has(row.sub_area_id)) area.subAreas.set(row.sub_area_id, { id: row.sub_area_id, name: row.sub_area_name, indicators: [] });
         area.subAreas.get(row.sub_area_id).indicators.push({ id: row.indicator_id, description: row.description, scaleOptionId: row.scale_option_id, scaleCode: row.scale_code });
       }
-      const structuredAreas = [...areas.values()].map((area) => ({ ...area, subAreas: [...area.subAreas.values()] }));
+      const structuredAreas = [...areas.values()].map((area) => {
+        const generation = generationsByArea.get(area.id);
+        const narrativeIsGenerated = generation?.content === area.narrative;
+        const narrativeStale = Boolean(narrativeIsGenerated && generation && area.latestAssessmentAt && new Date(area.latestAssessmentAt) > new Date(generation.created_at));
+        return { ...area, latestAssessmentAt: undefined, narrativeStale, subAreas: [...area.subAreas.values()] };
+      });
       const growth = (await client.query("SELECT weight_kg,height_cm,head_circumference_cm FROM growth_records WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null;
       const attendance = (await client.query("SELECT sick_days,permission_days,unexcused_days FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null;
       const guardians = (await client.query("SELECT name,relationship,phone,occupation,is_primary FROM guardian_contacts WHERE student_id=$1 ORDER BY is_primary DESC,name", [report.student_id])).rows;
