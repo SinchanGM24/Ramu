@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 
-export const SMART_NARRATIVE_ENGINE_VERSION = "1.2.0";
+export const SMART_NARRATIVE_ENGINE_VERSION = "1.3.0";
 export type NarrativeRating = "BB" | "MB" | "BSH" | "BSB";
 export type NarrativeAssessment = { indicatorId: string; rating: NarrativeRating; description: string; semanticGroup?: string | null; narrativeLabel?: string | null; observationType?: "SKILL" | "SAFETY" | "MEASUREMENT" | null; recommendationTags?: string[] | null; metadataVersion?: number | null };
 export type NarrativeDraft = { content: string; signature: string; coveredIndicatorIds: string[]; omittedIndicatorIds: string[]; validationWarnings: string[] };
@@ -45,6 +45,21 @@ function topicFor(items: NarrativeAssessment[]) {
   return group;
 }
 
+const topicLanguage: Record<string, { growth: string; support: string; reinforcement: string; recommendation: (activities: string, name: string) => string }> = {
+  "gerak-tubuh": { growth: "melalui berbagai pengalaman bermain", support: "melalui pengalaman bermain yang menyenangkan", reinforcement: "Pengalaman bermain yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi pilihan kegiatan yang menyenangkan bagi Ananda ${name}` },
+  "motorik-halus": { growth: "melalui kegiatan mencoba dan berkarya", support: "melalui kegiatan mencoba dengan beragam media", reinforcement: "Kegiatan mencoba dan berkarya yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi kesempatan yang menyenangkan bagi Ananda ${name}` },
+  "agama-dan-moral": { growth: "melalui pembiasaan dan teladan sehari-hari", support: "melalui pembiasaan dan teladan yang dilakukan secara konsisten", reinforcement: "Pembiasaan baik yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi pembiasaan yang dilakukan bersama Ananda ${name}` },
+  bahasa: { growth: "melalui percakapan, cerita, dan kegiatan membaca", support: "melalui percakapan, cerita, dan pendampingan yang hangat", reinforcement: "Percakapan dan kegiatan membaca yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi kesempatan untuk mendampingi Ananda ${name}` },
+  kognitif: { growth: "melalui kesempatan mengamati, mencoba, dan menemukan", support: "melalui kesempatan mengamati, mencoba, dan menemukan", reinforcement: "Kesempatan mengamati dan mencoba yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi kegiatan yang dapat dilakukan bersama Ananda ${name}` },
+  sosial: { growth: "melalui interaksi bersama dan pendampingan yang hangat", support: "melalui kegiatan bersama dan pendampingan yang hangat", reinforcement: "Interaksi bersama yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi kesempatan untuk menemani Ananda ${name}` },
+  seni: { growth: "melalui pengalaman berekspresi dan berkarya", support: "melalui kesempatan berekspresi dengan beragam kegiatan seni", reinforcement: "Kegiatan berekspresi yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi kegiatan yang menyenangkan bagi Ananda ${name}` },
+  "kesehatan-dan-keselamatan": { growth: "melalui pembiasaan sehari-hari", support: "melalui pembiasaan dan pendampingan sehari-hari", reinforcement: "Pembiasaan yang serupa", recommendation: (activities, name) => `${activities} dapat menjadi bagian dari pendampingan Ananda ${name}` },
+};
+
+function languageFor(items: NarrativeAssessment[]) {
+  return topicLanguage[topicFor(items)] ?? { growth: "melalui berbagai pengalaman sehari-hari", support: "melalui pendampingan yang hangat", reinforcement: "Pengalaman yang serupa", recommendation: (activities: string, name: string) => `${activities} dapat menjadi kesempatan yang baik bagi Ananda ${name}` };
+}
+
 function signature(input: { studentId: string; semesterId: string; areaId: string; assessments: NarrativeAssessment[] }) {
   const payload = input.assessments.map((item) => [item.indicatorId, item.rating, item.metadataVersion ?? 0] as const).sort((left, right) => left[0].localeCompare(right[0]));
   return createHash("sha256").update(JSON.stringify([SMART_NARRATIVE_ENGINE_VERSION, input.studentId, input.semesterId, input.areaId, payload])).digest("hex");
@@ -66,16 +81,16 @@ export function buildNarrativeDraft(input: { studentId: string; semesterId: stri
   const lines: string[] = [];
   if (veryStrong.length) lines.push(`Selama semester ini, Ananda ${name} menunjukkan perkembangan yang sangat baik dalam ${labels(veryStrong)}.`);
   if (strong.length) lines.push(`${veryStrong.length ? "Kemampuannya" : `Perkembangan Ananda ${name}`} dalam ${labels(strong)} juga telah berkembang sesuai harapan.`);
-  if (!veryStrong.length && !strong.length) lines.push(`Pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}, Ananda ${name} sedang menikmati proses bertumbuh melalui berbagai pengalaman bermain.`);
+  if (!veryStrong.length && !strong.length) lines.push(`Pada aspek ${input.areaName.toLocaleLowerCase("id-ID")}, Ananda ${name} sedang menikmati proses bertumbuh ${languageFor(usable).growth}.`);
   if (emerging.length) lines.push(`${veryStrong.length || strong.length ? "Dalam" : "Pada"} ${contextFor(emerging)}, Ananda ${name} mulai menunjukkan kemampuan ${labels(emerging)}.`);
   if (support.length) {
     const followsEmergingTopic = emerging.length > 0 && topicFor(emerging) === topicFor(support);
     const supportLead = followsEmergingTopic ? "Adapun kemampuan" : `Pada ${contextFor(support)}, kemampuan`;
-    lines.push(`${supportLead} ${labels(support)} masih membutuhkan dukungan dan pendampingan melalui pengalaman bermain yang menyenangkan.`);
+    lines.push(`${supportLead} ${labels(support)} masih membutuhkan dukungan dan pendampingan ${languageFor(support).support}.`);
     const tags = support.flatMap((item) => item.recommendationTags ?? []).filter((tag, index, all) => all.indexOf(tag) === index).map((tag) => recommendationCopy[tag]).filter(Boolean);
-    if (tags.length) lines.push(`Untuk mendukung perkembangannya, ${lowerFirst(joinNaturally(tags.slice(0, 2)))} dapat menjadi pilihan kegiatan yang menyenangkan bagi Ananda ${name}.`);
+    if (tags.length) lines.push(`Untuk mendukung perkembangannya, ${languageFor(support).recommendation(lowerFirst(joinNaturally(tags.slice(0, 2))), name)}.`);
   }
-  if (!emerging.length && !support.length && (veryStrong.length || strong.length)) lines.push(`Pengalaman bermain yang serupa dapat terus diberikan agar perkembangan Ananda ${name} semakin mantap.`);
+  if (!emerging.length && !support.length && (veryStrong.length || strong.length)) lines.push(`${languageFor(veryStrong.length ? veryStrong : strong).reinforcement} dapat terus diberikan agar perkembangan Ananda ${name} semakin mantap.`);
   if (!usable.length) warnings.push("Tidak ada indikator keterampilan yang dapat dinarasikan pada area ini.");
   return { content: lines.join(" "), signature: signature(input), coveredIndicatorIds: usable.map((item) => item.indicatorId), omittedIndicatorIds: omitted.map((item) => item.indicatorId), validationWarnings: warnings };
 }

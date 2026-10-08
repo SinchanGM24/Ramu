@@ -7,15 +7,15 @@ describe("buildNarrativeDraft", () => {
       studentId: "student", semesterId: "semester", areaId: "area", studentName: "Rizky",
       areaName: "Bahasa",
       assessments: [
-        { indicatorId: "1", rating: "BSH", semanticGroup: "keaksaraan", narrativeLabel: "mengenal suara hewan dan benda di sekitarnya", description: "mengenal suara hewan dan benda di sekitarnya" },
-        { indicatorId: "2", rating: "MB", semanticGroup: "memahami bahasa", narrativeLabel: "menyimak perkataan orang lain", description: "menyimak perkataan orang lain" },
-        { indicatorId: "3", rating: "BB", semanticGroup: "mengungkapkan bahasa", narrativeLabel: "mengulang kalimat sederhana", description: "mengulang kalimat sederhana", recommendationTags: ["bahasa"] },
+        { indicatorId: "1", rating: "BSH", semanticGroup: "bahasa-3", narrativeLabel: "mengenal suara hewan dan benda di sekitarnya", description: "mengenal suara hewan dan benda di sekitarnya" },
+        { indicatorId: "2", rating: "MB", semanticGroup: "bahasa-1", narrativeLabel: "menyimak perkataan orang lain", description: "menyimak perkataan orang lain" },
+        { indicatorId: "3", rating: "BB", semanticGroup: "bahasa-2", narrativeLabel: "mengulang kalimat sederhana", description: "mengulang kalimat sederhana", recommendationTags: ["bahasa"] },
       ],
     });
 
     expect(content.content).toContain("mengenal suara hewan dan benda di sekitarnya juga telah berkembang sesuai harapan");
     expect(content.content).toContain("mulai menunjukkan kemampuan menyimak perkataan orang lain");
-    expect(content.content).toContain("masih membutuhkan dukungan dan pendampingan melalui pengalaman bermain yang menyenangkan");
+    expect(content.content).toContain("masih membutuhkan dukungan dan pendampingan melalui percakapan, cerita, dan pendampingan yang hangat");
     expect(content.content).not.toContain("BSH");
   });
 
@@ -26,7 +26,7 @@ describe("buildNarrativeDraft", () => {
       assessments: Array.from({ length: 6 }, (_, index) => ({ indicatorId: String(index), rating: "BSH" as const, semanticGroup: "motorik-halus", narrativeLabel: `kemampuan ${index + 1}`, description: `kemampuan ${index + 1}` })),
     });
 
-    expect(content.content).toContain("Pengalaman bermain yang serupa dapat terus diberikan");
+    expect(content.content).toContain("Kegiatan mencoba dan berkarya yang serupa dapat terus diberikan");
     expect(content.content).not.toContain("kemampuan 6");
   });
 
@@ -60,7 +60,9 @@ describe("buildNarrativeDraft", () => {
       assessments: [{ indicatorId: "1", rating: "BB", semanticGroup, narrativeLabel, description: narrativeLabel, recommendationTags: [recommendationTag] }],
     });
     expect(content.content).toContain("Ananda Naya");
-    expect(content.content).toContain("pengalaman bermain yang menyenangkan");
+    const expectedSupport: Record<string, string> = { "agama-dan-moral": "pembiasaan dan teladan", "kognitif-2": "kesempatan mengamati", "bahasa-2": "percakapan, cerita", "sosial-3": "kegiatan bersama", "seni-2": "kesempatan berekspresi" };
+    expect(content.content).toContain(expectedSupport[semanticGroup]);
+    if (["agama-dan-moral", "bahasa-2"].includes(semanticGroup)) expect(content.content).not.toContain("pengalaman bermain");
     expect(content.content).not.toMatch(/perlu berlatih|meningkatkan keterampilan|belum optimal|harus menguasai/i);
   });
 });
