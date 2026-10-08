@@ -1,5 +1,6 @@
 import { DEFAULT_TK_TEMPLATE_NAME } from "./default-tk-template";
 import { defaultTkNarrativeMetadata } from "./default-tk-narrative-metadata";
+import { DEFAULT_TK_NARRATIVE_METADATA_VERSION } from "./default-tk-narrative-metadata";
 
 type Queryable = { query: (text: string, values?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }> };
 
@@ -32,7 +33,7 @@ export async function seedDefaultTkNarrativeMetadata(client: Queryable, schoolId
       `INSERT INTO indicator_narrative_metadata(
         school_id, indicator_id, semantic_group, competency_concept, narrative_label,
         observation_type, recommendation_tags, metadata_version
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,1)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       ON CONFLICT(indicator_id) DO UPDATE SET
         semantic_group=EXCLUDED.semantic_group,
         competency_concept=EXCLUDED.competency_concept,
@@ -41,7 +42,7 @@ export async function seedDefaultTkNarrativeMetadata(client: Queryable, schoolId
         recommendation_tags=EXCLUDED.recommendation_tags,
         metadata_version=EXCLUDED.metadata_version,
         updated_at=now()`,
-      [schoolId, indicator.id, metadata.semanticGroup, metadata.competencyConcept, metadata.narrativeLabel, metadata.observationType, metadata.recommendationTags],
+      [schoolId, indicator.id, metadata.semanticGroup, metadata.competencyConcept, metadata.narrativeLabel, metadata.observationType, metadata.recommendationTags, DEFAULT_TK_NARRATIVE_METADATA_VERSION],
     );
   }
 

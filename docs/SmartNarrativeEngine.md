@@ -39,7 +39,7 @@ Setiap hasil generasi menyimpan atau mengembalikan:
 - versi engine, versi metadata, status cakupan, serta warning validasi;
 - identitas aktor dan waktu generasi melalui audit log.
 
-Input yang identik menghasilkan signature dan narasi yang identik. Engine V1 menggunakan gaya `warm_natural` dan panjang `medium`; variasi gaya atau panjang tidak dibuat sebelum kualitas dasar stabil.
+Input yang identik menghasilkan signature dan narasi yang identik. Signature mencakup nilai, metadata semantik, label narasi, tipe observasi, tag rekomendasi, versi metadata, dan versi engine agar perubahan aturan dapat dilacak. Engine V1 menggunakan gaya `warm_natural` dan panjang `medium`; variasi gaya atau panjang tidak dibuat sebelum kualitas dasar stabil.
 
 ## Metadata semantik indikator
 
@@ -63,6 +63,7 @@ Indikator pertumbuhan fisik diperlakukan sebagai pengukuran. Engine tidak menyim
 - Indikator yang belum dinilai berstatus `UNASSESSED`; ia tidak boleh dianggap sebagai `BB` dan tidak boleh menjadi sumber klaim.
 - Urutan narasi: kekuatan/capaian positif, kemampuan yang sedang berkembang, lalu kebutuhan stimulasi bila terdapat `MB` atau `BB`.
 - Rekomendasi hanya ditampilkan bila ada `MB` atau `BB`, dan harus berasal dari `recommendationTags` indikator sumber.
+- Bahasa pendampingan mengikuti domain perkembangan: permainan untuk gerak tubuh, pembiasaan/teladan untuk agama dan moral, percakapan/cerita untuk bahasa, serta konteks relevan lain untuk kognitif, sosial emosional, seni, kesehatan, dan keselamatan.
 - Narasi tidak boleh mengklaim kenaikan dibanding semester sebelumnya tanpa data pembanding yang sah.
 - Jika sebuah kategori tidak memiliki indikator, bagian tersebut tidak dibuat.
 

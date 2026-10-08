@@ -1,6 +1,8 @@
 type IndicatorPath = { areaPosition: number; subAreaPosition: number; indicatorPosition: number; description: string };
 type Metadata = { semanticGroup: string; competencyConcept: string; narrativeLabel: string; observationType: "SKILL" | "SAFETY" | "MEASUREMENT"; recommendationTags: string[] };
 
+export const DEFAULT_TK_NARRATIVE_METADATA_VERSION = 2;
+
 const lowerFirst = (value: string) => value[0] && value[1]?.toLowerCase() === value[1] ? `${value[0].toLowerCase()}${value.slice(1)}` : value;
 
 export function defaultTkNarrativeMetadata(path: IndicatorPath): Metadata {

@@ -6,7 +6,7 @@ import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { assertReportAccess } from "./report-authorization";
-import { buildNarrativeDraft } from "./narrative-generator";
+import { buildNarrativeDraft, SMART_NARRATIVE_ENGINE_VERSION } from "./narrative-generator";
 
 const narrativeSchema = z.object({ content: z.string().max(5000) });
 
@@ -29,7 +29,7 @@ export class ReportWorkspaceController {
         LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$2 AND assessment.semester_id=$3
         LEFT JOIN assessment_scale_options option ON option.id=assessment.scale_option_id
         WHERE f.name=$4 AND f.is_active ORDER BY da.position,sa.position,i.position`, [id, report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME])).rows;
-      const latestGenerations = (await client.query<{ development_area_id: string; content: string; created_at: string }>(`SELECT DISTINCT ON (development_area_id) development_area_id,content,created_at
+      const latestGenerations = (await client.query<{ development_area_id: string; content: string; created_at: string; engine_version: string }>(`SELECT DISTINCT ON (development_area_id) development_area_id,content,created_at,engine_version
         FROM report_narrative_generations WHERE report_id=$1 ORDER BY development_area_id,created_at DESC`, [id])).rows;
       const generationsByArea = new Map(latestGenerations.map((generation) => [generation.development_area_id, generation]));
       const areas = new Map<string, any>();
@@ -43,7 +43,7 @@ export class ReportWorkspaceController {
       const structuredAreas = [...areas.values()].map((area) => {
         const generation = generationsByArea.get(area.id);
         const narrativeIsGenerated = generation?.content === area.narrative;
-        const narrativeStale = Boolean(narrativeIsGenerated && generation && area.latestAssessmentAt && new Date(area.latestAssessmentAt) > new Date(generation.created_at));
+        const narrativeStale = Boolean(narrativeIsGenerated && generation && (generation.engine_version !== SMART_NARRATIVE_ENGINE_VERSION || (area.latestAssessmentAt && new Date(area.latestAssessmentAt) > new Date(generation.created_at))));
         return { ...area, latestAssessmentAt: undefined, narrativeStale, subAreas: [...area.subAreas.values()] };
       });
       const growth = (await client.query("SELECT weight_kg,height_cm,head_circumference_cm FROM growth_records WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null;
@@ -100,7 +100,7 @@ export class ReportWorkspaceController {
       const content = draft.content;
       const saved = (await client.query(`INSERT INTO report_narratives(school_id,report_id,development_area_id,content,updated_by) VALUES($1,$2,$3,$4,$5)
         ON CONFLICT(report_id,development_area_id) DO UPDATE SET content=EXCLUDED.content,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING *`, [actor.schoolId, id, areaId, content, actor.userId])).rows[0];
-      const generation = (await client.query(`INSERT INTO report_narrative_generations(school_id,report_id,development_area_id,generated_by,engine_version,generation_signature,content,covered_indicator_ids,omitted_indicator_ids,validation_warnings) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, [actor.schoolId, id, areaId, actor.userId, "1.0.0", draft.signature, content, draft.coveredIndicatorIds, draft.omittedIndicatorIds, JSON.stringify(draft.validationWarnings)])).rows[0];
+      const generation = (await client.query(`INSERT INTO report_narrative_generations(school_id,report_id,development_area_id,generated_by,engine_version,generation_signature,content,covered_indicator_ids,omitted_indicator_ids,validation_warnings) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, [actor.schoolId, id, areaId, actor.userId, SMART_NARRATIVE_ENGINE_VERSION, draft.signature, content, draft.coveredIndicatorIds, draft.omittedIndicatorIds, JSON.stringify(draft.validationWarnings)])).rows[0];
       await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report_narrative.generated", entityType: "report_narrative", entityId: saved.id, metadata: { areaId, generationId: generation.id, warnings: draft.validationWarnings } }, client);
       return { content, generation: { id: generation.id, signature: draft.signature, warnings: draft.validationWarnings } };
     }, actor.schoolId);

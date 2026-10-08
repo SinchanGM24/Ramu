@@ -65,4 +65,28 @@ describe("buildNarrativeDraft", () => {
     if (["agama-dan-moral", "bahasa-2"].includes(semanticGroup)) expect(content.content).not.toContain("pengalaman bermain");
     expect(content.content).not.toMatch(/perlu berlatih|meningkatkan keterampilan|belum optimal|harus menguasai/i);
   });
+
+  it("changes its traceability signature when narrative metadata changes", () => {
+    const base = { studentId: "student", semesterId: "semester", areaId: "area", studentName: "Alya", areaName: "Bahasa", assessments: [{ indicatorId: "1", rating: "MB" as const, semanticGroup: "bahasa-1", narrativeLabel: "menyimak cerita", description: "menyimak cerita", recommendationTags: ["bahasa"], metadataVersion: 2 }] };
+    const renamed = { ...base, assessments: [{ ...base.assessments[0], narrativeLabel: "memahami cerita yang dibacakan" }] };
+    expect(buildNarrativeDraft(base).signature).not.toBe(buildNarrativeDraft(renamed).signature);
+  });
+
+  it.each([
+    ["Nilai-Nilai Agama dan Moral", "agama-dan-moral", "mengucapkan salam", "agama"],
+    ["Fisik Motorik", "motorik-kasar", "melompat dan berlari", "motorik-kasar"],
+    ["Kognitif", "kognitif-1", "mengenal benda berdasarkan fungsi", "kognitif"],
+    ["Bahasa", "bahasa-1", "memahami cerita yang dibacakan", "bahasa"],
+    ["Sosial Emosional", "sosial-3", "menunjukkan rasa empati", "sosial"],
+    ["Seni", "seni-2", "bernyanyi sendiri", "seni"],
+  ])("creates a complete, parent-facing paragraph for %s", (areaName, semanticGroup, label, tag) => {
+    const draft = buildNarrativeDraft({ studentId: "student", semesterId: "semester", areaId: "area", studentName: "Alya Putri", areaName, assessments: [
+      { indicatorId: "1", rating: "BSH", semanticGroup, narrativeLabel: label, description: label, recommendationTags: [tag] },
+      { indicatorId: "2", rating: "MB", semanticGroup, narrativeLabel: `mulai ${label}`, description: label, recommendationTags: [tag] },
+      { indicatorId: "3", rating: "BB", semanticGroup, narrativeLabel: `mencoba ${label}`, description: label, recommendationTags: [tag] },
+    ] });
+    expect(draft.content).toContain("Ananda Alya");
+    expect(draft.content).not.toMatch(/\bBB\b|\bMB\b|\bBSH\b|\bBSB\b/);
+    expect(draft.validationWarnings).not.toContain("Konteks kegiatan terulang; tinjau draf sebelum digunakan.");
+  });
 });

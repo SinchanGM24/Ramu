@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 
-export const SMART_NARRATIVE_ENGINE_VERSION = "1.3.0";
+export const SMART_NARRATIVE_ENGINE_VERSION = "1.4.0";
 export type NarrativeRating = "BB" | "MB" | "BSH" | "BSB";
 export type NarrativeAssessment = { indicatorId: string; rating: NarrativeRating; description: string; semanticGroup?: string | null; narrativeLabel?: string | null; observationType?: "SKILL" | "SAFETY" | "MEASUREMENT" | null; recommendationTags?: string[] | null; metadataVersion?: number | null };
 export type NarrativeDraft = { content: string; signature: string; coveredIndicatorIds: string[]; omittedIndicatorIds: string[]; validationWarnings: string[] };
@@ -27,7 +27,11 @@ const groupContext: Record<string, string> = {
 };
 
 function labels(items: NarrativeAssessment[], limit = 2) {
-  return joinNaturally(items.slice(0, limit).map((item) => lowerFirst(item.narrativeLabel || item.description)));
+  const selected: NarrativeAssessment[] = [];
+  const seenGroups = new Set<string>();
+  for (const item of items) if (selected.length < limit && !seenGroups.has(item.semanticGroup ?? item.indicatorId)) { selected.push(item); seenGroups.add(item.semanticGroup ?? item.indicatorId); }
+  for (const item of items) if (selected.length < limit && !selected.includes(item)) selected.push(item);
+  return joinNaturally(selected.map((item) => lowerFirst(item.narrativeLabel || item.description)));
 }
 
 function contextFor(items: NarrativeAssessment[]) {
@@ -61,7 +65,7 @@ function languageFor(items: NarrativeAssessment[]) {
 }
 
 function signature(input: { studentId: string; semesterId: string; areaId: string; assessments: NarrativeAssessment[] }) {
-  const payload = input.assessments.map((item) => [item.indicatorId, item.rating, item.metadataVersion ?? 0] as const).sort((left, right) => left[0].localeCompare(right[0]));
+  const payload = input.assessments.map((item) => [item.indicatorId, item.rating, item.semanticGroup ?? "", item.narrativeLabel ?? "", item.observationType ?? "", [...(item.recommendationTags ?? [])].sort(), item.metadataVersion ?? 0] as const).sort((left, right) => left[0].localeCompare(right[0]));
   return createHash("sha256").update(JSON.stringify([SMART_NARRATIVE_ENGINE_VERSION, input.studentId, input.semesterId, input.areaId, payload])).digest("hex");
 }
 
@@ -92,5 +96,7 @@ export function buildNarrativeDraft(input: { studentId: string; semesterId: stri
   }
   if (!emerging.length && !support.length && (veryStrong.length || strong.length)) lines.push(`${languageFor(veryStrong.length ? veryStrong : strong).reinforcement} dapat terus diberikan agar perkembangan Ananda ${name} semakin mantap.`);
   if (!usable.length) warnings.push("Tidak ada indikator keterampilan yang dapat dinarasikan pada area ini.");
+  if (/(Pada kegiatan [^.]+\. Pada kegiatan)/.test(lines.join(" "))) warnings.push("Konteks kegiatan terulang; tinjau draf sebelum digunakan.");
+  if (lines.some((line) => line.length > 330)) warnings.push("Salah satu kalimat cukup panjang; pertimbangkan menyederhanakan draf.");
   return { content: lines.join(" "), signature: signature(input), coveredIndicatorIds: usable.map((item) => item.indicatorId), omittedIndicatorIds: omitted.map((item) => item.indicatorId), validationWarnings: warnings };
 }
