@@ -8,6 +8,6 @@ export async function assertReportAccess(client: PoolClient, actor: AuthContext,
   const allowed = await client.query(`SELECT 1 FROM reports report
     JOIN student_enrollments enrollment ON enrollment.id=report.student_enrollment_id
     JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL
-    WHERE report.id=$1 AND assignment.teacher_user_id=$2`, [reportId, actor.userId]);
+    WHERE report.id=$1 AND assignment.teacher_user_id=$2 AND report.school_id=$3 AND enrollment.school_id=$3 AND assignment.school_id=$3`, [reportId, actor.userId, actor.schoolId]);
   if (!allowed.rowCount) throw new ForbiddenException("Anda bukan wali kelas untuk rapor ini.");
 }
