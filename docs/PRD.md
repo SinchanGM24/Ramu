@@ -127,6 +127,8 @@ Implementation order: multi-tenant foundation; auth/RBAC; onboarding; master aca
 
 ## 12. Optional AI assistance
 
+Deterministic report narrative rules are defined in [SmartNarrativeEngine.md](SmartNarrativeEngine.md). This engine is not an AI assessor and remains subject to the human-review requirements below.
+
 | Agent | Permitted output |
 | --- | --- |
 | Narrative | Draft narrative from indicators, teacher notes, and development area; teacher must review/edit. |

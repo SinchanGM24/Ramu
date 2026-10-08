@@ -46,7 +46,7 @@ Seed template `DEFAULT_TK_REPORT_TEMPLATE` untuk level referensi yang telah dive
 
 Indikator harus disimpan sebagai data template yang dapat diedit per level, bukan hard-code halaman. Konten indikator mengikuti spesifikasi referensi yang diberikan: Fisik Motorik memiliki indikator motorik kasar, halus, dan keselamatan; Kognitif mencakup pemecahan masalah/logis/simbolik; Bahasa mencakup memahami/mengungkapkan/keaksaraan; SOSEM mencakup kesadaran diri, tanggung jawab, prososial; Seni mencakup musik serta ekspresi/karya seni.
 
-Setiap **development area** memiliki tepat satu narasi per siswa per semester—bukan narasi per indikator atau subarea. Narasi memakai autosave.
+Setiap **development area** memiliki tepat satu narasi per siswa per semester—bukan narasi per indikator atau subarea. Narasi memakai autosave. Aturan generator draf deterministic, metadata indikator, serta validasinya ditetapkan dalam [docs/SmartNarrativeEngine.md](docs/SmartNarrativeEngine.md); draf tetap dapat disunting guru dan tidak boleh mengubah assessment sumber.
 
 ## 5. Data akhir semester
 
