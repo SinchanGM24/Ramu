@@ -6,6 +6,7 @@ import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { assertReportAccess } from "./report-authorization";
+import { completenessError, getReportCompleteness } from "./report-completeness";
 import { buildNarrativeDraft, SMART_NARRATIVE_ENGINE_VERSION } from "./narrative-generator";
 
 const narrativeSchema = z.object({ content: z.string().max(5000) });
@@ -110,15 +111,12 @@ export class ReportWorkspaceController {
   async submit(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
-      const report = (await client.query<{ student_id: string; semester_id: string; status: string }>("SELECT student_id,semester_id,status FROM reports WHERE id=$1", [id])).rows[0];
+      const report = (await client.query<{ id: string; student_id: string; semester_id: string; status: string }>("SELECT id,student_id,semester_id,status FROM reports WHERE id=$1 AND school_id=$2", [id, actor.schoolId])).rows[0];
       if (!report) throw new Error("Rapor tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (report.status !== "DRAFT") throw new Error("Hanya rapor draf yang dapat dikirim");
-      const missing = (await client.query<{ count: number }>(`SELECT
-        (SELECT count(*) FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2 WHERE f.name=$3 AND f.is_active AND assessment.id IS NULL)
-        + (SELECT count(*) FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id LEFT JOIN report_narratives narrative ON narrative.report_id=$4 AND narrative.development_area_id=da.id WHERE f.name=$3 AND f.is_active AND (narrative.id IS NULL OR btrim(narrative.content)=''))
-        + CASE WHEN EXISTS(SELECT 1 FROM growth_records WHERE student_id=$1 AND semester_id=$2) AND EXISTS(SELECT 1 FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2) THEN 0 ELSE 1 END AS count`, [report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME, id])).rows[0].count;
-      if (Number(missing)) throw new Error("Rapor belum lengkap. Lengkapi penilaian, narasi, pertumbuhan, dan kehadiran.");
+      const completeness = await getReportCompleteness(client, { id: report.id, studentId: report.student_id, semesterId: report.semester_id, schoolId: actor.schoolId });
+      if (!completeness.complete) throw new Error(completenessError(completeness));
       const saved = (await client.query("UPDATE reports SET status='SUBMITTED',submitted_at=now(),updated_at=now() WHERE id=$1 RETURNING *", [id])).rows[0];
       await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report.submitted", entityType: "report", entityId: id }, client);
       return saved;

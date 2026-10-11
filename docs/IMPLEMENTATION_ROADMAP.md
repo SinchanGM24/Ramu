@@ -40,9 +40,9 @@ Tujuan: admin dapat menyelesaikan rapor dari progres sampai wali menerimanya tan
    - Riwayat menampilkan tahun ajaran, semester, tanggal terbit, dan nomor versi.
    - Koreksi rapor membuat versi baru tanpa mengubah versi lama.
 
-2. Pusat kerja rapor admin — dalam pengerjaan
+2. Pusat kerja rapor admin — selesai
    - Pisahkan daftar: progres pengisian, perlu ditinjau, siap diterbitkan, sudah terbit — selesai.
-   - Tampilkan alasan yang dapat ditindaklanjuti apabila rapor belum dapat dikirim/diterbitkan.
+   - Tampilkan alasan yang dapat ditindaklanjuti apabila rapor belum dapat dikirim/diterbitkan — selesai.
    - Beri navigasi jelas dari daftar ke murid, editor, pratinjau, dan pengiriman — selesai.
 
 3. Pengiriman kepada wali

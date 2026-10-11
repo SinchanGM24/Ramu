@@ -26,7 +26,7 @@ export function ReportEditorPage({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const [pendingScaleOptionIds, setPendingScaleOptionIds] = useState<Record<string, string>>({});
   const workspace = useQuery({ queryKey: ["report-workspace", id], queryFn: () => api<Workspace | null>(`/reports/${id}/workspace`) });
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["report-workspace", id] });
+  const refresh = () => { void queryClient.invalidateQueries({ queryKey: ["report-workspace", id] }); void queryClient.invalidateQueries({ queryKey: ["report-completeness", id] }); };
   const assessment = useMutation({
     mutationFn: ({ indicatorId, scaleOptionId }: { indicatorId: string; scaleOptionId: string }) => api(`/reports/${id}/assessments/${indicatorId}`, { method: "PUT", body: JSON.stringify({ scaleOptionId }) }),
     onMutate: ({ indicatorId, scaleOptionId }) => setPendingScaleOptionIds((current) => ({ ...current, [indicatorId]: scaleOptionId })),

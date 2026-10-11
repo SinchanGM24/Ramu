@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ClipboardCheck, RotateCcw } from "lucide-react";
+import { AlertCircle, Check, ClipboardCheck, RotateCcw } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ type ReviewReport = {
   semester_name: string;
 };
 type PublishedReport = { parentAccess: { link: string; pin: string } };
+type Completeness = { complete: boolean; missingAssessments: string[]; missingNarratives: string[]; missingSemesterData: boolean };
 
 const status: Record<ReviewReport["status"], { label: string; tone: "green" | "amber" | "slate" }> = {
   SUBMITTED: { label: "Menunggu ditinjau", tone: "amber" },
@@ -28,6 +29,19 @@ const status: Record<ReviewReport["status"], { label: string; tone: "green" | "a
 function submittedAt(value: string | null) {
   if (!value) return "Belum tersedia";
   return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+}
+
+function PublishReportAction({ reportId, pending, onPublish }: { reportId: string; pending: boolean; onPublish: () => void }) {
+  const completeness = useQuery({ queryKey: ["report-completeness", reportId], queryFn: () => api<Completeness>(`/reports/${reportId}/completeness`) });
+  if (completeness.isLoading) return <span className="text-sm text-slate-500">Memeriksa kelengkapan…</span>;
+  if (completeness.isError || !completeness.data) return <span className="text-sm text-red-700">Kelengkapan rapor belum dapat diperiksa.</span>;
+  const data = completeness.data;
+  const missing = [
+    data.missingAssessments.length ? `${data.missingAssessments.length} penilaian indikator` : "",
+    data.missingNarratives.length ? `${data.missingNarratives.length} narasi perkembangan` : "",
+    data.missingSemesterData ? "data pertumbuhan dan kehadiran" : "",
+  ].filter(Boolean);
+  return <div className="flex flex-col items-start gap-2 sm:items-end"><Button disabled={!data.complete || pending} onClick={onPublish}>Terbitkan rapor</Button>{!data.complete && <p className="flex max-w-sm items-start gap-1.5 text-xs text-amber-800"><AlertCircle className="mt-0.5 size-3.5 shrink-0" />Belum dapat diterbitkan: {missing.join(", ")} belum lengkap.</p>}</div>;
 }
 
 export function ReportReviewPage() {
@@ -69,7 +83,7 @@ export function ReportReviewPage() {
         <div className="flex flex-wrap gap-2">
           {report.status === "SUBMITTED" && <Button disabled={transition.isPending} onClick={() => transition.mutate({ id: report.id, action: "review" })}>Mulai tinjau</Button>}
           {report.status === "IN_REVIEW" && <><Button disabled={transition.isPending} variant="secondary" onClick={() => { setOpenRevisionFor(openRevisionFor === report.id ? undefined : report.id); setRevisionNote(""); }}><RotateCcw className="mr-1 size-4" />Minta revisi</Button><Button disabled={transition.isPending} onClick={() => transition.mutate({ id: report.id, action: "approve" })}><Check className="mr-1 size-4" />Setujui rapor</Button></>}
-          {report.status === "APPROVED" && <Button disabled={publish.isPending} onClick={() => publish.mutate(report.id)}>Terbitkan rapor</Button>}
+          {report.status === "APPROVED" && <PublishReportAction reportId={report.id} pending={publish.isPending} onPublish={() => publish.mutate(report.id)} />}
         </div>
       </div>
       {openRevisionFor === report.id && <div className="mt-4 border-t border-slate-100 pt-4"><label className="block text-sm font-semibold text-slate-800">Catatan revisi<textarea value={revisionNote} onChange={(event) => setRevisionNote(event.target.value)} maxLength={1000} className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-brand-500" placeholder="Jelaskan bagian yang perlu diperbaiki…" /></label><div className="mt-3 flex gap-2"><Button variant="secondary" onClick={() => { setOpenRevisionFor(undefined); setRevisionNote(""); }}>Batal</Button><Button disabled={!revisionNote.trim() || transition.isPending} onClick={() => submitRevision(report.id)}>Kirim permintaan revisi</Button></div></div>}
