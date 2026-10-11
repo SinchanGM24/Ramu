@@ -7,7 +7,7 @@ import { useState } from "react";
 import { api } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { academicNavigation, navigation, settingsNavigation } from "./navigation";
+import { academicNavigation, navigation, settingsNavigation, type AppRole } from "./navigation";
 
 export function DesktopSidebar() {
   const pathname=usePathname();
@@ -32,13 +32,12 @@ export function DesktopSidebar() {
       <span><strong className="block text-lg tracking-tight text-slate-900">RAMU</strong><small className="text-xs text-slate-500">Raport Murid</small></span>
     </Link>
     <nav className="flex h-[calc(100%-4.5rem)] flex-col space-y-1" aria-label="Navigasi aplikasi">
-      {navigation.map(({href,label,icon:Icon})=><NavigationLink key={href} href={href} label={label} Icon={Icon} active={pathname.startsWith(href)}/>)}
+      {navigation.filter(item=>item.roles.includes(session.data?.role as AppRole)).map(({href,label,icon:Icon})=><NavigationLink key={href} href={href} label={label} Icon={Icon} active={pathname.startsWith(href)}/>)}
       <NavigationGroup label="Akademik">
-        {academicNavigation.map(({href,label,icon:Icon})=><NavigationLink key={href} href={href} label={label} Icon={Icon} active={pathname.startsWith(href)}/>)}
+        {academicNavigation.filter(item=>item.roles.includes(session.data?.role as AppRole)).map(({href,label,icon:Icon})=><NavigationLink key={href} href={href} label={label} Icon={Icon} active={pathname.startsWith(href)}/>)}
       </NavigationGroup>
       <NavigationGroup label="Pengaturan">
-        {settingsNavigation.filter(({ href }) => href !== "/app/settings/profile" && (href !== "/app/settings/staff" || session.data?.role === "SCHOOL_ADMIN")).map(({href,label,icon:Icon})=><NavigationLink key={href} href={href} label={label} Icon={Icon} active={pathname.startsWith(href)}/>)}
-        {settingsNavigation.filter(({ href }) => href === "/app/settings/profile").map(({href,label,icon:Icon})=><NavigationLink key={href} href={href} label={label} Icon={Icon} active={pathname.startsWith(href)}/>)}
+        {settingsNavigation.filter(item=>item.roles.includes(session.data?.role as AppRole)).map(({href,label,icon:Icon})=><NavigationLink key={href} href={href} label={label} Icon={Icon} active={pathname.startsWith(href)}/>)}
       </NavigationGroup>
     </nav>
     <div className="absolute inset-x-4 bottom-5 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">

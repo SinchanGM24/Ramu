@@ -11,6 +11,8 @@ Dokumen ini adalah urutan kerja produk setelah refactor siklus akademik. Tujuann
 - Riwayat penempatan dan rapor melekat pada murid, termasuk setelah murid diarsipkan.
 - Framework penilaian memakai standar PAUD yang sama untuk setiap sekolah pada MVP.
 - Semua teks pengguna menggunakan Bahasa Indonesia.
+- Admin Sekolah adalah satu-satunya peran yang menerbitkan rapor setelah persetujuan Kepala Sekolah. Guru maupun Kepala Sekolah tidak dapat menerbitkan rapor.
+- Guru dapat melihat Arsip seluruh murid dalam sekolahnya untuk kebutuhan riwayat, tetapi hanya-baca dan tidak dapat membatalkan kelulusan atau mengubah data administratif arsip.
 
 ## Status pondasi saat ini
 
@@ -61,7 +63,8 @@ Kriteria selesai:
 Tujuan: guru hanya mengerjakan murid pada kelas yang ditugaskan, satu murid dalam satu waktu.
 
 1. Halaman kerja guru
-   - Pilihan kelas dan semester yang memang ditugaskan kepada guru tersebut.
+   - Admin menetapkan kelas dan semester kerja guru melalui penugasan. Guru tidak dapat memilih kelas atau semester di luar penugasan tersebut.
+   - Jika guru memiliki lebih dari satu penugasan aktif, ia hanya dapat berpindah di antara konteks yang telah ditetapkan admin; konteks aktif dapat langsung dibuka sebagai halaman awal.
    - Daftar murid dengan status Bahasa Indonesia: Belum dimulai, Sebagian terisi, Lengkap.
    - Aksi utama jelas: lanjutkan pengisian atau mulai rapor.
 
@@ -69,6 +72,12 @@ Tujuan: guru hanya mengerjakan murid pada kelas yang ditugaskan, satu murid dala
    - Penilaian individual, narasi, pertumbuhan, kehadiran semester, ekstrakurikuler, dan portofolio mudah dijangkau.
    - Autosave serta status tersimpan/gagal tersimpan terlihat jelas.
    - Guru dapat mengirim rapor hanya jika persyaratan lengkap.
+
+3. Batas akses guru dan persetujuan
+   - Guru hanya melihat daftar murid aktif dari kelas yang ditugaskan untuk pekerjaan rapor dan data murid.
+   - Guru dapat membuat pengajuan perpindahan atau kelulusan; pengajuan tidak mengubah penempatan maupun status murid sebelum disetujui Kepala Sekolah.
+   - Guru dapat melihat Arsip seluruh sekolah secara hanya-baca.
+   - Setelah Kepala Sekolah menyetujui rapor, Admin Sekolah menerbitkan versi immutable. Sesudah penerbitan, guru dapat mengirim rapor hanya kepada wali murid pada kelas yang ditugaskan; Admin Sekolah dapat mengirim untuk semua kelas.
 
 Kriteria selesai:
 

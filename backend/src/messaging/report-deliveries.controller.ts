@@ -4,6 +4,7 @@ import { z } from "zod";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import { assertReportAccess } from "../reports/report-authorization";
 
 const deliveryRequestSchema = z.object({
   guardianContactIds: z.array(z.string().uuid()).min(1).max(20).optional(),
@@ -19,8 +20,9 @@ export class ReportDeliveriesController {
 
   @Get("reports/:reportId/deliveries")
   async list(@Req() request: FastifyRequest, @Param("reportId") reportId: string) {
-    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL"]);
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
+      if (actor.role === "TEACHER") await assertReportAccess(client, actor, reportId);
       const result = await client.query(
         `SELECT d.id, d.channel, d.recipient_phone, d.status, d.attempt_count, d.failure_reason,
                 d.queued_at, d.sent_at, d.delivered_at, d.read_at, d.failed_at, d.created_at,
@@ -38,8 +40,9 @@ export class ReportDeliveriesController {
 
   @Get("reports/:reportId/delivery-recipients")
   async recipients(@Req() request: FastifyRequest, @Param("reportId") reportId: string) {
-    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL"]);
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
+      if (actor.role === "TEACHER") await assertReportAccess(client, actor, reportId);
       const report = (await client.query<{ student_id: string }>(`SELECT r.student_id
         FROM reports r JOIN report_versions version ON version.report_id=r.id AND version.school_id=$2
         WHERE r.id=$1 AND r.school_id=$2
@@ -58,10 +61,11 @@ export class ReportDeliveriesController {
     @Param("reportId") reportId: string,
     @Body() body: unknown,
   ) {
-    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL"]);
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     const input = deliveryRequestSchema.parse(body ?? {});
 
     return this.db.transaction(async (client) => {
+      if (actor.role === "TEACHER") await assertReportAccess(client, actor, reportId);
       const version = (await client.query<{ id: string; student_id: string }>(
         `SELECT rv.id, r.student_id
          FROM report_versions rv
@@ -123,8 +127,13 @@ export class ReportDeliveriesController {
 
   @Post("deliveries/:deliveryId/retry")
   async retry(@Req() request: FastifyRequest, @Param("deliveryId") deliveryId: string) {
-    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL"]);
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
+      if (actor.role === "TEACHER") {
+        const report = (await client.query<{ report_id: string }>(`SELECT version.report_id FROM report_deliveries delivery JOIN report_versions version ON version.id=delivery.report_version_id WHERE delivery.id=$1 AND delivery.school_id=$2`, [deliveryId, actor.schoolId])).rows[0];
+        if (!report) throw new Error("Pengiriman gagal tidak ditemukan");
+        await assertReportAccess(client, actor, report.report_id);
+      }
       const delivery = (await client.query<{ id: string; report_version_id: string }>(
         `UPDATE report_deliveries
          SET status = 'QUEUED', failure_reason = NULL, queued_at = now(), updated_at = now()

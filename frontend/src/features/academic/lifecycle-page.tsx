@@ -30,6 +30,8 @@ export function LifecyclePage() {
 	const [panel, setPanel] = useState(false);
 	const [notice, setNotice] = useState("");
 	const [error, setError] = useState("");
+	const session = useQuery({ queryKey: ["session"], queryFn: () => api<{ role: "SCHOOL_ADMIN" | "TEACHER" | "PRINCIPAL" }>("/auth/session") });
+	const isTeacher = session.data?.role === "TEACHER";
 	const students = useQuery({
 		queryKey: ["students"],
 		queryFn: () => api<{ items: Student[] }>("/students?limit=100"),
@@ -85,7 +87,7 @@ export function LifecyclePage() {
 			<PageHeader
 				eyebrow="Manajemen siswa"
 				title="Perpindahan & Kelulusan"
-				description="Pilih murid terlebih dahulu, lalu tinjau tindakan administratif secara terpisah."
+				description={isTeacher ? "Ajukan perpindahan atau kelulusan murid kelas Anda untuk disetujui Kepala Sekolah." : "Pilih murid terlebih dahulu, lalu tinjau tindakan administratif secara terpisah."}
 				action={
 					<Link href="/app/academic/archive">
 						<Button variant="secondary">Lihat Arsip</Button>
@@ -183,6 +185,7 @@ export function LifecyclePage() {
 						onClose={() => setPanel(false)}
 						onSuccess={completed}
 						onError={setError}
+						isTeacher={isTeacher}
 					/>
 				) : (
 					<GraduationPanel
@@ -190,6 +193,7 @@ export function LifecyclePage() {
 						onClose={() => setPanel(false)}
 						onSuccess={completed}
 						onError={setError}
+						isTeacher={isTeacher}
 					/>
 				))}
 		</>
@@ -431,12 +435,14 @@ function TransferPanel({
 	onClose,
 	onSuccess,
 	onError,
+	isTeacher,
 }: {
 	students: Student[];
 	yearId: string;
 	onClose: () => void;
 	onSuccess: (message: string) => Promise<void>;
 	onError: (message: string) => void;
+	isTeacher: boolean;
 }) {
 	const [defaultTarget, setDefaultTarget] = useState("");
 	const [destinations, setDestinations] = useState<Record<string, string>>({});
@@ -455,7 +461,7 @@ function TransferPanel({
 		setSaving(true);
 		onError("");
 		try {
-			const result = await api<{ processed: number }>("/lifecycle/transfers", {
+			const result = await api<{ processed?: number; submitted?: number }>(isTeacher ? "/lifecycle/proposals/transfers" : "/lifecycle/transfers", {
 				method: "POST",
 				body: JSON.stringify({
 					items: students.map((x) => ({
@@ -467,7 +473,7 @@ function TransferPanel({
 					reason: reason || undefined,
 				}),
 			});
-			await onSuccess(`${result.processed} murid berhasil dipindahkan.`);
+			await onSuccess(isTeacher ? `${result.submitted} pengajuan perpindahan telah dikirim ke Kepala Sekolah.` : `${result.processed} murid berhasil dipindahkan.`);
 		} catch (e) {
 			onError(
 				e instanceof Error ? e.message : "Perpindahan tidak dapat diproses.",
@@ -547,7 +553,7 @@ function TransferPanel({
 					Batal
 				</Button>
 				<Button disabled={!valid || saving} onClick={() => void submit()}>
-					{saving ? "Memproses…" : "Konfirmasi perpindahan"}
+					{saving ? "Memproses…" : isTeacher ? "Ajukan perpindahan" : "Konfirmasi perpindahan"}
 				</Button>
 			</div>
 		</ActionPanel>
@@ -559,11 +565,13 @@ function GraduationPanel({
 	onClose,
 	onSuccess,
 	onError,
+	isTeacher,
 }: {
 	students: Student[];
 	onClose: () => void;
 	onSuccess: (message: string) => Promise<void>;
 	onError: (message: string) => void;
+	isTeacher: boolean;
 }) {
 	const [effectiveOn, setEffectiveOn] = useState(today());
 	const [reason, setReason] = useState("");
@@ -572,8 +580,8 @@ function GraduationPanel({
 		setSaving(true);
 		onError("");
 		try {
-			const result = await api<{ processed: number }>(
-				"/lifecycle/graduations",
+			const result = await api<{ processed?: number; submitted?: number }>(
+				isTeacher ? "/lifecycle/proposals/graduations" : "/lifecycle/graduations",
 				{
 					method: "POST",
 					body: JSON.stringify({
@@ -583,7 +591,7 @@ function GraduationPanel({
 					}),
 				},
 			);
-			await onSuccess(`${result.processed} murid telah masuk ke Arsip.`);
+			await onSuccess(isTeacher ? `${result.submitted} pengajuan kelulusan telah dikirim ke Kepala Sekolah.` : `${result.processed} murid telah masuk ke Arsip.`);
 		} catch (e) {
 			onError(
 				e instanceof Error ? e.message : "Kelulusan tidak dapat diproses.",
@@ -634,7 +642,7 @@ function GraduationPanel({
 					disabled={saving}
 					onClick={() => void submit()}
 				>
-					{saving ? "Memproses…" : "Konfirmasi kelulusan"}
+					{saving ? "Memproses…" : isTeacher ? "Ajukan kelulusan" : "Konfirmasi kelulusan"}
 				</Button>
 			</div>
 		</ActionPanel>
