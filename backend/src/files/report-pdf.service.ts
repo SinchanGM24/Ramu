@@ -3,7 +3,7 @@ import { CreateBucketCommand, GetObjectCommand, HeadBucketCommand, PutObjectComm
 import PDFDocument from "pdfkit";
 import { DatabaseService } from "../database/database.service";
 
-type Snapshot = { school?: { name?: string; address?: string | null }; report?: { id?: string }; student?: { name?: string; student_number?: string | null; class_name?: string | null; nickname?: string | null; birth_date?: string | null; birth_place?: string | null; gender?: string | null; religion?: string | null; child_order?: number | null; address?: string | null }; semester?: { name?: string; academic_year_name?: string | null }; assessments?: { area_name?: string; area_position?: number; sub_area_name?: string; sub_area_position?: number; description?: string; code?: string }[]; narratives?: { name?: string; content?: string }[]; guardians?: { name?: string; relationship?: string; phone?: string; occupation?: string | null }[]; extracurricular?: { activity_name?: string; grade?: string }[]; portfolio?: { original_filename?: string; caption?: string | null }[]; growth?: { weight_kg?: number | string; height_cm?: number | string } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null };
+type Snapshot = { school?: { name?: string; address?: string | null; logo_storage_key?: string | null }; report?: { id?: string }; student?: { name?: string; student_number?: string | null; class_name?: string | null; nickname?: string | null; birth_date?: string | null; birth_place?: string | null; gender?: string | null; religion?: string | null; child_order?: number | null; address?: string | null }; semester?: { name?: string; academic_year_name?: string | null }; teachers?: { name?: string; phone?: string | null }[]; assessments?: { area_name?: string; area_position?: number; sub_area_name?: string; sub_area_position?: number; description?: string; code?: string }[]; narratives?: { name?: string; content?: string }[]; guardians?: { name?: string; relationship?: string; phone?: string; occupation?: string | null }[]; extracurricular?: { activity_name?: string; grade?: string }[]; portfolio?: { original_filename?: string; caption?: string | null }[]; growth?: { weight_kg?: number | string; height_cm?: number | string } | null; attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null };
 
 @Injectable()
 export class ReportPdfService {
@@ -16,15 +16,18 @@ export class ReportPdfService {
     const extracurricular = await this.db.transaction(async (client) => (await client.query<{ activity_name: string; grade: string }>("SELECT e.activity_name,e.grade FROM extracurricular_records e JOIN reports r ON r.student_id=e.student_id AND r.semester_id=e.semester_id WHERE r.id=$1 ORDER BY e.activity_name", [input.reportId])).rows, input.schoolId);
     const portfolio = await this.db.transaction(async (client) => (await client.query<{ original_filename: string; caption: string | null }>("SELECT original_filename,caption FROM portfolio_items WHERE report_id=$1 AND included_in_report=true ORDER BY created_at", [input.reportId])).rows, input.schoolId);
     await this.ensureBucket();
-    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: await this.render({ ...input.snapshot, extracurricular, portfolio }), ContentType: "application/pdf", ContentDisposition: `attachment; filename="rapor-v${input.versionNumber}.pdf"` }));
+    const schoolLogo = input.snapshot.school?.logo_storage_key ? await this.readStoredImage(input.snapshot.school.logo_storage_key) : undefined;
+    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: await this.render({ ...input.snapshot, extracurricular, portfolio }, schoolLogo), ContentType: "application/pdf", ContentDisposition: `attachment; filename="rapor-v${input.versionNumber}.pdf"` }));
     return key;
   }
 
   async readPublishedReport(storageKey: string) { const object = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: storageKey })); if (!object.Body) throw new Error("File PDF rapor tidak tersedia"); return Buffer.from(await object.Body.transformToByteArray()); }
+  async readStoredImage(storageKey: string) { const object = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: storageKey })); if (!object.Body) throw new Error("Logo sekolah tidak tersedia"); return Buffer.from(await object.Body.transformToByteArray()); }
+  async storeSchoolLogo(input: { schoolId: string; contentType: string; body: Buffer }) { const extension = input.contentType === "image/png" ? "png" : "jpg"; const key = `schools/${input.schoolId}/profile/logo-${crypto.randomUUID()}.${extension}`; await this.ensureBucket(); await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: input.body, ContentType: input.contentType })); return key; }
   async storePortfolioImage(input: { schoolId: string; reportId: string; filename: string; contentType: string; body: Buffer }) { const extension = input.contentType === "image/png" ? "png" : input.contentType === "image/webp" ? "webp" : "jpg"; const key = `schools/${input.schoolId}/reports/${input.reportId}/portfolio/${crypto.randomUUID()}.${extension}`; await this.ensureBucket(); await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: input.body, ContentType: input.contentType })); return key; }
   private async ensureBucket() { try { await this.client.send(new HeadBucketCommand({ Bucket: this.bucket })); } catch { await this.client.send(new CreateBucketCommand({ Bucket: this.bucket })); } }
 
-  private render(snapshot: Snapshot): Promise<Buffer> {
+  private render(snapshot: Snapshot, schoolLogo?: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const document = new PDFDocument({ margin: 48, size: "A4" }); const chunks: Buffer[] = [];
       document.on("data", (chunk: Buffer) => chunks.push(chunk)); document.on("error", reject); document.on("end", () => resolve(Buffer.concat(chunks)));
@@ -35,8 +38,11 @@ export class ReportPdfService {
       const student = snapshot.student || {}; const guardians = snapshot.guardians || [];
       const birthDate = student.birth_date ? new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(new Date(student.birth_date)) : "-";
 
-      document.font("Helvetica-Bold").fontSize(10).text(snapshot.school?.name || "", { align: "center" });
-      if (snapshot.school?.address) document.font("Helvetica").fontSize(9).text(snapshot.school.address, { align: "center" });
+      const headerX = schoolLogo ? 124 : 48;
+      const headerWidth = schoolLogo ? 420 : 499;
+      if (schoolLogo) document.image(schoolLogo, 48, 48, { fit: [60, 60] });
+      document.font("Helvetica-Bold").fontSize(10).text(snapshot.school?.name || "", headerX, 48, { width: headerWidth, align: "center" });
+      if (snapshot.school?.address) document.font("Helvetica").fontSize(9).text(snapshot.school.address, headerX, undefined, { width: headerWidth, align: "center" });
       document.moveDown(0.8).font("Helvetica-Bold").fontSize(16).text("LAPORAN PERKEMBANGAN ANAK DIDIK", { align: "center" });
       document.moveDown(0.6).font("Helvetica").fontSize(10).text(`Kelompok: ${student.class_name || "-"}`, { align: "center" });
       document.text(`Semester: ${snapshot.semester?.name || "-"} | Tahun Pelajaran: ${snapshot.semester?.academic_year_name || "-"}`, { align: "center" });
@@ -57,7 +63,7 @@ export class ReportPdfService {
       heading("Data Akhir Semester"); label("Berat badan", snapshot.growth?.weight_kg === undefined ? "-" : `${snapshot.growth.weight_kg} kg`); label("Tinggi badan", snapshot.growth?.height_cm === undefined ? "-" : `${snapshot.growth.height_cm} cm`); label("Kehadiran", `Sakit ${snapshot.attendance?.sick_days ?? "-"} hari, Izin ${snapshot.attendance?.permission_days ?? "-"} hari, Tanpa keterangan ${snapshot.attendance?.unexcused_days ?? "-"} hari`);
       document.moveDown(0.5).font("Helvetica-Bold").text("Ekstrakurikuler").font("Helvetica"); if (snapshot.extracurricular?.length) for (const activity of snapshot.extracurricular) text(`${activity.activity_name || "Kegiatan"}: ${activity.grade || "-"}`); else text("Tidak ada data ekstrakurikuler.");
       document.moveDown(0.5).font("Helvetica-Bold").text("Portofolio Perkembangan").font("Helvetica"); if (snapshot.portfolio?.length) for (const item of snapshot.portfolio) text(`${item.original_filename || "Foto kegiatan"}${item.caption ? `: ${item.caption}` : ""}`); else text("Tidak ada portofolio yang disertakan.");
-      ensureSpace(140); document.moveDown(3).font("Helvetica").fontSize(10).text("Guru kelas", 48, document.y, { width: 180, align: "center" }); document.text("Kepala PAUD", 360, document.y - 12, { width: 180, align: "center" }); document.moveDown(4).text("(________________________)", 48, document.y, { width: 180, align: "center" }); document.text("(________________________)", 360, document.y - 12, { width: 180, align: "center" });
+      const teachers = snapshot.teachers || []; heading("Guru yang Bertanggung Jawab"); for (const teacher of teachers) label("Guru", `${teacher.name || "-"}${teacher.phone ? `, ${teacher.phone}` : ""}`); ensureSpace(140); document.moveDown(3).font("Helvetica").fontSize(10).text("Guru kelas", 48, document.y, { width: 180, align: "center" }); document.text("Kepala PAUD", 360, document.y - 12, { width: 180, align: "center" }); document.moveDown(4).text("(________________________)", 48, document.y, { width: 180, align: "center" }); document.text("(________________________)", 360, document.y - 12, { width: 180, align: "center" });
       document.end();
     });
   }

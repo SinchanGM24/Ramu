@@ -1,2 +1,2 @@
-import { PromotionPage } from "@/features/academic/promotion-page";
-export default function Page(){return <PromotionPage/>}
+import { redirect } from "next/navigation";
+export default function Page(){redirect("/app/academic/lifecycle")}

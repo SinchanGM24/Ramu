@@ -1,0 +1,2 @@
+-- Legacy level metadata remains unchanged for historical recovery only.
+-- New class placement no longer reads or writes it.

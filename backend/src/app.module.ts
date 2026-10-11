@@ -11,6 +11,7 @@ import { SchoolsModule } from "./schools/schools.module";
 import { StudentsModule } from "./students/students.module";
 import { ReportsModule } from "./reports/reports.module";
 import { StaffModule } from "./staff/staff.module";
+import { LifecycleModule } from "./lifecycle/lifecycle.module";
 
-@Module({ imports: [DatabaseModule, AuditModule, AuthModule, HealthModule, FilesModule, SchoolsModule, AcademicModule, StudentsModule, AssessmentModule, ReportsModule, MessagingModule, StaffModule] })
+@Module({ imports: [DatabaseModule, AuditModule, AuthModule, HealthModule, FilesModule, SchoolsModule, AcademicModule, StudentsModule, AssessmentModule, ReportsModule, MessagingModule, StaffModule, LifecycleModule] })
 export class AppModule {}

@@ -61,7 +61,7 @@ export class ReportDeliveriesController {
       const guardians = await client.query<{ id: string; phone: string }>(
         `SELECT id, phone
          FROM guardian_contacts
-         WHERE student_id = $1 AND school_id = $2
+         WHERE student_id = $1 AND school_id = $2 AND is_active AND is_delivery_recipient
            AND ($3::uuid[] IS NULL OR id = ANY($3::uuid[]))
          ORDER BY is_primary DESC, name`,
         [version.student_id, actor.schoolId, input.guardianContactIds ?? null],
