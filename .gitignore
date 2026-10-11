@@ -1,6 +1,8 @@
 node_modules/
 .next/
 frontend/.next-dev/
+.agents/
+skills-lock.json
 frontend/out/
 dist/
 coverage/
