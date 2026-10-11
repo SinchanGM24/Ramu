@@ -35,7 +35,7 @@ Masih perlu diselesaikan sebelum pengujian alur sekolah sebenarnya:
 
 Tujuan: admin dapat menyelesaikan rapor dari progres sampai wali menerimanya tanpa kehilangan konteks.
 
-1. Riwayat rapor immutable
+1. Riwayat rapor immutable — selesai
    - Tautan pada profil murid membuka snapshot versi rapor atau PDF tersimpan.
    - Riwayat menampilkan tahun ajaran, semester, tanggal terbit, dan nomor versi.
    - Koreksi rapor membuat versi baru tanpa mengubah versi lama.

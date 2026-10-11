@@ -56,6 +56,18 @@ export class ReportsController {
     }, actor.schoolId);
   }
 
+  @Get(":id/published-version")
+  async publishedVersion(@Req() request: FastifyRequest, @Param("id") id: string) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL", "TEACHER"]);
+    return this.db.transaction(async (client) => {
+      if (actor.role === "TEACHER") await assertReportAccess(client, actor, id);
+      return (await client.query(`SELECT version.id,version.version_number,version.published_at,version.snapshot,version.pdf_storage_key
+        FROM report_versions version JOIN reports report ON report.id=version.report_id
+        WHERE report.id=$1 AND report.school_id=$2 AND version.school_id=$2
+        ORDER BY version.version_number DESC LIMIT 1`, [id, actor.schoolId])).rows[0] ?? null;
+    }, actor.schoolId);
+  }
+
   @Get(":id/editor")
   async editor(@Req() request: FastifyRequest, @Param("id") id: string) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]); return this.db.transaction(async (client) => { const report = (await client.query("SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key IS NOT NULL AS school_has_logo,s.name AS student_name,s.student_number,grouping.name AS class_name,sem.name AS semester_name FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.id=$1", [id])).rows[0]; if (!report) return null; await assertReportAccess(client,actor,id); const areas = (await client.query(`SELECT da.id,da.name,count(i.id)::int AS indicator_count,count(assessment.id)::int AS assessed_count,n.content AS narrative FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sub ON sub.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sub.id LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2 LEFT JOIN report_narratives n ON n.report_id=$3 AND n.development_area_id=da.id WHERE f.name=$4 AND f.is_active GROUP BY da.id,da.name,n.content,da.position ORDER BY da.position`, [report.student_id, report.semester_id, id, DEFAULT_TK_TEMPLATE_NAME])).rows; const assessments = (await client.query(`SELECT da.id AS area_id,sub.name AS sub_area_name,i.description,opt.code AS scale_code FROM indicators i JOIN sub_areas sub ON sub.id=i.sub_area_id JOIN development_areas da ON da.id=sub.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id LEFT JOIN student_assessments sa ON sa.indicator_id=i.id AND sa.student_id=$1 AND sa.semester_id=$2 LEFT JOIN assessment_scale_options opt ON opt.id=sa.scale_option_id WHERE f.name=$3 AND f.is_active ORDER BY da.position,sub.position,i.position`, [report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME])).rows; const growth = (await client.query("SELECT weight_kg,height_cm,head_circumference_cm FROM growth_records WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null; const attendance = (await client.query("SELECT sick_days,permission_days,unexcused_days FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null; return { report, school: { name: report.school_name, address: report.school_address, has_logo: report.school_has_logo }, areas, assessments, growth, attendance }; }, actor.schoolId); }
 
