@@ -1,5 +1,6 @@
 node_modules/
 .next/
+frontend/.next-dev/
 frontend/out/
 dist/
 coverage/

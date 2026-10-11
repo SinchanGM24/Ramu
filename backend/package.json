@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "npm run build && concurrently -k \"tsc -w -p tsconfig.json\" \"node --watch dist/main.js\"",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "dev": "npm run build && npm run db:migrate && concurrently --names \"compiler,server\" --prefix name --kill-others-on-fail --restart-tries -1 --restart-after 1000 \"tsc -w -p tsconfig.json --preserveWatchOutput\" \"node --watch --watch-preserve-output dist/main.js\"",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').cpSync('src/database/migrations','dist/database/migrations',{recursive:true})\"",
+    "build:clean": "npm run clean && npm run build",
     "start": "node dist/main.js",
     "test": "vitest run",
     "db:migrate": "tsx src/database/migrate.ts",
