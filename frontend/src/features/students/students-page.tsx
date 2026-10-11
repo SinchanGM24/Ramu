@@ -14,7 +14,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 type Student = { id: string; name: string; student_number?: string; class_name?: string };
 type ClassRoom = { id: string; name: string };
 type StudentResponse = { items: Student[]; total: number; page: number };
-const pageSize = 20;
+const pageSize = 10;
 
 export function StudentsPage() {
   const queryClient = useQueryClient();

@@ -16,7 +16,7 @@ type Semester = { id: string; name: string; academic_year_name: string };
 type ReportStatus = "DRAFT" | "SUBMITTED" | "IN_REVIEW" | "REVISION_REQUIRED" | "APPROVED" | "PUBLISHED";
 type Item = { id: string; name: string; report_id?: string; status?: ReportStatus };
 type Filter = "ALL" | "NOT_CREATED" | "WORKING" | ReportStatus;
-const pageSize = 20;
+const pageSize = 10;
 const statusCopy: Record<ReportStatus, { label: string; tone: "green" | "amber" | "slate" }> = { DRAFT: { label: "Draf", tone: "slate" }, SUBMITTED: { label: "Menunggu ditinjau", tone: "amber" }, IN_REVIEW: { label: "Sedang ditinjau", tone: "amber" }, REVISION_REQUIRED: { label: "Perlu revisi", tone: "amber" }, APPROVED: { label: "Siap diterbitkan", tone: "green" }, PUBLISHED: { label: "Sudah diterbitkan", tone: "green" } };
 
 function matchesFilter(item: Item, filter: Filter) { return filter === "ALL" || filter === "NOT_CREATED" ? (filter === "ALL" || !item.status) : filter === "WORKING" ? item.status === "DRAFT" || item.status === "REVISION_REQUIRED" : item.status === filter; }

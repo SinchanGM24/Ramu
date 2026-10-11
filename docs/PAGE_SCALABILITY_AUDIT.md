@@ -20,6 +20,7 @@ Audit ini memisahkan halaman berdasarkan jumlah data yang realistis, agar pagina
 ## Prinsip implementasi
 
 - Semua pencarian teks ditunda 300 ms agar tidak membuat permintaan saat setiap karakter diketik.
+- Daftar besar memakai maksimal 10 data per halaman; daftar sedang seperti Kelola Akun memakai maksimal 5 data per halaman.
 - Daftar tenant besar memakai pagination di server, bukan memuat seluruh data ke browser.
 - Filter mengembalikan halaman ke halaman pertama.
 - Pagination tidak boleh memecah pilihan batch secara diam-diam; halaman lifecycle memerlukan model pilihan lintas halaman sebelum pagination ditambahkan.

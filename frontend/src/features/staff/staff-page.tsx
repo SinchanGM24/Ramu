@@ -14,7 +14,7 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 type Staff = { id: string; name: string; email: string; phone: string | null; role: "TEACHER" | "PRINCIPAL" | "SCHOOL_ADMIN"; is_active: boolean };
 type StaffResponse = { items: Staff[]; total: number; page: number };
 const inputClass = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm";
-const pageSize = 20;
+const pageSize = 5;
 
 export function StaffPage() {
   const queryClient = useQueryClient();
