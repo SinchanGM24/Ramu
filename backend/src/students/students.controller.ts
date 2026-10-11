@@ -15,11 +15,11 @@ export class StudentsController {
   constructor(private readonly auth: AuthService, private readonly db: DatabaseService, private readonly audit: AuditService) {}
 
   @Get()
-  list(@Req() request: FastifyRequest, @Query("page") page = "1", @Query("limit") limit = "20") {
-    const actor = this.auth.require(request); const safePage = Math.max(Number(page), 1); const safeLimit = Math.min(Math.max(Number(limit), 1), 100);
+  list(@Req() request: FastifyRequest, @Query("page") page = "1", @Query("limit") limit = "20", @Query("search") search = "", @Query("classPeriodId") classPeriodId?: string) {
+    const actor = this.auth.require(request); const safePage = Math.max(Number(page), 1); const safeLimit = Math.min(Math.max(Number(limit), 1), 100); const term = `%${search.trim()}%`;
     return this.db.transaction(async (client) => {
-      const items = await client.query("SELECT s.*,grouping.name AS class_name,enrollment.class_period_id FROM students s LEFT JOIN student_enrollments enrollment ON enrollment.student_id=s.id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id WHERE s.school_id=$1 ORDER BY s.created_at DESC LIMIT $2 OFFSET $3", [actor.schoolId, safeLimit, (safePage - 1) * safeLimit]);
-      const total = await client.query<{ total: number }>("SELECT count(*)::int AS total FROM students WHERE school_id=$1 AND lifecycle_status='ACTIVE'", [actor.schoolId]);
+      const items = await client.query("SELECT s.*,grouping.name AS class_name,enrollment.class_period_id FROM students s LEFT JOIN student_enrollments enrollment ON enrollment.student_id=s.id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id WHERE s.school_id=$1 AND ($2='' OR s.name ILIKE $3 OR COALESCE(s.student_number,'') ILIKE $3) AND ($4::uuid IS NULL OR enrollment.class_period_id=$4) ORDER BY s.created_at DESC LIMIT $5 OFFSET $6", [actor.schoolId, search.trim(), term, classPeriodId ?? null, safeLimit, (safePage - 1) * safeLimit]);
+      const total = await client.query<{ total: number }>("SELECT count(*)::int AS total FROM students s LEFT JOIN student_enrollments enrollment ON enrollment.student_id=s.id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) WHERE s.school_id=$1 AND ($2='' OR s.name ILIKE $3 OR COALESCE(s.student_number,'') ILIKE $3) AND ($4::uuid IS NULL OR enrollment.class_period_id=$4)", [actor.schoolId, search.trim(), term, classPeriodId ?? null]);
       return { items: items.rows, total: total.rows[0].total, page: safePage };
     }, actor.schoolId);
   }
