@@ -45,11 +45,11 @@ Tujuan: admin dapat menyelesaikan rapor dari progres sampai wali menerimanya tan
    - Tampilkan alasan yang dapat ditindaklanjuti apabila rapor belum dapat dikirim/diterbitkan — selesai.
    - Beri navigasi jelas dari daftar ke murid, editor, pratinjau, dan pengiriman — selesai.
 
-3. Pengiriman kepada wali
+3. Pengiriman kepada wali — selesai
    - Admin dapat memilih kontak penerima yang aktif untuk setiap rapor — selesai.
-   - Tampilkan status pengiriman dalam Bahasa Indonesia: Menunggu dikirim, Terkirim, Dibaca, Gagal.
-   - Sediakan kirim ulang untuk pengiriman gagal.
-   - Tampilkan riwayat pengiriman per rapor.
+   - Tampilkan status pengiriman dalam Bahasa Indonesia: Menunggu dikirim, Terkirim, Dibaca, Gagal — selesai.
+   - Sediakan kirim ulang untuk pengiriman gagal — selesai.
+   - Tampilkan riwayat pengiriman per rapor — selesai.
 
 Kriteria selesai:
 

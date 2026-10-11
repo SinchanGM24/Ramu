@@ -36,6 +36,22 @@ export class ReportDeliveriesController {
     }, actor.schoolId);
   }
 
+  @Get("reports/:reportId/delivery-recipients")
+  async recipients(@Req() request: FastifyRequest, @Param("reportId") reportId: string) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL"]);
+    return this.db.transaction(async (client) => {
+      const report = (await client.query<{ student_id: string }>(`SELECT r.student_id
+        FROM reports r JOIN report_versions version ON version.report_id=r.id AND version.school_id=$2
+        WHERE r.id=$1 AND r.school_id=$2
+        ORDER BY version.version_number DESC LIMIT 1`, [reportId, actor.schoolId])).rows[0];
+      if (!report) throw new Error("Rapor terbit tidak ditemukan");
+      return (await client.query(`SELECT id,name,relationship,phone,is_primary
+        FROM guardian_contacts
+        WHERE student_id=$1 AND school_id=$2 AND is_active AND is_delivery_recipient
+        ORDER BY is_primary DESC,name`, [report.student_id, actor.schoolId])).rows;
+    }, actor.schoolId);
+  }
+
   @Post("reports/:reportId/deliveries")
   async queue(
     @Req() request: FastifyRequest,
