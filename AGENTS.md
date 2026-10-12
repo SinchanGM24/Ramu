@@ -23,6 +23,17 @@
 - Generate a PDF on publication, store it once, and serve the stored file thereafter.
 - Queue WhatsApp work in a background worker. Delivery states are `QUEUED`, `SENT`, `DELIVERED`, `READ`, and `FAILED`.
 
+## Frontend composition and file structure
+
+- Treat `frontend/src/app/**/page.tsx` as a thin Next.js route entry point. It may resolve route parameters and render one feature-page component; it must not contain page UI, modal, table, form, query, or mutation implementations.
+- Organize each substantial screen by domain under `frontend/src/features/<domain>/`. A page component is an orchestrator: it composes named UI components and connects only the state, callbacks, notifications, and data needed across those components.
+- Put distinct, meaningful UI responsibilities in their own files under `components/`: headers, filters, tables/lists, forms, dialogs, action panels, summaries, and history sections. Name files after their responsibility, for example `student-create-dialog.tsx`, `class-table.tsx`, or `delivery-history-list.tsx`.
+- Put reusable server-state or complex shared page-state in `hooks/`, domain contracts in `types.ts`, and pure domain helpers/status-label mappings in `utils.ts`. Keep local input state close to the form or dialog that owns it.
+- Do not hide several large components inside a `*-page.tsx` file, and do not recreate a one-file implementation under a new folder. Conversely, do not split trivial labels, one-off text fragments, or a single simple markup element into files without a clear reuse or maintenance benefit.
+- Reuse shared primitives from `components/shared` and `components/ui` for common behavior such as dialogs, page headers, pagination, status badges, buttons, and cards. Preserve feature-specific styling through explicit props or feature components rather than duplicating dialog shells.
+- Keep imports, function calls, JSX props, conditional branches, and nested UI multiline and formatted with the repository Prettier configuration. Run `npm run format -w frontend` after frontend changes and verify with `npm run format:check -w frontend`.
+- When moving files, update every route import before deleting the old module. Do not leave compatibility copies, duplicate feature implementations, or unused local component definitions.
+
 ## Implementation and verification
 
 - Prefer TypeScript, strict tenant-aware types, and server-side authorization checks.

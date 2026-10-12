@@ -24,6 +24,13 @@ Use this skill for product, architecture, or implementation work in this reposit
 
 Use English for code, database/API contracts, and internal state values. All user-facing UI and generated customer content must be Bahasa Indonesia. Translate status codes at the presentation boundary; never display raw codes such as `not-started`, `partial`, `complete`, `DRAFT`, or `PUBLISHED`.
 
+## Frontend implementation shape
+
+- Keep Next.js route files in `frontend/src/app` thin: resolve route parameters and render a feature-page component only.
+- Build substantial screens in `frontend/src/features/<domain>/` as a composition of named components. A `*-page.tsx` file coordinates shared state/data and should not contain entire tables, dialogs, forms, or several large local components.
+- Place meaningful page sections in `components/`, shared/complex state in `hooks/`, contracts in `types.ts`, and pure mappings/helpers in `utils.ts`. Do not over-split trivial one-off markup.
+- Reuse `components/shared` primitives for common dialogs, page headers, pagination, and status displays. Keep all TS/TSX formatted with the repository Prettier configuration.
+
 ## Delivery routing
 
 - For a data model, route, authorization change, or API, read [tenancy and security](references/tenancy-security.md).
