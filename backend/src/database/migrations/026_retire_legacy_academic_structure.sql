@@ -12,10 +12,11 @@ DROP INDEX IF EXISTS active_primary_teacher_unique;
 ALTER TABLE teacher_class_assignments DROP COLUMN IF EXISTS is_primary;
 
 -- Preserve old placement rows but remove retired promotion/repetition vocabulary.
+-- The old constraint does not permit COMPLETED, so remove it before normalizing.
+ALTER TABLE student_enrollments DROP CONSTRAINT IF EXISTS student_enrollments_status_check;
 UPDATE student_enrollments
 SET status = CASE WHEN effective_end_on IS NULL THEN 'ACTIVE' ELSE 'COMPLETED' END
 WHERE status IN ('PROMOTED', 'REPEATED');
-ALTER TABLE student_enrollments DROP CONSTRAINT IF EXISTS student_enrollments_status_check;
 ALTER TABLE student_enrollments ADD CONSTRAINT student_enrollments_status_check CHECK (status IN ('ACTIVE','SCHEDULED','COMPLETED','GRADUATED','TRANSFERRED','WITHDRAWN'));
 
 -- Levels were retired in favor of freely named reusable classes.
