@@ -1,0 +1,41 @@
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import type { Completeness } from "../types";
+
+type PublishReportActionProps = { pending: boolean; reportId: string; onPublish: () => void };
+
+export function PublishReportAction({ pending, reportId, onPublish }: PublishReportActionProps) {
+	const completeness = useQuery({
+		queryKey: ["report-completeness", reportId],
+		queryFn: () => api<Completeness>(`/reports/${reportId}/completeness`),
+	});
+
+	if (completeness.isLoading)
+		return <span className="text-sm text-slate-500">Memeriksa kelengkapan…</span>;
+	if (completeness.isError || !completeness.data) {
+		return <span className="text-sm text-red-700">Kelengkapan rapor belum dapat diperiksa.</span>;
+	}
+
+	const data = completeness.data;
+	const missing = [
+		data.missingAssessments.length ? `${data.missingAssessments.length} penilaian indikator` : "",
+		data.missingNarratives.length ? `${data.missingNarratives.length} narasi perkembangan` : "",
+		data.missingSemesterData ? "data pertumbuhan dan kehadiran" : "",
+	].filter(Boolean);
+
+	return (
+		<div className="flex flex-col items-start gap-2 sm:items-end">
+			<Button disabled={!data.complete || pending} onClick={onPublish}>
+				Terbitkan rapor
+			</Button>
+			{!data.complete ? (
+				<p className="flex max-w-sm items-start gap-1.5 text-xs text-amber-800">
+					<AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+					Belum dapat diterbitkan: {missing.join(", ")} belum lengkap.
+				</p>
+			) : null}
+		</div>
+	);
+}

@@ -1,0 +1,71 @@
+import Link from "next/link";
+import { Card } from "@/components/ui/card";
+import type { Enrollment, PublishedReport } from "../types";
+
+type EnrollmentHistoryProps = { enrollments: Enrollment[]; publishedReports: PublishedReport[] };
+
+export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentHistoryProps) {
+	return (
+		<Card>
+			<h2 className="text-lg font-bold">Riwayat kelas</h2>
+			<div className="mt-4 space-y-2">
+				{enrollments.length ? (
+					enrollments.map((enrollment) => (
+						<div key={enrollment.id} className="rounded-xl bg-slate-50 p-3 text-sm">
+							<b>{enrollment.academic_year_name}</b>
+							<p className="text-slate-600">
+								{enrollment.class_name ?? "Belum ditempatkan"} ·{" "}
+								{enrollmentStatusLabel(enrollment.status)}
+							</p>
+						</div>
+					))
+				) : (
+					<p className="text-sm text-slate-500">Belum ada riwayat penempatan kelas.</p>
+				)}
+			</div>
+			<div className="mt-6 border-t border-slate-100 pt-5">
+				<h3 className="font-semibold text-slate-900">Rapor terbit</h3>
+				<p className="mt-1 text-sm text-slate-500">
+					Hanya rapor yang sudah diterbitkan ditampilkan sebagai riwayat.
+				</p>
+				<div className="mt-3 space-y-2">
+					{publishedReports.length ? (
+						publishedReports.map((report) => (
+							<Link
+								key={report.id}
+								href={`/app/reports/${report.id}/preview`}
+								className="flex items-center justify-between rounded-xl border border-slate-200 p-3 text-sm transition hover:border-brand-300 hover:bg-brand-50"
+							>
+								<span>
+									<span className="block font-semibold text-slate-800">
+										{report.academic_year_name} · {report.semester_name}
+									</span>
+									<span className="mt-1 block text-xs text-slate-500">
+										Diterbitkan{" "}
+										{new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(
+											new Date(report.published_at),
+										)}{" "}
+										· Versi {report.version_number}
+									</span>
+								</span>
+								<span className="font-semibold text-brand-700">Lihat rapor</span>
+							</Link>
+						))
+					) : (
+						<p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">
+							Belum ada rapor yang diterbitkan.
+						</p>
+					)}
+				</div>
+			</div>
+		</Card>
+	);
+}
+
+function enrollmentStatusLabel(status: string) {
+	return (
+		({ SCHEDULED: "Terjadwal", ACTIVE: "Aktif", COMPLETED: "Selesai" } as Record<string, string>)[
+			status
+		] ?? "Selesai"
+	);
+}

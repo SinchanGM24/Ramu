@@ -7,12 +7,7 @@ type SwitchProps = {
 	"aria-label": string;
 };
 
-export function Switch({
-	name,
-	checked,
-	onChange,
-	"aria-label": ariaLabel,
-}: SwitchProps) {
+export function Switch({ name, checked, onChange, "aria-label": ariaLabel }: SwitchProps) {
 	return (
 		<>
 			<button

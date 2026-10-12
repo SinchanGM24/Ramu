@@ -1,0 +1,330 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, ClipboardCheck, FilePenLine, Send, UsersRound } from "lucide-react";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/shared/page-header";
+import { PaginationControls } from "@/components/shared/pagination-controls";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+
+type Semester = { id: string; name: string; academic_year_name: string };
+type ReportStatus =
+	| "DRAFT"
+	| "SUBMITTED"
+	| "IN_REVIEW"
+	| "REVISION_REQUIRED"
+	| "APPROVED"
+	| "PUBLISHED";
+type Item = { id: string; name: string; report_id?: string; status?: ReportStatus };
+type Filter = "ALL" | "NOT_CREATED" | "WORKING" | ReportStatus;
+const pageSize = 10;
+const statusCopy: Record<ReportStatus, { label: string; tone: "green" | "amber" | "slate" }> = {
+	DRAFT: { label: "Draf", tone: "slate" },
+	SUBMITTED: { label: "Menunggu ditinjau", tone: "amber" },
+	IN_REVIEW: { label: "Sedang ditinjau", tone: "amber" },
+	REVISION_REQUIRED: { label: "Perlu revisi", tone: "amber" },
+	APPROVED: { label: "Siap diterbitkan", tone: "green" },
+	PUBLISHED: { label: "Sudah diterbitkan", tone: "green" },
+};
+
+function matchesFilter(item: Item, filter: Filter) {
+	return filter === "ALL" || filter === "NOT_CREATED"
+		? filter === "ALL" || !item.status
+		: filter === "WORKING"
+			? item.status === "DRAFT" || item.status === "REVISION_REQUIRED"
+			: item.status === filter;
+}
+function destination(item: Item) {
+	if (!item.report_id) return null;
+	if (["SUBMITTED", "IN_REVIEW", "APPROVED"].includes(item.status ?? ""))
+		return { href: "/app/reports/review", label: "Buka tinjauan" };
+	if (item.status === "PUBLISHED")
+		return { href: `/app/reports/${item.report_id}/preview`, label: "Lihat rapor" };
+	return {
+		href: `/app/reports/${item.report_id}`,
+		label: item.status === "REVISION_REQUIRED" ? "Lanjutkan revisi" : "Buka editor",
+	};
+}
+
+export function ReportProgressPage() {
+	const queryClient = useQueryClient();
+	const [semesterId, setSemesterId] = useState("");
+	const [filter, setFilter] = useState<Filter>("ALL");
+	const [search, setSearch] = useState("");
+	const [page, setPage] = useState(1);
+	const [error, setError] = useState("");
+	const debouncedSearch = useDebouncedValue(search);
+	const semesters = useQuery({
+		queryKey: ["academic", "semesters"],
+		queryFn: () => api<Semester[]>("/academic/semesters"),
+	});
+	useEffect(() => {
+		if (!semesterId && semesters.data?.[0]) setSemesterId(semesters.data[0].id);
+	}, [semesterId, semesters.data]);
+	const progress = useQuery({
+		queryKey: ["reports", semesterId],
+		enabled: Boolean(semesterId),
+		queryFn: () => api<Item[]>(`/reports/progress?semesterId=${semesterId}`),
+	});
+	const items = progress.data ?? [];
+	const counts = useMemo(
+		() => ({
+			total: items.length,
+			draft: items.filter(
+				(item) => !item.status || item.status === "DRAFT" || item.status === "REVISION_REQUIRED",
+			).length,
+			review: items.filter((item) => ["SUBMITTED", "IN_REVIEW"].includes(item.status ?? "")).length,
+			publish: items.filter((item) => item.status === "APPROVED").length,
+			published: items.filter((item) => item.status === "PUBLISHED").length,
+		}),
+		[items],
+	);
+	useEffect(() => {
+		setPage(1);
+	}, [semesterId, filter, debouncedSearch]);
+	const filteredItems = items.filter(
+		(item) =>
+			matchesFilter(item, filter) &&
+			item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
+	);
+	const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);
+	async function draft(studentId: string) {
+		if (!semesterId) return;
+		setError("");
+		try {
+			await api(`/reports/students/${studentId}/draft`, {
+				method: "POST",
+				body: JSON.stringify({ semesterId }),
+			});
+			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
+		} catch (reason) {
+			setError(reason instanceof Error ? reason.message : "Draf rapor tidak dapat dibuat.");
+		}
+	}
+	const filters: { id: Filter; label: string; count: number }[] = [
+		{ id: "ALL", label: "Semua", count: counts.total },
+		{
+			id: "NOT_CREATED",
+			label: "Belum dibuat",
+			count: items.filter((item) => !item.status).length,
+		},
+		{ id: "WORKING", label: "Sedang dikerjakan", count: counts.draft },
+		{ id: "SUBMITTED", label: "Perlu ditinjau", count: counts.review },
+		{ id: "APPROVED", label: "Siap terbit", count: counts.publish },
+		{ id: "PUBLISHED", label: "Terbit", count: counts.published },
+	];
+	return (
+		<>
+			<PageHeader
+				eyebrow="Rapor"
+				title="Pusat rapor"
+				description="Pantau setiap rapor dalam satu semester, lalu lanjutkan tindakan yang tepat pada setiap tahap."
+				action={
+					<Link href="/app/reports/review">
+						<Button variant="secondary">
+							<ClipboardCheck className="mr-1.5 size-4" />
+							Tinjauan rapor
+						</Button>
+					</Link>
+				}
+			/>
+			{error && (
+				<p role="alert" className="mb-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+					{error}
+				</p>
+			)}
+			{!semesters.data?.length ? (
+				<Card className="space-y-3">
+					<h2 className="font-bold">Tahun ajaran belum tersedia</h2>
+					<p className="text-sm text-slate-600">
+						Buat tahun ajaran pada Data Akademik. Sistem akan menambahkan Semester I dan Semester II
+						secara otomatis.
+					</p>
+					<Link href="/app/academic">
+						<Button>Buat tahun ajaran</Button>
+					</Link>
+				</Card>
+			) : (
+				<>
+					<Card className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+						<label className="block text-sm font-semibold text-slate-700">
+							Semester
+							<select
+								value={semesterId}
+								onChange={(event) => setSemesterId(event.target.value)}
+								className="mt-2 block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm sm:w-80"
+							>
+								{semesters.data.map((semester) => (
+									<option key={semester.id} value={semester.id}>
+										{semester.name} · {semester.academic_year_name}
+									</option>
+								))}
+							</select>
+						</label>
+						<p className="text-sm text-slate-500">
+							Pilih semester untuk melihat status rapor murid.
+						</p>
+					</Card>
+					<div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+						<SummaryCard
+							icon={<FilePenLine className="size-5" />}
+							label="Sedang dikerjakan"
+							value={counts.draft}
+							description="Draf atau perlu revisi"
+						/>
+						<SummaryCard
+							icon={<ClipboardCheck className="size-5" />}
+							label="Perlu ditinjau"
+							value={counts.review}
+							description="Menunggu tindakan peninjau"
+						/>
+						<SummaryCard
+							icon={<Send className="size-5" />}
+							label="Siap diterbitkan"
+							value={counts.publish}
+							description="Sudah disetujui"
+						/>
+						<SummaryCard
+							icon={<CheckCircle2 className="size-5" />}
+							label="Sudah diterbitkan"
+							value={counts.published}
+							description="Versi rapor telah dikunci"
+						/>
+					</div>
+					<Card>
+						<div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+							<div>
+								<h2 className="font-bold text-slate-900">Daftar rapor murid</h2>
+								<p className="mt-1 text-sm text-slate-500">
+									Cari murid atau pilih status untuk menyaring daftar.
+								</p>
+							</div>
+							<div className="flex items-center gap-2 text-sm text-slate-500">
+								<UsersRound className="size-4" />
+								{counts.total} murid
+							</div>
+						</div>
+						<div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+							<input
+								value={search}
+								onChange={(event) => setSearch(event.target.value)}
+								placeholder="Cari nama murid"
+								className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+							/>
+							<div
+								className="flex gap-2 overflow-x-auto pb-1"
+								role="tablist"
+								aria-label="Filter status rapor"
+							>
+								{filters.map((item) => (
+									<button
+										key={item.id}
+										type="button"
+										role="tab"
+										aria-selected={filter === item.id}
+										onClick={() => setFilter(item.id)}
+										className={`whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition ${filter === item.id ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+									>
+										{item.label}{" "}
+										<span className={filter === item.id ? "text-brand-100" : "text-slate-400"}>
+											{item.count}
+										</span>
+									</button>
+								))}
+							</div>
+						</div>
+						<div className="mt-4 overflow-x-auto">
+							<table className="w-full text-left text-sm">
+								<thead className="border-b text-xs text-slate-500">
+									<tr>
+										<th className="pb-3 font-semibold">Murid</th>
+										<th className="pb-3 font-semibold">Tahap rapor</th>
+										<th className="pb-3 text-right font-semibold">Tindakan</th>
+									</tr>
+								</thead>
+								<tbody>
+									{progress.isLoading ? (
+										<tr>
+											<td colSpan={3} className="py-8 text-slate-500">
+												Memuat rapor murid…
+											</td>
+										</tr>
+									) : pagedItems.length === 0 ? (
+										<tr>
+											<td colSpan={3} className="py-10 text-center text-slate-500">
+												Tidak ada murid pada filter ini.
+											</td>
+										</tr>
+									) : (
+										pagedItems.map((item) => {
+											const next = destination(item);
+											return (
+												<tr key={item.id} className="border-b border-slate-100 last:border-0">
+													<td className="py-4 font-semibold text-slate-900">{item.name}</td>
+													<td className="py-4">
+														{item.status ? (
+															<StatusBadge tone={statusCopy[item.status].tone}>
+																{statusCopy[item.status].label}
+															</StatusBadge>
+														) : (
+															<span className="text-slate-500">Belum dibuat</span>
+														)}
+													</td>
+													<td className="py-4 text-right">
+														{next ? (
+															<Link href={next.href}>
+																<Button variant="secondary">{next.label}</Button>
+															</Link>
+														) : (
+															<Button onClick={() => void draft(item.id)}>Buat draf</Button>
+														)}
+													</td>
+												</tr>
+											);
+										})
+									)}
+								</tbody>
+							</table>
+						</div>
+						<PaginationControls
+							page={page}
+							pageSize={pageSize}
+							total={filteredItems.length}
+							onPageChange={setPage}
+						/>
+					</Card>
+				</>
+			)}
+		</>
+	);
+}
+
+function SummaryCard({
+	icon,
+	label,
+	value,
+	description,
+}: {
+	icon: React.ReactNode;
+	label: string;
+	value: number;
+	description: string;
+}) {
+	return (
+		<Card className="p-4">
+			<div className="flex items-start justify-between">
+				<div>
+					<p className="text-sm font-medium text-slate-600">{label}</p>
+					<p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{value}</p>
+					<p className="mt-1 text-xs text-slate-500">{description}</p>
+				</div>
+				<span className="rounded-xl bg-brand-50 p-2.5 text-brand-700">{icon}</span>
+			</div>
+		</Card>
+	);
+}

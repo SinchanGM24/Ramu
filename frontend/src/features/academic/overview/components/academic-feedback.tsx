@@ -1,0 +1,16 @@
+export function AcademicFeedback({ error, notice }: { error: string; notice: string }) {
+	return (
+		<>
+			{error && (
+				<p className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+					{error}
+				</p>
+			)}
+			{notice && (
+				<p className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">
+					{notice}
+				</p>
+			)}
+		</>
+	);
+}

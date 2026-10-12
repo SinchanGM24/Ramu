@@ -1,0 +1,47 @@
+"use client";
+
+import { Card } from "@/components/ui/card";
+import { DevelopmentAreaCard } from "./components/development-area-card";
+import { ReportEditorHeader } from "./components/report-editor-header";
+import { ReportEditorProgressCard } from "./components/report-editor-progress-card";
+import { ScaleGuide } from "./components/scale-guide";
+import { useReportWorkspace } from "./hooks/use-report-workspace";
+import { getAreaProgress } from "./utils";
+
+export function ReportEditorPage({ id }: { id: string }) {
+	const { assessment, pendingScaleOptionIds, refresh, workspace } = useReportWorkspace(id);
+
+	if (workspace.isLoading) return <Card>Memuat ruang kerja rapor…</Card>;
+	if (!workspace.data) return <Card>Rapor tidak dapat dimuat.</Card>;
+
+	const { areas, report, scales } = workspace.data;
+	const editable = ["DRAFT", "REVISION_REQUIRED"].includes(report.status);
+	const done = areas.reduce((sum, area) => sum + getAreaProgress(area).assessed, 0);
+	const total = areas.reduce((sum, area) => sum + getAreaProgress(area).total, 0);
+
+	return (
+		<>
+			<ReportEditorHeader reportId={id} report={report} />
+			<ReportEditorProgressCard done={done} total={total} status={report.status} />
+			<ScaleGuide scales={scales} />
+			<div className="mt-4 space-y-4">
+				{areas.map((area, index) => (
+					<DevelopmentAreaCard
+						key={area.id}
+						area={area}
+						number={index + 1}
+						scales={scales}
+						editable={editable}
+						savingIndicatorId={assessment.isPending ? assessment.variables?.indicatorId : undefined}
+						pendingScaleOptionIds={pendingScaleOptionIds}
+						onChoose={(indicatorId, scaleOptionId) =>
+							assessment.mutate({ indicatorId, scaleOptionId })
+						}
+						reportId={id}
+						refresh={refresh}
+					/>
+				))}
+			</div>
+		</>
+	);
+}
