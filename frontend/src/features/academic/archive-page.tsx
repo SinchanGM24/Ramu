@@ -28,6 +28,8 @@ export function ArchivePage() {
 		queryKey: ["students"],
 		queryFn: () => api<{ items: Student[] }>("/students?limit=100"),
 	});
+	const session = useQuery({ queryKey: ["session"], queryFn: () => api<{ role: string }>("/auth/session") });
+	const canReverseGraduation = session.data?.role === "SCHOOL_ADMIN";
 	const history = useQuery({
 		queryKey: ["lifecycle", "history"],
 		queryFn: () => api<History[]>("/lifecycle/history"),
@@ -102,9 +104,7 @@ export function ArchivePage() {
 										{x.student_number || "Tanpa nomor induk"}
 									</span>
 								</span>
-								<Button variant="secondary" onClick={() => void reverse(x.id)}>
-									Batalkan kelulusan
-								</Button>
+								{canReverseGraduation && <Button variant="secondary" onClick={() => void reverse(x.id)}>Batalkan kelulusan</Button>}
 							</div>
 						))
 					) : (

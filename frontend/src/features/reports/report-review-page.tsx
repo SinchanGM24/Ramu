@@ -50,6 +50,8 @@ export function ReportReviewPage() {
   const [revisionNote, setRevisionNote] = useState("");
   const [notice, setNotice] = useState<string>();
   const [parentAccess, setParentAccess] = useState<{ link: string; pin: string }>();
+  const session = useQuery({ queryKey: ["session"], queryFn: () => api<{ role: string }>("/auth/session") });
+  const canPublish = session.data?.role === "SCHOOL_ADMIN";
   const reports = useQuery({ queryKey: ["reports", "review-queue"], queryFn: () => api<ReviewReport[]>("/reports/review-queue") });
   const transition = useMutation({
     mutationFn: ({ id, action, note }: { id: string; action: "review" | "revision" | "approve"; note?: string }) =>
@@ -83,7 +85,8 @@ export function ReportReviewPage() {
         <div className="flex flex-wrap gap-2">
           {report.status === "SUBMITTED" && <Button disabled={transition.isPending} onClick={() => transition.mutate({ id: report.id, action: "review" })}>Mulai tinjau</Button>}
           {report.status === "IN_REVIEW" && <><Button disabled={transition.isPending} variant="secondary" onClick={() => { setOpenRevisionFor(openRevisionFor === report.id ? undefined : report.id); setRevisionNote(""); }}><RotateCcw className="mr-1 size-4" />Minta revisi</Button><Button disabled={transition.isPending} onClick={() => transition.mutate({ id: report.id, action: "approve" })}><Check className="mr-1 size-4" />Setujui rapor</Button></>}
-          {report.status === "APPROVED" && <PublishReportAction reportId={report.id} pending={publish.isPending} onPublish={() => publish.mutate(report.id)} />}
+          {report.status === "APPROVED" && canPublish && <PublishReportAction reportId={report.id} pending={publish.isPending} onPublish={() => publish.mutate(report.id)} />}
+          {report.status === "APPROVED" && !canPublish && <span className="text-sm text-slate-500">Menunggu Admin Sekolah menerbitkan rapor.</span>}
         </div>
       </div>
       {openRevisionFor === report.id && <div className="mt-4 border-t border-slate-100 pt-4"><label className="block text-sm font-semibold text-slate-800">Catatan revisi<textarea value={revisionNote} onChange={(event) => setRevisionNote(event.target.value)} maxLength={1000} className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-brand-500" placeholder="Jelaskan bagian yang perlu diperbaiki…" /></label><div className="mt-3 flex gap-2"><Button variant="secondary" onClick={() => { setOpenRevisionFor(undefined); setRevisionNote(""); }}>Batal</Button><Button disabled={!revisionNote.trim() || transition.isPending} onClick={() => submitRevision(report.id)}>Kirim permintaan revisi</Button></div></div>}
