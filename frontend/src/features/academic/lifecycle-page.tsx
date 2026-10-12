@@ -15,8 +15,7 @@ type Student = {
 	class_name?: string | null;
 	lifecycle_status: "ACTIVE" | "GRADUATED";
 };
-type Year = { id: string; name: string; is_active: boolean };
-type Period = { id: string; name: string };
+type ClassGroup = { id: string; name: string };
 type Mode = "transfer" | "graduation";
 type Proposal = { id: string; operation_type: "TRANSFER" | "GRADUATION"; reason?: string | null; payload: { items?: { studentId: string }[]; studentIds?: string[] }; created_at: string; requester_name: string };
 const today = () => new Date().toISOString().slice(0, 10);
@@ -25,7 +24,6 @@ export function LifecyclePage() {
 	const qc = useQueryClient();
 	const [mode, setMode] = useState<Mode>("transfer");
 	const [chosen, setChosen] = useState<string[]>([]);
-	const [yearId, setYearId] = useState("");
 	const [classFilter, setClassFilter] = useState("");
 	const [search, setSearch] = useState("");
 	const [panel, setPanel] = useState(false);
@@ -40,14 +38,6 @@ export function LifecyclePage() {
 		queryKey: ["students"],
 		queryFn: () => api<{ items: Student[] }>("/students?limit=100"),
 	});
-	const years = useQuery({
-		queryKey: ["academic", "years"],
-		queryFn: () => api<Year[]>("/academic/years"),
-	});
-	useEffect(() => {
-		if (!yearId && years.data?.length)
-			setYearId(years.data.find((x) => x.is_active)?.id ?? years.data[0].id);
-	}, [yearId, years.data]);
 	const active = useMemo(
 		() =>
 			students.data?.items.filter(
@@ -124,19 +114,7 @@ export function LifecyclePage() {
 				</Tab>
 			</div>
 			<Card>
-				<div className="grid gap-3 md:grid-cols-3">
-					<select
-						value={yearId}
-						onChange={(e) => setYearId(e.target.value)}
-						className="rounded-xl border p-3 text-sm"
-						aria-label="Tahun ajaran"
-					>
-						{years.data?.map((x) => (
-							<option key={x.id} value={x.id}>
-								{x.name}
-							</option>
-						))}
-					</select>
+				<div className="grid gap-3 md:grid-cols-2">
 					<select
 						value={classFilter}
 						onChange={(e) => setClassFilter(e.target.value)}
@@ -186,7 +164,6 @@ export function LifecyclePage() {
 				(mode === "transfer" ? (
 					<TransferPanel
 						students={selected}
-						yearId={yearId}
 						onClose={() => setPanel(false)}
 						onSuccess={completed}
 						onError={setError}
@@ -441,14 +418,12 @@ function ActionPanel({
 
 function TransferPanel({
 	students,
-	yearId,
 	onClose,
 	onSuccess,
 	onError,
 	isTeacher,
 }: {
 	students: Student[];
-	yearId: string;
 	onClose: () => void;
 	onSuccess: (message: string) => Promise<void>;
 	onError: (message: string) => void;
@@ -459,11 +434,9 @@ function TransferPanel({
 	const [effectiveOn, setEffectiveOn] = useState(today());
 	const [reason, setReason] = useState("");
 	const [saving, setSaving] = useState(false);
-	const periods = useQuery({
-		queryKey: ["academic", "class-periods", yearId],
-		enabled: Boolean(yearId),
-		queryFn: () =>
-			api<Period[]>(`/academic/class-periods?academicYearId=${yearId}`),
+	const classGroups = useQuery({
+		queryKey: ["academic", "class-groups", "active"],
+		queryFn: () => api<ClassGroup[]>("/academic/class-groups?activeOnly=true"),
 	});
 	const valid = students.every((x) => destinations[x.id] || defaultTarget);
 	async function submit() {
@@ -476,7 +449,7 @@ function TransferPanel({
 				body: JSON.stringify({
 					items: students.map((x) => ({
 						studentId: x.id,
-						targetClassPeriodId: destinations[x.id] || defaultTarget,
+						targetClassGroupId: destinations[x.id] || defaultTarget,
 						effectiveOn,
 						reason: reason || undefined,
 					})),
@@ -503,7 +476,7 @@ function TransferPanel({
 						className="mt-1 w-full rounded-xl border p-3"
 					>
 						<option value="">Pilih kelas</option>
-						{periods.data?.map((p) => (
+						{classGroups.data?.map((p) => (
 							<option key={p.id} value={p.id}>
 								{p.name}
 							</option>
@@ -549,7 +522,7 @@ function TransferPanel({
 							className="rounded-lg border p-2"
 						>
 							<option value="">Pilih tujuan</option>
-							{periods.data?.map((p) => (
+							{classGroups.data?.map((p) => (
 								<option key={p.id} value={p.id}>
 									{p.name}
 								</option>

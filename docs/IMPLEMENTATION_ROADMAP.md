@@ -20,6 +20,7 @@ Sudah tersedia:
 
 - Tahun ajaran, semester, kelas yang dapat dipakai ulang, penugasan beberapa guru, dan penempatan murid historis.
 - Struktur lama tingkatan, kenaikan/mengulang, guru utama, dan pemilihan kelas ganda per tahun ajaran telah dipensiunkan dari kontrak aplikasi. Migrasi baru mempertahankan penempatan historis lalu menghapus kolom/tabel yang tidak lagi dipakai.
+- Pengajuan guru disimpan terpisah dari operasi perpindahan atau kelulusan yang sudah diterapkan. Persetujuan Kepala Sekolah membuat operasi final beserta audit trail dalam satu transaksi.
 - Perpindahan kelas, kelulusan, pembatalan kelulusan, dan Arsip.
 - Data murid, profil, beberapa kontak wali, serta kontak utama.
 - Alur rapor individual, review, persetujuan, penerbitan versi/PDF, akses wali melalui PIN, dan pengiriman rapor.

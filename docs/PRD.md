@@ -38,7 +38,7 @@ LMS, SPP/accounting, payroll, chat, daily attendance, student rankings, parent a
 - A class is a reusable school-owned name such as **Apel** or **Melati**. Users select that class once; they do not select duplicate copies by academic year.
 - Historical placement and reporting internally connect a student, class, academic year, and semester. This internal record must not make duplicate class choices appear in ordinary forms.
 - There are no levels, next-level rules, promotion/repetition states, homeroom teachers, primary teachers, or automatic advancement. Transfer and graduation are explicit administrative actions.
-- A teacher request is pending work, not an applied enrollment or lifecycle operation. Approval creates the applied record in one transaction; rejection changes no student placement.
+- A teacher request is pending work, not an applied enrollment or lifecycle operation. It is stored separately from applied lifecycle operations. Approval creates the applied record and links it to the request in one transaction; rejection changes no student placement.
 
 ## 4. Primary journeys
 
