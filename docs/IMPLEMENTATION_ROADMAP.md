@@ -5,7 +5,7 @@ Dokumen ini adalah urutan kerja produk setelah refactor siklus akademik. Tujuann
 ## Keputusan produk yang sudah ditetapkan
 
 - Tahun ajaran dibuat manual oleh admin. Sistem membuat Semester I dan Semester II.
-- Kelas adalah nama yang dapat digunakan kembali lintas tahun ajaran; tidak ada tingkatan kelas yang mengatur perpindahan.
+- Kelas adalah nama sekolah yang dapat digunakan kembali lintas tahun ajaran. Form operasional memilih satu nama kelas; pencatatan per tahun ajaran hanya terjadi di belakang layar untuk riwayat dan rapor.
 - Perpindahan kelas dan kelulusan adalah tindakan administratif. Publikasi rapor adalah tindakan akademik. Tidak ada perubahan otomatis.
 - Seorang kelas dapat memiliki beberapa guru dengan hak kerja yang setara. Tidak ada guru utama.
 - Riwayat penempatan dan rapor melekat pada murid, termasuk setelah murid diarsipkan.
@@ -19,6 +19,7 @@ Dokumen ini adalah urutan kerja produk setelah refactor siklus akademik. Tujuann
 Sudah tersedia:
 
 - Tahun ajaran, semester, kelas yang dapat dipakai ulang, penugasan beberapa guru, dan penempatan murid historis.
+- Struktur lama tingkatan, kenaikan/mengulang, guru utama, dan pemilihan kelas ganda per tahun ajaran telah dipensiunkan dari kontrak aplikasi. Migrasi baru mempertahankan penempatan historis lalu menghapus kolom/tabel yang tidak lagi dipakai.
 - Perpindahan kelas, kelulusan, pembatalan kelulusan, dan Arsip.
 - Data murid, profil, beberapa kontak wali, serta kontak utama.
 - Alur rapor individual, review, persetujuan, penerbitan versi/PDF, akses wali melalui PIN, dan pengiriman rapor.
@@ -97,7 +98,7 @@ Tujuan: sekolah baru memahami urutan persiapan tanpa harus memahami struktur tek
    - Mulai pengisian rapor.
 
 2. Penyempurnaan data akademik
-   - UI duplikasi struktur kelas dari tahun sebelumnya.
+- Tahun ajaran aktif dipakai internal ketika sistem membuat riwayat penempatan; pengguna tidak memilih salinan kelas berdasarkan tahun saat menambah murid.
    - Penjelasan konteks tahun ajaran aktif pada setiap halaman terkait.
    - Validasi yang mudah dipahami sebelum kelas, guru, atau murid dapat dipakai.
 
@@ -135,7 +136,7 @@ Tujuan: seluruh perjalanan terasa konsisten sebelum keamanan diperketat.
 - Ganti seluruh `window.confirm` dan `window.prompt` dengan dialog/modal aplikasi.
 - Samakan pola tabel, filter, empty state, toast/notifikasi, loading, dan error.
 - Uji satu skenario sekolah nyata dari tahun ajaran baru sampai murid lulus/diarsipkan.
-- Uji data contoh serta seed agar tidak lagi memuat istilah lama seperti tingkatan, kenaikan kelas, atau guru utama.
+- Uji data contoh serta seed agar tidak lagi memuat istilah lama seperti tingkatan, kenaikan kelas, atau guru utama. Selesai untuk demo dan struktur basis data; tetap dijalankan kembali saat seed berikutnya berubah.
 
 Kriteria selesai:
 

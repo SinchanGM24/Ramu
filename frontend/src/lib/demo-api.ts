@@ -21,11 +21,11 @@ export function demoResponse(path: string, options: RequestInit): unknown {
     return { id: reportId, status: reviewStatus };
   }
   if (options.method && options.method !== "GET") return { id: reportId, status: "DRAFT" };
-  if (path === "/academic/semesters") return [{ id: semesterId, name: "Semester I", academic_year_name: "2026/2027" }];
-  if (path === "/academic/years") return [{ id: "demo-year", name: "2026/2027", is_active: true }];
-  if (path === "/academic/levels") return [{ id: "demo-level-a", name: "Kelompok A", code: "A", position: 1, next_level_name: "Kelompok B" }, { id: "demo-level-b", name: "Kelompok B", code: "B", position: 2 }];
-  if (path.startsWith("/academic/class-periods")) return [{ id: "demo-class", class_group_id: "demo-group", name: "Kelas Apel", is_active: true, level_name: "Kelompok A", academic_year_name: "2026/2027", homeroom_teacher_name: "Guru Aisyah" }];
-  if (path.startsWith("/academic/enrollments")) return [{ id: "demo-enrollment", student_name: "Alya Putri", class_name: "Kelas Apel", level_name: "Kelompok A" }];
+  if (path === "/academic/semesters") return [{ id: semesterId, name: "Semester I", academic_year_name: "2026" }];
+  if (path === "/academic/years") return [{ id: "demo-year", name: "2026", is_active: true }];
+  if (path === "/academic/class-groups") return [{ id: "demo-group", name: "Kelas Apel", is_active: true }];
+  if (path.startsWith("/academic/class-periods")) return [{ id: "demo-class", class_group_id: "demo-group", name: "Kelas Apel", is_active: true, academic_year_name: "2026", teacher_names: "Guru Aisyah" }];
+  if (path.startsWith("/academic/enrollments")) return [{ id: "demo-enrollment", student_name: "Alya Putri", class_name: "Kelas Apel" }];
   if (path === "/staff") return [{ id: "demo-teacher", name: "Guru Aisyah", email: "guru.aisyah@ramu.test", role: "TEACHER", is_active: true }, { id: "demo-principal", name: "Kepala Sekolah", email: "kepsek@ramu.test", role: "PRINCIPAL", is_active: true }];
   if (path === "/students") return { items: [{ id: studentId, name: "Alya Putri", student_number: "TK-2026-014", class_name: "Kelompok A" }] };
   if (path.startsWith("/reports/progress")) return [{ id: studentId, name: "Alya Putri", report_id: reportId, status: "DRAFT" }, { id: "demo-student-2", name: "Bima Pratama", report_id: null, status: null }];

@@ -16,6 +16,9 @@ Use this skill for product, architecture, or implementation work in this reposit
 - Publishing makes a version immutable. A correction is a new version, PDF, token, and delivery scope.
 - Analytics aggregate scale results only and never rank students.
 - AI drafts/flags only. A human teacher or authorized staff member keeps all academic and publication decisions.
+- A reusable class is `class_groups`. It is the only class concept exposed in ordinary forms. `class_periods` is an internal historical placement record; never render duplicate reusable classes merely because they appear in multiple academic years.
+- Do not reintroduce education levels, next-level progression, promotion/repetition, homeroom/primary-teacher flags, or automatic class advancement. Administrative movement is an explicit transfer or graduation only.
+- Keep requests separate from applied operations: a teacher request is not a student placement, graduation, enrollment, or other applied lifecycle event until its authorized approval transaction succeeds.
 
 ## Language boundary
 

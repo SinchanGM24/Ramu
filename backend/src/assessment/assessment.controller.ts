@@ -83,8 +83,8 @@ export class AssessmentController {
     if (role !== "TEACHER") return;
     const assignment = await client.query(`SELECT 1 FROM student_enrollments enrollment
       JOIN semesters semester ON semester.id=$2 AND semester.academic_year_id=enrollment.academic_year_id
-      JOIN teacher_class_assignments homeroom ON homeroom.class_period_id=enrollment.class_period_id AND homeroom.ended_at IS NULL
-      WHERE enrollment.student_id=$1 AND enrollment.status='ACTIVE' AND homeroom.teacher_user_id=$3`, [studentId, semesterId, userId]);
-    if (!assignment.rowCount) throw new ForbiddenException("Anda bukan wali kelas untuk murid pada semester ini.");
+      JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL
+      WHERE enrollment.student_id=$1 AND enrollment.status='ACTIVE' AND assignment.teacher_user_id=$3`, [studentId, semesterId, userId]);
+    if (!assignment.rowCount) throw new ForbiddenException("Anda tidak ditugaskan pada kelas murid di semester ini.");
   }
 }
