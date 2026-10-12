@@ -1,14 +1,12 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardCheck } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
 import { ParentAccessCard } from "./components/parent-access-card";
-import { ReviewQueueItem } from "./components/review-queue-item";
+import { ReviewFeedback } from "./components/review-feedback";
+import { ReviewQueue } from "./components/review-queue";
 import type { PublishedReport, ReviewReport } from "./types";
 
 export function ReportReviewPage() {
@@ -65,14 +63,6 @@ export function ReportReviewPage() {
 			: transition.error
 				? "Tindakan tidak dapat diproses. Coba lagi."
 				: undefined;
-	const queue = reports.data ?? [];
-	const canPublish = session.data?.role === "SCHOOL_ADMIN";
-
-	function submitRevision(id: string) {
-		const note = revisionNote.trim();
-		if (note) transition.mutate({ id, action: "revision", note });
-	}
-
 	return (
 		<>
 			<PageHeader
@@ -80,14 +70,14 @@ export function ReportReviewPage() {
 				title="Tinjauan rapor"
 				description="Periksa rapor yang dikirim guru, minta revisi bila perlu, lalu setujui rapor yang sudah layak."
 			/>
-			{notice ? <Feedback tone="success">{notice}</Feedback> : null}
+			{notice ? <ReviewFeedback tone="success">{notice}</ReviewFeedback> : null}
 			{parentAccess ? <ParentAccessCard {...parentAccess} /> : null}
-			{error ? <Feedback tone="error">{error}</Feedback> : null}
+			{error ? <ReviewFeedback tone="error">{error}</ReviewFeedback> : null}
 			<ReviewQueue
-				canPublish={canPublish}
+				canPublish={session.data?.role === "SCHOOL_ADMIN"}
 				loading={reports.isLoading}
 				error={reports.isError}
-				queue={queue}
+				queue={reports.data ?? []}
 				openRevisionFor={openRevisionFor}
 				publishPending={publish.isPending}
 				revisionNote={revisionNote}
@@ -105,98 +95,11 @@ export function ReportReviewPage() {
 				onPublish={(id) => publish.mutate(id)}
 				onRevisionNoteChange={setRevisionNote}
 				onStartReview={(id) => transition.mutate({ id, action: "review" })}
-				onSubmitRevision={submitRevision}
+				onSubmitRevision={(id) => {
+					const note = revisionNote.trim();
+					if (note) transition.mutate({ id, action: "revision", note });
+				}}
 			/>
 		</>
-	);
-}
-
-function ReviewQueue({
-	canPublish,
-	error,
-	loading,
-	openRevisionFor,
-	publishPending,
-	queue,
-	revisionNote,
-	transitionPending,
-	onApprove,
-	onCancelRevision,
-	onOpenRevision,
-	onPublish,
-	onRetry,
-	onRevisionNoteChange,
-	onStartReview,
-	onSubmitRevision,
-}: {
-	canPublish: boolean;
-	error: boolean;
-	loading: boolean;
-	openRevisionFor?: string;
-	publishPending: boolean;
-	queue: ReviewReport[];
-	revisionNote: string;
-	transitionPending: boolean;
-	onApprove: (id: string) => void;
-	onCancelRevision: () => void;
-	onOpenRevision: (id: string) => void;
-	onPublish: (id: string) => void;
-	onRetry: () => void;
-	onRevisionNoteChange: (note: string) => void;
-	onStartReview: (id: string) => void;
-	onSubmitRevision: (id: string) => void;
-}) {
-	if (loading) return <Card>Memuat antrean rapor…</Card>;
-	if (error) {
-		return (
-			<Card>
-				<p className="text-red-700">Antrean rapor tidak dapat dimuat.</p>
-				<Button className="mt-4" variant="secondary" onClick={onRetry}>
-					Coba lagi
-				</Button>
-			</Card>
-		);
-	}
-	if (!queue.length) {
-		return (
-			<Card className="py-10 text-center">
-				<ClipboardCheck className="mx-auto size-9 text-brand-600" />
-				<h2 className="mt-3 font-bold text-slate-900">Belum ada rapor untuk ditinjau</h2>
-				<p className="mt-1 text-sm text-slate-500">Rapor yang dikirim guru akan muncul di sini.</p>
-			</Card>
-		);
-	}
-	return (
-		<div className="space-y-4">
-			{queue.map((report) => (
-				<ReviewQueueItem
-					key={report.id}
-					report={report}
-					canPublish={canPublish}
-					openRevision={openRevisionFor === report.id}
-					pending={transitionPending}
-					publishPending={publishPending}
-					revisionNote={revisionNote}
-					onApprove={() => onApprove(report.id)}
-					onCancelRevision={onCancelRevision}
-					onOpenRevision={() => onOpenRevision(report.id)}
-					onPublish={() => onPublish(report.id)}
-					onRevisionNoteChange={onRevisionNoteChange}
-					onStartReview={() => onStartReview(report.id)}
-					onSubmitRevision={() => onSubmitRevision(report.id)}
-				/>
-			))}
-		</div>
-	);
-}
-
-function Feedback({ children, tone }: { children: ReactNode; tone: "error" | "success" }) {
-	return (
-		<div
-			role={tone === "error" ? "alert" : "status"}
-			className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium ${tone === "success" ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}
-		>
-			{children}
-		</div>
 	);
 }

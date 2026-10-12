@@ -1,38 +1,29 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import { Download, Printer } from "lucide-react";
+
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { FormalAssessmentTable as FormalTable } from "@/features/reports/presentation/formal-assessment-table";
-import { ReportScaleLegend as ScaleLegend } from "@/features/reports/presentation/report-scale-legend";
-type Item = { area_name?: string; sub_area_name?: string; description: string; code: string };
-type Report = {
-	student?: {
-		name?: string;
-		nickname?: string | null;
-		student_number?: string | null;
-		class_name?: string | null;
-	};
-	semester?: { name?: string; academic_year_name?: string };
-	assessments?: Item[];
-	narratives?: { name: string; content: string }[];
-	growth?: { weight_kg?: string | number; height_cm?: string | number } | null;
-	attendance?: { sick_days?: number; permission_days?: number; unexcused_days?: number } | null;
-	extracurricular?: { activity_name: string; grade: string }[];
-};
+import { ParentAccessForm } from "./components/parent-access-form";
+import { ParentReportContent } from "./components/parent-report-content";
+import type { ParentReport } from "./types";
+
 export function ParentReportViewer({ token }: { token: string }) {
 	const [pin, setPin] = useState("");
-	const [data, setData] = useState<Report>();
+	const [report, setReport] = useState<ParentReport>();
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 	const demo = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
 	async function load() {
-		const result = await api<{ report: Report }>("/parent/report");
-		setData(result.report);
+		const result = await api<{ report: ParentReport }>("/parent/report");
+		setReport(result.report);
 	}
+
 	useEffect(() => {
-		load().catch(() => undefined);
+		void load().catch(() => undefined);
 	}, []);
-	async function submit(event: React.FormEvent) {
+
+	async function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setLoading(true);
 		setError("");
@@ -45,11 +36,9 @@ export function ParentReportViewer({ token }: { token: string }) {
 			setLoading(false);
 		}
 	}
+
 	async function download() {
-		if (demo) {
-			window.print();
-			return;
-		}
+		if (demo) return window.print();
 		const response = await fetch(
 			`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/parent/report-pdf`,
 			{ credentials: "include" },
@@ -65,143 +54,17 @@ export function ParentReportViewer({ token }: { token: string }) {
 		link.click();
 		URL.revokeObjectURL(url);
 	}
-	if (!data)
+
+	if (!report)
 		return (
-			<main className="grid min-h-screen place-items-center bg-brand-50 p-5">
-				<form onSubmit={submit} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-soft">
-					<p className="text-sm font-bold text-brand-700">RAMU · AKSES WALI</p>
-					<h1 className="mt-1 text-xl font-bold">Rapor murid</h1>
-					<p className="mt-2 text-sm text-slate-600">
-						Masukkan PIN dari sekolah untuk membuka rapor.
-					</p>
-					{demo && (
-						<p className="mt-3 rounded-xl bg-brand-50 p-2 text-xs">
-							Demo: PIN <b>123456</b>
-						</p>
-					)}
-					<input
-						required
-						value={pin}
-						onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 6))}
-						inputMode="numeric"
-						className="mt-5 w-full rounded-xl border p-3 text-center text-xl"
-						placeholder="PIN enam digit"
-					/>
-					{error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-					<button
-						disabled={loading}
-						className="mt-4 w-full rounded-xl bg-brand-600 py-3 font-semibold text-white"
-					>
-						{loading ? "Memeriksa…" : "Buka rapor"}
-					</button>
-				</form>
-			</main>
+			<ParentAccessForm
+				demo={demo}
+				error={error}
+				loading={loading}
+				pin={pin}
+				onPinChange={setPin}
+				onSubmit={submit}
+			/>
 		);
-	return <Content report={data} error={error} download={download} />;
-}
-function Content({
-	report,
-	error,
-	download,
-}: {
-	report: Report;
-	error: string;
-	download: () => void;
-}) {
-	const areas = useMemo(() => {
-		const map = new Map<string, Item[]>();
-		for (const item of report.assessments || []) {
-			const name = item.area_name || "Perkembangan Anak Didik";
-			map.set(name, [...(map.get(name) || []), item]);
-		}
-		return [...map.entries()];
-	}, [report.assessments]);
-	const narratives = new Map((report.narratives || []).map((item) => [item.name, item.content]));
-	return (
-		<main className="min-h-screen bg-brand-50">
-			<header className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3 print:hidden">
-				<div>
-					<p className="text-xs font-bold text-brand-700">RAMU · RAPOR WALI</p>
-					<b>{report.student?.name || "Anak didik"}</b>
-				</div>
-				<div className="flex gap-2">
-					<button
-						onClick={download}
-						aria-label="Unduh PDF"
-						className="rounded-lg p-2 text-brand-700"
-					>
-						<Download size={19} />
-					</button>
-					<button
-						onClick={() => window.print()}
-						aria-label="Cetak rapor"
-						className="rounded-lg p-2 text-brand-700"
-					>
-						<Printer size={19} />
-					</button>
-				</div>
-			</header>
-			<article className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
-				<section className="rounded-2xl bg-brand-700 p-6 text-white">
-					<p>Laporan Perkembangan Anak Didik</p>
-					<h1 className="mt-2 text-2xl font-bold">{report.student?.name}</h1>
-					<p className="mt-2 text-sm">
-						{report.student?.class_name} · {report.semester?.name} ·{" "}
-						{report.semester?.academic_year_name}
-					</p>
-				</section>
-				<section className="rounded-2xl bg-white p-5 shadow-soft">
-					<h2 className="font-bold">Keterangan skala penilaian</h2>
-					<ScaleLegend />
-				</section>
-				{error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-				{areas.map(([name, items], index) => (
-					<section key={name} className="rounded-2xl bg-white p-5 shadow-soft">
-						<h2 className="font-bold uppercase">
-							{["I", "II", "III", "IV", "V", "VI"][index]}. {name}
-						</h2>
-						<div className="mt-4">
-							<FormalTable items={items} />
-						</div>
-						<div className="mt-4 rounded-xl bg-slate-50 p-4">
-							<b className="text-sm">Narasi perkembangan</b>
-							<p className="mt-2 whitespace-pre-wrap text-sm leading-6">
-								{narratives.get(name) || "-"}
-							</p>
-						</div>
-					</section>
-				))}
-				<section className="grid gap-4 sm:grid-cols-2">
-					<Box
-						title="Pertumbuhan"
-						rows={[
-							["Berat badan", report.growth?.weight_kg ? `${report.growth.weight_kg} kg` : "-"],
-							["Tinggi badan", report.growth?.height_cm ? `${report.growth.height_cm} cm` : "-"],
-						]}
-					/>
-					<Box
-						title="Kehadiran"
-						rows={[
-							["Sakit", `${report.attendance?.sick_days ?? "-"} hari`],
-							["Izin", `${report.attendance?.permission_days ?? "-"} hari`],
-							["Tanpa keterangan", `${report.attendance?.unexcused_days ?? "-"} hari`],
-						]}
-					/>
-				</section>
-			</article>
-		</main>
-	);
-}
-function Box({ title, rows }: { title: string; rows: string[][] }) {
-	return (
-		<section className="rounded-2xl bg-white p-5 shadow-soft">
-			<h2 className="font-bold">{title}</h2>
-			{rows.map(([a, b]) => (
-				<p key={a} className="mt-2 flex justify-between text-sm">
-					<span>{a}</span>
-					<b>{b}</b>
-				</p>
-			))}
-		</section>
-	);
+	return <ParentReportContent report={report} error={error} onDownload={() => void download()} />;
 }

@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { SchoolProfileForm } from "./components/school-profile-form";
 
 type School = {
 	id: string;
 	name: string;
-	slug?: string;
 	address?: string | null;
 	phone?: string | null;
 	has_logo?: boolean;
@@ -31,17 +30,14 @@ export function SchoolProfilePage() {
 	const [error, setError] = useState("");
 	const [saving, setSaving] = useState(false);
 	const [uploadingLogo, setUploadingLogo] = useState(false);
-	const logoUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001"}/api/schools/current/logo`;
-
 	useEffect(() => {
-		if (!school.data) return;
-		setName(school.data.name);
-		setAddress(school.data.address || "");
-		setPhone(school.data.phone || "");
+		if (school.data) {
+			setName(school.data.name);
+			setAddress(school.data.address || "");
+			setPhone(school.data.phone || "");
+		}
 	}, [school.data]);
-
-	async function save(event: React.FormEvent<HTMLFormElement>) {
-		event.preventDefault();
+	async function save() {
 		setError("");
 		setNotice("");
 		setSaving(true);
@@ -62,7 +58,6 @@ export function SchoolProfilePage() {
 			setSaving(false);
 		}
 	}
-
 	async function uploadLogo(file?: File) {
 		if (!file) return;
 		if (!["image/jpeg", "image/png"].includes(file.type) || file.size > 2 * 1024 * 1024) {
@@ -84,7 +79,7 @@ export function SchoolProfilePage() {
 			setUploadingLogo(false);
 		}
 	}
-
+	const logoUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001"}/api/schools/current/logo?v=${school.data?.updated_at || ""}`;
 	return (
 		<>
 			<PageHeader
@@ -107,88 +102,30 @@ export function SchoolProfilePage() {
 							</p>
 						</div>
 					</div>
-					{error && (
+					{error ? (
 						<p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">
 							{error}
 						</p>
-					)}
-					{notice && (
+					) : null}
+					{notice ? (
 						<p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
 							{notice}
 						</p>
-					)}
-					<form onSubmit={save} className="mt-5 space-y-4">
-						<label className="block text-sm font-semibold text-slate-700">
-							Nama sekolah
-							<input
-								required
-								minLength={2}
-								maxLength={160}
-								value={name}
-								onChange={(event) => setName(event.target.value)}
-								className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none focus:border-brand-500"
-							/>
-						</label>
-						<label className="block text-sm font-semibold text-slate-700">
-							Alamat sekolah
-							<textarea
-								value={address}
-								onChange={(event) => setAddress(event.target.value)}
-								maxLength={500}
-								rows={3}
-								className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none focus:border-brand-500"
-								placeholder="Alamat lengkap sekolah"
-							/>
-						</label>
-						<label className="block text-sm font-semibold text-slate-700">
-							Nomor telepon
-							<input
-								value={phone}
-								onChange={(event) => setPhone(event.target.value)}
-								maxLength={40}
-								className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none focus:border-brand-500"
-								placeholder="Contoh: 021-12345678"
-							/>
-						</label>
-						<div className="border-t border-slate-100 pt-5">
-							<p className="text-sm font-semibold text-slate-700">Logo sekolah</p>
-							<div className="mt-2 flex flex-wrap items-center gap-4">
-								<div className="grid size-20 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-									{school.data?.has_logo ? (
-										<img
-											src={`${logoUrl}?v=${school.data.updated_at || ""}`}
-											alt="Logo sekolah"
-											className="size-full object-contain p-1"
-										/>
-									) : (
-										<Building2 size={26} className="text-slate-300" />
-									)}
-								</div>
-								<label className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-									<input
-										type="file"
-										accept="image/png,image/jpeg"
-										className="sr-only"
-										disabled={uploadingLogo}
-										onChange={(event) => {
-											void uploadLogo(event.target.files?.[0]);
-											event.currentTarget.value = "";
-										}}
-									/>
-									{uploadingLogo ? "Mengunggah…" : "Unggah logo"}
-								</label>
-								<p className="text-xs leading-5 text-slate-500">
-									JPG atau PNG, maksimal 2 MB. Logo akan digunakan pada kop rapor yang diterbitkan
-									setelah perubahan ini.
-								</p>
-							</div>
-						</div>
-						<div className="flex justify-end border-t border-slate-100 pt-5">
-							<Button disabled={saving || !name.trim()}>
-								{saving ? "Menyimpan…" : "Simpan perubahan"}
-							</Button>
-						</div>
-					</form>
+					) : null}
+					<SchoolProfileForm
+						address={address}
+						hasLogo={school.data?.has_logo}
+						logoUrl={logoUrl}
+						name={name}
+						phone={phone}
+						saving={saving}
+						uploadingLogo={uploadingLogo}
+						onAddressChange={setAddress}
+						onLogoUpload={(file) => void uploadLogo(file)}
+						onNameChange={setName}
+						onPhoneChange={setPhone}
+						onSubmit={() => void save()}
+					/>
 				</Card>
 			)}
 		</>
