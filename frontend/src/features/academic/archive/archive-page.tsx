@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 type Student = {
 	id: string;
 	name: string;
@@ -28,10 +29,7 @@ export function ArchivePage() {
 		queryKey: ["students"],
 		queryFn: () => api<{ items: Student[] }>("/students?limit=100"),
 	});
-	const session = useQuery({
-		queryKey: ["session"],
-		queryFn: () => api<{ role: string }>("/auth/session"),
-	});
+	const session = useQuery(authSessionQueryOptions);
 	const canReverseGraduation = session.data?.role === "SCHOOL_ADMIN";
 	const history = useQuery({
 		queryKey: ["lifecycle", "history"],

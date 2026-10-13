@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/page-header";
 import { api, ApiError } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 import { ParentAccessCard } from "./components/parent-access-card";
 import { ReviewFeedback } from "./components/review-feedback";
 import { ReviewQueue } from "./components/review-queue";
@@ -15,10 +16,7 @@ export function ReportReviewPage() {
 	const [revisionNote, setRevisionNote] = useState("");
 	const [notice, setNotice] = useState<string>();
 	const [parentAccess, setParentAccess] = useState<{ link: string; pin: string }>();
-	const session = useQuery({
-		queryKey: ["session"],
-		queryFn: () => api<{ role: string }>("/auth/session"),
-	});
+	const session = useQuery(authSessionQueryOptions);
 	const reports = useQuery({
 		queryKey: ["reports", "review-queue"],
 		queryFn: () => api<ReviewReport[]>("/reports/review-queue"),

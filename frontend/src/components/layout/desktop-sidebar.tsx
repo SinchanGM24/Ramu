@@ -5,25 +5,25 @@ import { usePathname, useRouter } from "next/navigation";
 import { GraduationCap, LogOut } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { authSessionQueryOptions } from "@/features/auth/session";
 import { cn } from "@/lib/utils";
 import { academicNavigation, navigation, settingsNavigation, type AppRole } from "./navigation";
 
 export function DesktopSidebar() {
 	const pathname = usePathname();
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [loggingOut, setLoggingOut] = useState(false);
 	const [logoutError, setLogoutError] = useState("");
-	const session = useQuery({
-		queryKey: ["session"],
-		queryFn: () => api<{ role: string; email: string }>("/auth/session"),
-	});
+	const session = useQuery(authSessionQueryOptions);
 
 	async function logout() {
 		setLoggingOut(true);
 		setLogoutError("");
 		try {
 			await api("/auth/logout", { method: "POST" });
+			queryClient.clear();
 			router.replace("/login");
 			router.refresh();
 		} catch {

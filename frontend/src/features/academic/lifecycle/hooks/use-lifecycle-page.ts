@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 import { useLifecycleProposals } from "./use-lifecycle-proposals";
 import { useLifecycleStudents } from "./use-lifecycle-students";
 import type { LifecycleMode } from "../types";
@@ -11,10 +12,7 @@ export function useLifecyclePage() {
 	const [isActionOpen, setActionOpen] = useState(false);
 	const [notice, setNotice] = useState("");
 	const [error, setError] = useState("");
-	const session = useQuery({
-		queryKey: ["session"],
-		queryFn: () => api<{ role: "SCHOOL_ADMIN" | "TEACHER" | "PRINCIPAL" }>("/auth/session"),
-	});
+	const session = useQuery(authSessionQueryOptions);
 	const isTeacher = session.data?.role === "TEACHER";
 	const isPrincipal = session.data?.role === "PRINCIPAL";
 	const directory = useLifecycleStudents();

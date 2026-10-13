@@ -3,14 +3,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 import { navigation, type AppRole } from "./navigation";
 export function MobileBottomNav() {
 	const pathname = usePathname();
-	const session = useQuery({
-		queryKey: ["session"],
-		queryFn: () => api<{ role: AppRole }>("/auth/session"),
-	});
+	const session = useQuery(authSessionQueryOptions);
 	const items = navigation.filter((item) => item.roles.includes(session.data?.role as AppRole));
 	return (
 		<nav

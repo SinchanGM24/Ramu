@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 import { StudentAdmissionRequests } from "./components/student-admission-requests";
 import { StudentCreateDialog } from "./components/student-create-dialog";
 import { StudentDirectoryTable } from "./components/student-directory-table";
@@ -18,10 +19,7 @@ export function StudentsPage() {
 	const [tab, setTab] = useState<StudentTab>("students");
 	const [modalOpen, setModalOpen] = useState(false);
 	const [formError, setFormError] = useState("");
-	const session = useQuery({
-		queryKey: ["session"],
-		queryFn: () => api<{ role: string }>("/auth/session"),
-	});
+	const session = useQuery(authSessionQueryOptions);
 	const isTeacher = session.data?.role === "TEACHER";
 	const directory = useStudentDirectory();
 	const { requests, decide } = useStudentAdmissionRequests(tab === "requests");

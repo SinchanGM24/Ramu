@@ -2,11 +2,15 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AuthShell } from "./auth-shell";
 import { Button } from "@/components/ui/button";
+import { authSessionQueryOptions } from "./session";
+
 export function LoginForm() {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 	async function submit(event: FormEvent<HTMLFormElement>) {
@@ -19,7 +23,10 @@ export function LoginForm() {
 				method: "POST",
 				body: JSON.stringify({ email: data.get("email"), password: data.get("password") }),
 			});
-			router.push("/app/dashboard");
+			queryClient.clear();
+			await queryClient.fetchQuery(authSessionQueryOptions);
+			router.replace("/app/dashboard");
+			router.refresh();
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "Tidak dapat masuk");
 		} finally {
