@@ -86,7 +86,7 @@ Setiap sekolah otomatis menerima framework PAUD standar dan skala `BB`, `MB`, `B
 
 The student workspace shows identity, semester, completion progress, each development area, semester data, and report preview. Area state is visually `complete`, `partial`, or `not-started`. For each indicator the teacher chooses one scale option in one click; the result autosaves. Assessment is strictly one student at a time.
 
-Semester data contains growth (weight, height, optional head circumference), attendance (sick, permission, absent), extracurricular activity/grade, and portfolio photo/caption/report inclusion.
+Semester data contains optional growth measurements (weight, height, and head circumference), attendance (sick, permission, absent), extracurricular activity/grade, and portfolio photo/caption/report inclusion.
 
 ## 7. Report lifecycle
 

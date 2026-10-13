@@ -53,7 +53,7 @@ Setiap **development area** memiliki tepat satu narasi per siswa per semester—
 Satu section **Data Akhir Semester** memuat:
 
 - Ekstrakurikuler: `activity_name`, `semester`, `grade`; grade default A–D; kegiatan tidak dibatasi empat baris.
-- Pertumbuhan: `weight_kg` dan `height_cm` numerik, bukan string berunit.
+- Pertumbuhan: `weight_kg`, `height_cm`, dan `head_circumference_cm` bersifat opsional; bila diisi, nilainya numerik, bukan string berunit.
 - Kehadiran: `sick_days`, `permission_days`, `unexcused_days`, semuanya minimum 0. Tidak ada daily attendance pada MVP.
 - Pengesahan: tempat/tanggal, nama kepala PAUD/guru kelas, opsional gambar tanda tangan dan stempel.
 

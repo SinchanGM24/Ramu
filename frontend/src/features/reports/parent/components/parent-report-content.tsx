@@ -46,8 +46,14 @@ export function ParentReportContent({ error, report, onDownload }: ParentReportC
 					<SummaryBox
 						title="Pertumbuhan"
 						rows={[
-							["Berat badan", report.growth?.weight_kg ? `${report.growth.weight_kg} kg` : "-"],
-							["Tinggi badan", report.growth?.height_cm ? `${report.growth.height_cm} cm` : "-"],
+							[
+								"Berat badan",
+								report.growth?.weight_kg == null ? "-" : `${report.growth.weight_kg} kg`,
+							],
+							[
+								"Tinggi badan",
+								report.growth?.height_cm == null ? "-" : `${report.growth.height_cm} cm`,
+							],
 						]}
 					/>
 					<SummaryBox

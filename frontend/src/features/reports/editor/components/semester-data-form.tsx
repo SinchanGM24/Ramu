@@ -22,6 +22,10 @@ type SemesterDataValues = {
 	weightKg: string;
 };
 
+function optionalNumber(value: string) {
+	return value === "" ? undefined : Number(value);
+}
+
 function valuesFromData(
 	growth: ReportWorkspace["growth"],
 	attendance: ReportWorkspace["attendance"],
@@ -50,11 +54,9 @@ export function SemesterDataForm({
 			api(`/reports/${reportId}/semester-data`, {
 				method: "PUT",
 				body: JSON.stringify({
-					weightKg: Number(values.weightKg),
-					heightCm: Number(values.heightCm),
-					headCircumferenceCm: values.headCircumferenceCm
-						? Number(values.headCircumferenceCm)
-						: undefined,
+					weightKg: optionalNumber(values.weightKg),
+					heightCm: optionalNumber(values.heightCm),
+					headCircumferenceCm: optionalNumber(values.headCircumferenceCm),
 					sickDays: Number(values.sickDays),
 					permissionDays: Number(values.permissionDays),
 					unexcusedDays: Number(values.unexcusedDays),
@@ -91,7 +93,7 @@ export function SemesterDataForm({
 				<p className="text-xs font-bold text-brand-700">DATA AKHIR SEMESTER</p>
 				<h2 className="mt-1 text-lg font-bold text-slate-900">Pertumbuhan dan kehadiran</h2>
 				<p className="mt-1 text-sm text-slate-600">
-					Lengkapi data ini sebagai bagian dari rapor semester murid.
+					Data pertumbuhan bersifat opsional. Lengkapi kehadiran sebelum mengirim rapor.
 				</p>
 			</div>
 			<form className="mt-5 space-y-5" onSubmit={submit}>
@@ -99,19 +101,17 @@ export function SemesterDataForm({
 					<legend className="text-sm font-semibold text-slate-800">Data pertumbuhan</legend>
 					<div className="mt-3 grid gap-4 sm:grid-cols-3">
 						<NumberField
-							label="Berat badan (kg)"
+							label="Berat badan (kg, opsional)"
 							min="0"
 							name="weightKg"
-							required
 							step="0.01"
 							value={values.weightKg}
 							onChange={(value) => update("weightKg", value)}
 						/>
 						<NumberField
-							label="Tinggi badan (cm)"
+							label="Tinggi badan (cm, opsional)"
 							min="0"
 							name="heightCm"
-							required
 							step="0.01"
 							value={values.heightCm}
 							onChange={(value) => update("heightCm", value)}

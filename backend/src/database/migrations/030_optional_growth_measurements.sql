@@ -1,0 +1,3 @@
+ALTER TABLE growth_records
+  ALTER COLUMN weight_kg DROP NOT NULL,
+  ALTER COLUMN height_cm DROP NOT NULL;

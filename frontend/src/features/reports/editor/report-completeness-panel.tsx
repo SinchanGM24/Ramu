@@ -41,7 +41,7 @@ export function ReportCompletenessPanel({
 	const missing = [
 		...data.missingAssessments.map((item) => `Penilaian: ${item}`),
 		...data.missingNarratives.map((item) => `Narasi: ${item}`),
-		...(data.missingSemesterData ? ["Data pertumbuhan dan kehadiran"] : []),
+		...(data.missingSemesterData ? ["Data kehadiran"] : []),
 	];
 
 	function goToFirstMissingField() {

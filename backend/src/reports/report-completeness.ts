@@ -28,8 +28,7 @@ export async function getReportCompleteness(
     WHERE da.school_id=$3 AND f.name=$2 AND f.is_active AND (narrative.id IS NULL OR btrim(narrative.content)='')
     ORDER BY da.position`, [report.id, DEFAULT_TK_TEMPLATE_NAME, report.schoolId])).rows.map((row) => row.name);
   const semesterData = (await client.query<{ ready: boolean }>(`SELECT
-    EXISTS(SELECT 1 FROM growth_records WHERE student_id=$1 AND semester_id=$2 AND school_id=$3)
-    AND EXISTS(SELECT 1 FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2 AND school_id=$3) AS ready`, [report.studentId, report.semesterId, report.schoolId])).rows[0].ready;
+    EXISTS(SELECT 1 FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2 AND school_id=$3) AS ready`, [report.studentId, report.semesterId, report.schoolId])).rows[0].ready;
   return { complete: missingAssessments.length === 0 && missingNarratives.length === 0 && semesterData, missingAssessments, missingNarratives, missingSemesterData: !semesterData };
 }
 
@@ -37,6 +36,6 @@ export function completenessError(completeness: ReportCompleteness) {
   const missing: string[] = [];
   if (completeness.missingAssessments.length) missing.push("penilaian indikator");
   if (completeness.missingNarratives.length) missing.push("narasi perkembangan");
-  if (completeness.missingSemesterData) missing.push("data pertumbuhan dan kehadiran");
+  if (completeness.missingSemesterData) missing.push("data kehadiran");
   return `Rapor belum lengkap. Lengkapi ${missing.join(", ")} sebelum melanjutkan.`;
 }
