@@ -23,8 +23,8 @@ Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
 - [x] Dalam pengerjaan — `/app/academic`
 - [x] Dalam pengerjaan — `/app/academic/students`
 - [ ] Belum dimulai — `/app/academic/students/[id]`
-- [ ] Belum dimulai — `/app/academic/lifecycle`
-- [ ] Belum dimulai — `/app/academic/archive`
+- [x] Dalam pengerjaan — `/app/academic/lifecycle`
+- [x] Dalam pengerjaan — `/app/academic/archive`
 - [ ] Belum dimulai — `/app/students/[id]/assessment`
 
 ## Rute rapor

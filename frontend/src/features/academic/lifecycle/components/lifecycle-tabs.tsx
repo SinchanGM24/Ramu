@@ -9,7 +9,7 @@ export function LifecycleTabs({
 	onChange: (mode: LifecycleMode) => void;
 }) {
 	return (
-		<div className="mb-5 flex gap-2 border-b border-slate-200">
+		<div className="mb-5 inline-flex rounded-2xl border border-[#dfe2d6] bg-[#eef0e9] p-1">
 			<Tab active={mode === "transfer"} onClick={() => onChange("transfer")}>
 				Perpindahan Kelas
 			</Tab>
@@ -33,7 +33,7 @@ function Tab({
 			type="button"
 			onClick={onClick}
 			aria-pressed={active}
-			className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${active ? "bg-white text-brand-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:bg-white/70 hover:text-slate-800"}`}
+			className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${active ? "bg-[#fffdf8] text-brand-700 shadow-sm" : "text-[#637065] hover:bg-white/70 hover:text-brand-800"}`}
 		>
 			{children}
 		</button>

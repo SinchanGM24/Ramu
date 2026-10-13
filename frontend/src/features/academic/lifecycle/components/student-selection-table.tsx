@@ -21,18 +21,18 @@ export function StudentSelectionTable({
 		<Card className="mt-5">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h2 className="font-bold">Murid aktif</h2>
-					<p className="mt-1 text-sm text-slate-500">Pilih murid yang akan {action}.</p>
+					<h2 className="font-bold tracking-[-0.02em] text-brand-950">Murid aktif</h2>
+					<p className="mt-1 text-sm text-[#637065]">Pilih murid yang akan {action}.</p>
 				</div>
-				<span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+				<span className="rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700">
 					{students.length} murid
 				</span>
 			</div>
 			{students.length ? (
 				<>
-					<div className="mt-5 hidden overflow-hidden rounded-xl border border-slate-200 md:block">
+					<div className="mt-5 hidden overflow-hidden rounded-2xl border border-[#e2e4da] md:block">
 						<table className="w-full text-left text-sm">
-							<thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+							<thead className="bg-[#f4f4ed] text-xs font-semibold uppercase tracking-[0.12em] text-[#637065]">
 								<tr>
 									<th className="w-14 px-4 py-3">
 										<input
@@ -63,7 +63,7 @@ export function StudentSelectionTable({
 													onToggle(student.id);
 												}
 											}}
-											className={`cursor-pointer border-t border-slate-100 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600 ${selected ? "bg-brand-50/70" : "hover:bg-slate-50/70"}`}
+											className={`cursor-pointer border-t border-[#e7e7dc] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-600 ${selected ? "bg-brand-50/70" : "hover:bg-brand-50/30"}`}
 										>
 											<td className="px-4 py-4">
 												<input
@@ -75,15 +75,15 @@ export function StudentSelectionTable({
 												/>
 											</td>
 											<td className="px-4 py-4">
-												<p className="font-semibold text-slate-900">{student.name}</p>
-												<p className="mt-1 text-xs text-slate-500">
+												<p className="font-semibold text-brand-950">{student.name}</p>
+												<p className="mt-1 text-xs text-[#637065]">
 													{student.student_number
 														? `Nomor induk: ${student.student_number}`
 														: "Nomor induk belum diisi"}
 												</p>
 											</td>
 											<td className="px-4 py-4">
-												<span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+												<span className="inline-flex rounded-full bg-[#f1f3ec] px-2.5 py-1 text-xs font-medium text-[#4e5c50]">
 													{student.class_name || "Belum ditempatkan"}
 												</span>
 											</td>

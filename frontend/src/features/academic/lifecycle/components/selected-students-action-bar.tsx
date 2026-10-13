@@ -13,8 +13,8 @@ export function SelectedStudentsActionBar({
 }) {
 	if (!count) return null;
 	return (
-		<div className="sticky bottom-4 z-20 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-white p-4 shadow-lg">
-			<p className="text-sm font-medium">{count} murid dipilih</p>
+		<div className="sticky bottom-4 z-20 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-100 bg-[#fffdf8] p-4 shadow-panel">
+			<p className="text-sm font-semibold text-brand-950">{count} murid dipilih</p>
 			<div className="flex gap-2">
 				<Button variant="ghost" onClick={onClear}>
 					Batalkan pilihan
