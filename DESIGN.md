@@ -18,8 +18,8 @@ Dokumen ini adalah acuan visual seluruh frontend RAMU. Semua antarmuka memakai B
 | Teks utama | `#17251b` |
 | Teks sekunder | `#637065` |
 | Border | `#e5e7dd` |
-| Forest utama | `brand-700` / `#174b31` |
-| Forest gelap | `brand-900` / `#092b1a` |
+| Forest utama | `brand-700` / `#2c704d` |
+| Forest gelap | `brand-900` / `#1e553a` |
 | Sukses | hijau lembut |
 | Peringatan | amber lembut |
 | Bahaya | merah lembut |

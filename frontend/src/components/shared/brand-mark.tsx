@@ -10,7 +10,7 @@ export function BrandMark({
 }) {
 	return (
 		<div className={cn("flex items-center gap-3", className)}>
-			<span className="grid size-10 place-items-center rounded-2xl bg-brand-800 text-white shadow-[0_8px_20px_rgba(9,43,26,0.16)]">
+			<span className="grid size-10 place-items-center rounded-2xl bg-brand-800 text-white shadow-[0_8px_20px_rgba(44,112,77,0.16)]">
 				<GraduationCap size={21} strokeWidth={2.2} />
 			</span>
 			{compact ? null : (
