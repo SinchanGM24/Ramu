@@ -5,7 +5,7 @@ import { PaginationControls } from "@/components/shared/pagination-controls";
 import type { ClassGroup, StudentList } from "../types";
 
 const inputClass =
-	"w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
+	"w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50";
 
 type StudentDirectoryTableProps = {
 	classGroupId: string;
@@ -38,14 +38,16 @@ export function StudentDirectoryTable({
 }: StudentDirectoryTableProps) {
 	return (
 		<Card>
-			<div className="flex flex-col gap-4 border-b border-slate-100 pb-4 lg:flex-row lg:items-end lg:justify-between">
+			<div className="flex flex-col gap-4 border-b border-[#e7e7dc] pb-4 lg:flex-row lg:items-end lg:justify-between">
 				<div>
-					<h2 className="font-bold text-slate-900">Daftar murid</h2>
-					<p className="mt-1 text-sm text-slate-500">
+					<h2 className="font-bold tracking-[-0.02em] text-brand-950">Daftar murid</h2>
+					<p className="mt-1 text-sm text-[#637065]">
 						Gunakan pencarian atau filter kelas untuk mempersempit daftar.
 					</p>
 				</div>
-				<p className="text-sm text-slate-500">{students?.total ?? 0} murid</p>
+				<p className="rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700">
+					{students?.total ?? 0} murid
+				</p>
 			</div>
 			<div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_240px]">
 				<label className="relative">
@@ -76,7 +78,7 @@ export function StudentDirectoryTable({
 			</div>
 			<div className="mt-4 overflow-x-auto">
 				<table className="w-full min-w-[580px] text-left text-sm">
-					<thead className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
+					<thead className="border-b border-[#e7e7dc] text-xs font-semibold uppercase tracking-[0.12em] text-[#637065]">
 						<tr>
 							<th className="pb-3">Murid</th>
 							<th className="pb-3">Kelas saat ini</th>
@@ -97,17 +99,20 @@ export function StudentDirectoryTable({
 							</tr>
 						) : students?.items.length ? (
 							students.items.map((student) => (
-								<tr key={student.id} className="border-b border-slate-100 last:border-0">
+								<tr
+									key={student.id}
+									className="border-b border-[#e7e7dc] transition-colors hover:bg-brand-50/35 last:border-0"
+								>
 									<td className="py-4">
-										<p className="font-semibold text-slate-900">{student.name}</p>
-										<p className="mt-1 text-xs text-slate-500">
+										<p className="font-semibold text-brand-950">{student.name}</p>
+										<p className="mt-1 text-xs text-[#637065]">
 											{student.student_number
 												? `Nomor induk: ${student.student_number}`
 												: "Nomor induk belum diisi"}
 										</p>
 									</td>
 									<td className="py-4">
-										<span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+										<span className="inline-flex rounded-full bg-[#f1f3ec] px-2.5 py-1 text-xs font-medium text-[#4e5c50]">
 											{student.class_name || "Belum ditempatkan"}
 										</span>
 									</td>

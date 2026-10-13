@@ -20,8 +20,8 @@ Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
 ## Rute aplikasi
 
 - [x] Dalam pengerjaan — `/app/dashboard`
-- [ ] Belum dimulai — `/app/academic`
-- [ ] Belum dimulai — `/app/academic/students`
+- [x] Dalam pengerjaan — `/app/academic`
+- [x] Dalam pengerjaan — `/app/academic/students`
 - [ ] Belum dimulai — `/app/academic/students/[id]`
 - [ ] Belum dimulai — `/app/academic/lifecycle`
 - [ ] Belum dimulai — `/app/academic/archive`

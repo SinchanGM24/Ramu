@@ -20,8 +20,8 @@ export function ClassTable({
 		<Card className="mt-5">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h2 className="font-bold text-slate-950">Kelas tahun ajaran aktif</h2>
-					<p className="mt-1 text-sm text-slate-500">
+					<h2 className="font-bold tracking-[-0.02em] text-brand-950">Kelas tahun ajaran aktif</h2>
+					<p className="mt-1 text-sm leading-6 text-[#637065]">
 						Kelola kelas, guru yang ditugaskan, dan ringkasan penempatan murid untuk{" "}
 						{activeYearName || "tahun ajaran aktif"}.
 					</p>
@@ -32,9 +32,9 @@ export function ClassTable({
 				</Button>
 			</div>
 			{hasActiveYear ? (
-				<div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
+				<div className="mt-5 overflow-x-auto rounded-2xl border border-[#e2e4da]">
 					<table className="w-full min-w-[680px] text-left text-sm">
-						<thead className="bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+						<thead className="bg-[#f4f4ed] text-xs font-bold uppercase tracking-[0.12em] text-[#637065]">
 							<tr>
 								<th className="px-4 py-3">Kelas</th>
 								<th className="px-4 py-3">Guru ditugaskan</th>
@@ -45,12 +45,15 @@ export function ClassTable({
 						</thead>
 						<tbody>
 							{periods?.map((period) => (
-								<tr key={period.id} className="border-t border-slate-100">
-									<td className="px-4 py-4 font-semibold text-slate-900">{period.name}</td>
-									<td className="px-4 py-4 text-slate-600">
+								<tr
+									key={period.id}
+									className="border-t border-[#e7e7dc] transition-colors hover:bg-brand-50/35"
+								>
+									<td className="px-4 py-4 font-semibold text-brand-950">{period.name}</td>
+									<td className="px-4 py-4 text-[#637065]">
 										{period.teacher_names || "Belum ada guru ditugaskan"}
 									</td>
-									<td className="px-4 py-4 text-center text-slate-600">
+									<td className="px-4 py-4 text-center text-[#637065]">
 										{period.student_count || 0}
 									</td>
 									<td className="px-4 py-4">
@@ -78,7 +81,7 @@ export function ClassTable({
 						</tbody>
 					</table>
 					{!periods?.length ? (
-						<p className="p-6 text-center text-sm text-slate-500">
+						<p className="p-8 text-center text-sm text-[#637065]">
 							Belum ada kelas pada tahun ajaran ini.
 						</p>
 					) : null}
