@@ -12,7 +12,45 @@ const request = {
 	},
 } as never;
 
+const schoolAdminRequest = {
+	auth: {
+		userId: "admin-1",
+		schoolId: "school-1",
+		role: "SCHOOL_ADMIN",
+		email: "admin@example.test",
+		sessionId: "session-1",
+	},
+} as never;
+
 describe("ReportsController", () => {
+	it("locks only the report row while loading publication data", async () => {
+		const queries: Array<{ sql: string; values: unknown[] }> = [];
+		const client = {
+			query: async (sql: string, values: unknown[]) => {
+				queries.push({ sql, values });
+				return { rows: [] };
+			},
+		};
+		const db = {
+			transaction: async (
+				callback: (input: typeof client) => Promise<unknown>,
+			) => callback(client),
+		};
+		const audit = { record: async () => undefined };
+		const controller = new ReportsController(
+			new AuthService({} as never),
+			db as never,
+			audit as never,
+			{} as never,
+		);
+
+		await expect(
+			controller.publish(schoolAdminRequest, "report-1"),
+		).rejects.toThrow("Rapor tidak ditemukan");
+
+		expect(queries[0]?.sql).toContain("FOR UPDATE OF r");
+	});
+
 	it("casts the report status update and uses boolean transition flags", async () => {
 		const queries: Array<{ sql: string; values: unknown[] }> = [];
 		const client = {
