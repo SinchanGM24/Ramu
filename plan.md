@@ -19,7 +19,7 @@ Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
 
 ## Rute aplikasi
 
-- [ ] Belum dimulai — `/app/dashboard`
+- [x] Dalam pengerjaan — `/app/dashboard`
 - [ ] Belum dimulai — `/app/academic`
 - [ ] Belum dimulai — `/app/academic/students`
 - [ ] Belum dimulai — `/app/academic/students/[id]`
