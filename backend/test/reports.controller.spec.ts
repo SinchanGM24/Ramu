@@ -23,6 +23,33 @@ const schoolAdminRequest = {
 } as never;
 
 describe("ReportsController", () => {
+	it("scopes the review queue to the current school and review stages", async () => {
+		const queries: Array<{ sql: string; values?: unknown[] }> = [];
+		const client = {
+			query: async (sql: string, values?: unknown[]) => {
+				queries.push({ sql, values });
+				return { rows: [] };
+			},
+		};
+		const db = {
+			transaction: async (
+				callback: (input: typeof client) => Promise<unknown>,
+			) => callback(client),
+		};
+		const controller = new ReportsController(
+			new AuthService({} as never),
+			db as never,
+			{ record: async () => undefined } as never,
+			{} as never,
+		);
+
+		await expect(controller.reviewQueue(request)).resolves.toEqual([]);
+
+		expect(queries[0]?.sql).toContain("WHERE r.school_id=$1");
+		expect(queries[0]?.sql).toContain("r.status IN ('SUBMITTED','IN_REVIEW')");
+		expect(queries[0]?.values).toEqual(["school-1"]);
+	});
+
 	it("locks only the report row while loading publication data", async () => {
 		const queries: Array<{ sql: string; values: unknown[] }> = [];
 		const client = {

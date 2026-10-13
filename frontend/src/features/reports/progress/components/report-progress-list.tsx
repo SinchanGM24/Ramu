@@ -8,7 +8,14 @@ import type { ProgressFilter, ProgressItem } from "../types";
 import { getReportDestination, pageSize, statusCopy } from "../utils";
 
 type Props = {
-	counts: { total: number; draft: number; review: number; publish: number; published: number };
+	counts: {
+		total: number;
+		notCreated: number;
+		draft: number;
+		review: number;
+		publish: number;
+		published: number;
+	};
 	filter: ProgressFilter;
 	items: ProgressItem[];
 	loading: boolean;
@@ -35,24 +42,20 @@ export function ReportProgressList({
 	onSearchChange,
 }: Props) {
 	const filters: { id: ProgressFilter; label: string; count: number }[] = [
-		{ id: "ALL", label: "Semua", count: counts.total },
 		{
 			id: "NOT_CREATED",
 			label: "Belum dibuat",
-			count: counts.total - counts.draft - counts.review - counts.publish - counts.published,
+			count: counts.notCreated,
 		},
 		{ id: "WORKING", label: "Sedang dikerjakan", count: counts.draft },
-		{ id: "SUBMITTED", label: "Perlu ditinjau", count: counts.review },
-		{ id: "APPROVED", label: "Siap terbit", count: counts.publish },
-		{ id: "PUBLISHED", label: "Terbit", count: counts.published },
 	];
 	return (
 		<Card>
 			<div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h2 className="font-bold text-slate-900">Daftar rapor murid</h2>
+					<h2 className="font-bold text-slate-900">Rapor yang perlu diisi</h2>
 					<p className="mt-1 text-sm text-slate-500">
-						Cari murid atau pilih status untuk menyaring daftar.
+						Pilih murid untuk membuat draf atau melanjutkan pengisian rapor.
 					</p>
 				</div>
 				<div className="flex items-center gap-2 text-sm text-slate-500">

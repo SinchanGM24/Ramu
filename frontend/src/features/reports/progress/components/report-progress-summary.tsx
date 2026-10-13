@@ -1,4 +1,4 @@
-import { CheckCircle2, ClipboardCheck, FilePenLine, Send } from "lucide-react";
+import { FilePenLine } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { ProgressCounts } from "../types";
 
@@ -6,31 +6,13 @@ export function ReportProgressSummary({ counts }: { counts: ProgressCounts }) {
 	const cards = [
 		{
 			icon: <FilePenLine className="size-5" />,
-			label: "Sedang dikerjakan",
-			value: counts.draft,
-			description: "Draf atau perlu revisi",
-		},
-		{
-			icon: <ClipboardCheck className="size-5" />,
-			label: "Perlu ditinjau",
-			value: counts.review,
-			description: "Menunggu tindakan peninjau",
-		},
-		{
-			icon: <Send className="size-5" />,
-			label: "Siap diterbitkan",
-			value: counts.publish,
-			description: "Sudah disetujui",
-		},
-		{
-			icon: <CheckCircle2 className="size-5" />,
-			label: "Sudah diterbitkan",
-			value: counts.published,
-			description: "Versi rapor telah dikunci",
+			label: "Perlu diisi",
+			value: counts.notCreated + counts.draft,
+			description: "Draf baru atau rapor yang perlu direvisi",
 		},
 	];
 	return (
-		<div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+		<div className="mb-5 grid max-w-xs gap-3">
 			{cards.map((card) => (
 				<Card key={card.label} className="p-4">
 					<div className="flex items-start justify-between">

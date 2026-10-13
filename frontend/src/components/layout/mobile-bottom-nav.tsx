@@ -4,11 +4,13 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { authSessionQueryOptions } from "@/features/auth/session";
-import { navigation, type AppRole } from "./navigation";
+import { mobileNavigation, type AppRole } from "./navigation";
 export function MobileBottomNav() {
 	const pathname = usePathname();
 	const session = useQuery(authSessionQueryOptions);
-	const items = navigation.filter((item) => item.roles.includes(session.data?.role as AppRole));
+	const items = mobileNavigation.filter((item) =>
+		item.roles.includes(session.data?.role as AppRole),
+	);
 	return (
 		<nav
 			aria-label="Navigasi utama"

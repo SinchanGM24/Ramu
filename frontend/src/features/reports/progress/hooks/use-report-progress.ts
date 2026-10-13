@@ -8,7 +8,7 @@ import { getProgressCounts, matchesProgressFilter, pageSize } from "../utils";
 export function useReportProgress() {
 	const queryClient = useQueryClient();
 	const [semesterId, setSemesterId] = useState("");
-	const [filter, setFilter] = useState<ProgressFilter>("ALL");
+	const [filter, setFilter] = useState<ProgressFilter>("NOT_CREATED");
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [error, setError] = useState("");

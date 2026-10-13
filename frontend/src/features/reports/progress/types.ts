@@ -10,6 +10,7 @@ export type ProgressItem = { id: string; name: string; report_id?: string; statu
 export type ProgressFilter = "ALL" | "NOT_CREATED" | "WORKING" | ReportStatus;
 export type ProgressCounts = {
 	total: number;
+	notCreated: number;
 	draft: number;
 	review: number;
 	publish: number;

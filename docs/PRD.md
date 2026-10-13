@@ -50,6 +50,8 @@ LMS, SPP/accounting, payroll, chat, daily attendance, student rankings, parent a
 
 `Academic setup → Teacher individual assessment → Submit → Review → Approve → Publish → Generate PDF + secure token + six-digit PIN → Queue WhatsApp → Parent read-only view`
 
+Antarmuka aplikasi memisahkan tiga ruang kerja rapor: **Pengisian rapor** untuk membuat atau melengkapi draf, **Tinjauan rapor** untuk meminta revisi atau menyetujui, serta **Publikasi & kirim** untuk menerbitkan rapor yang disetujui dan mengirimkannya kepada wali. Jangan mencampur tindakan antar-tahap pada satu daftar kerja.
+
 ### Parent access
 
 `/r/[token] → PIN verification → temporary session → view report / download stored PDF / print`
@@ -68,7 +70,7 @@ The parent must not edit, comment, upload, chat, access analytics, or see other 
 
 `/app/academic/{years,classes,teachers,students}`
 
-`/app/reports/{progress,review,publish}`
+`/app/reports/{progress,review,publication}`
 
 `/app/analytics`, `/app/communication/whatsapp`
 

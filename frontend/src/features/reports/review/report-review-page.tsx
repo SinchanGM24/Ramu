@@ -4,19 +4,15 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/page-header";
 import { api, ApiError } from "@/lib/api";
-import { authSessionQueryOptions } from "@/features/auth/session";
-import { ParentAccessCard } from "./components/parent-access-card";
 import { ReviewFeedback } from "./components/review-feedback";
 import { ReviewQueue } from "./components/review-queue";
-import type { PublishedReport, ReviewReport } from "./types";
+import type { ReviewReport } from "./types";
 
 export function ReportReviewPage() {
 	const queryClient = useQueryClient();
 	const [openRevisionFor, setOpenRevisionFor] = useState<string>();
 	const [revisionNote, setRevisionNote] = useState("");
 	const [notice, setNotice] = useState<string>();
-	const [parentAccess, setParentAccess] = useState<{ link: string; pin: string }>();
-	const session = useQuery(authSessionQueryOptions);
 	const reports = useQuery({
 		queryKey: ["reports", "review-queue"],
 		queryFn: () => api<ReviewReport[]>("/reports/review-queue"),
@@ -46,42 +42,26 @@ export function ReportReviewPage() {
 			queryClient.invalidateQueries({ queryKey: ["reports"] });
 		},
 	});
-	const publish = useMutation({
-		mutationFn: (id: string) => api<PublishedReport>(`/reports/${id}/publish`, { method: "POST" }),
-		onSuccess: (published) => {
-			setNotice("Rapor berhasil diterbitkan dan dikunci sebagai versi final.");
-			setParentAccess(published.parentAccess);
-			queryClient.invalidateQueries({ queryKey: ["reports"] });
-			queryClient.invalidateQueries({ queryKey: ["reports", "review-queue"] });
-		},
-	});
 	const error =
 		transition.error instanceof ApiError
 			? transition.error.message
 			: transition.error
 				? "Tindakan tidak dapat diproses. Coba lagi."
-				: publish.error instanceof ApiError
-					? publish.error.message
-					: publish.error
-						? "Rapor belum dapat diterbitkan. Coba lagi."
-						: undefined;
+				: undefined;
 	return (
 		<>
 			<PageHeader
 				eyebrow="Rapor"
 				title="Tinjauan rapor"
-				description="Periksa rapor yang dikirim guru, minta revisi bila perlu, lalu setujui rapor yang sudah layak."
+				description="Periksa rapor yang dikirim guru, minta revisi bila perlu, lalu setujui rapor yang sudah layak diterbitkan."
 			/>
 			{notice ? <ReviewFeedback tone="success">{notice}</ReviewFeedback> : null}
-			{parentAccess ? <ParentAccessCard {...parentAccess} /> : null}
 			{error ? <ReviewFeedback tone="error">{error}</ReviewFeedback> : null}
 			<ReviewQueue
-				canPublish={session.data?.role === "SCHOOL_ADMIN"}
 				loading={reports.isLoading}
 				error={reports.isError}
 				queue={reports.data ?? []}
 				openRevisionFor={openRevisionFor}
-				publishPending={publish.isPending}
 				revisionNote={revisionNote}
 				transitionPending={transition.isPending}
 				onRetry={() => void reports.refetch()}
@@ -94,7 +74,6 @@ export function ReportReviewPage() {
 					setOpenRevisionFor(undefined);
 					setRevisionNote("");
 				}}
-				onPublish={(id) => publish.mutate(id)}
 				onRevisionNoteChange={setRevisionNote}
 				onStartReview={(id) => transition.mutate({ id, action: "review" })}
 				onSubmitRevision={(id) => {

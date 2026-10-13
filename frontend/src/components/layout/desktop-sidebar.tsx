@@ -8,7 +8,13 @@ import { api } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authSessionQueryOptions } from "@/features/auth/session";
 import { cn } from "@/lib/utils";
-import { academicNavigation, navigation, settingsNavigation, type AppRole } from "./navigation";
+import {
+	academicNavigation,
+	navigation,
+	reportNavigation,
+	settingsNavigation,
+	type AppRole,
+} from "./navigation";
 
 export function DesktopSidebar() {
 	const pathname = usePathname();
@@ -58,6 +64,19 @@ export function DesktopSidebar() {
 					))}
 				<NavigationGroup label="Akademik">
 					{academicNavigation
+						.filter((item) => item.roles.includes(session.data?.role as AppRole))
+						.map(({ href, label, icon: Icon }) => (
+							<NavigationLink
+								key={href}
+								href={href}
+								label={label}
+								Icon={Icon}
+								active={pathname.startsWith(href)}
+							/>
+						))}
+				</NavigationGroup>
+				<NavigationGroup label="Rapor">
+					{reportNavigation
 						.filter((item) => item.roles.includes(session.data?.role as AppRole))
 						.map(({ href, label, icon: Icon }) => (
 							<NavigationLink

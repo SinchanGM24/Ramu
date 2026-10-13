@@ -5,18 +5,15 @@ import { ReviewQueueItem } from "./review-queue-item";
 import type { ReviewReport } from "../types";
 
 export type ReviewQueueProps = {
-	canPublish: boolean;
 	error: boolean;
 	loading: boolean;
 	openRevisionFor?: string;
-	publishPending: boolean;
 	queue: ReviewReport[];
 	revisionNote: string;
 	transitionPending: boolean;
 	onApprove: (id: string) => void;
 	onCancelRevision: () => void;
 	onOpenRevision: (id: string) => void;
-	onPublish: (id: string) => void;
 	onRetry: () => void;
 	onRevisionNoteChange: (note: string) => void;
 	onStartReview: (id: string) => void;
@@ -48,15 +45,12 @@ export function ReviewQueue(props: ReviewQueueProps) {
 				<ReviewQueueItem
 					key={report.id}
 					report={report}
-					canPublish={props.canPublish}
 					openRevision={props.openRevisionFor === report.id}
 					pending={props.transitionPending}
-					publishPending={props.publishPending}
 					revisionNote={props.revisionNote}
 					onApprove={() => props.onApprove(report.id)}
 					onCancelRevision={props.onCancelRevision}
 					onOpenRevision={() => props.onOpenRevision(report.id)}
-					onPublish={() => props.onPublish(report.id)}
 					onRevisionNoteChange={props.onRevisionNoteChange}
 					onStartReview={() => props.onStartReview(report.id)}
 					onSubmitRevision={() => props.onSubmitRevision(report.id)}

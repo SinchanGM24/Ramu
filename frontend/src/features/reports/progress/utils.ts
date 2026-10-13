@@ -22,11 +22,7 @@ export function matchesProgressFilter(item: ProgressItem, filter: ProgressFilter
 
 export function getReportDestination(item: ProgressItem) {
 	if (!item.report_id) return null;
-	if (["SUBMITTED", "IN_REVIEW", "APPROVED"].includes(item.status ?? "")) {
-		return { href: "/app/reports/review", label: "Buka tinjauan" };
-	}
-	if (item.status === "PUBLISHED")
-		return { href: `/app/reports/${item.report_id}/preview`, label: "Lihat rapor" };
+	if (!["DRAFT", "REVISION_REQUIRED"].includes(item.status ?? "")) return null;
 	return {
 		href: `/app/reports/${item.report_id}`,
 		label: item.status === "REVISION_REQUIRED" ? "Lanjutkan revisi" : "Buka editor",
@@ -36,9 +32,9 @@ export function getReportDestination(item: ProgressItem) {
 export function getProgressCounts(items: ProgressItem[]): ProgressCounts {
 	return {
 		total: items.length,
-		draft: items.filter(
-			(item) => !item.status || item.status === "DRAFT" || item.status === "REVISION_REQUIRED",
-		).length,
+		notCreated: items.filter((item) => !item.status).length,
+		draft: items.filter((item) => item.status === "DRAFT" || item.status === "REVISION_REQUIRED")
+			.length,
 		review: items.filter((item) => ["SUBMITTED", "IN_REVIEW"].includes(item.status ?? "")).length,
 		publish: items.filter((item) => item.status === "APPROVED").length,
 		published: items.filter((item) => item.status === "PUBLISHED").length,

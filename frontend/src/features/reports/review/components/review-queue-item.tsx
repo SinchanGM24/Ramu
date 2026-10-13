@@ -2,7 +2,6 @@ import { Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { PublishReportAction } from "./publish-report-action";
 import { RevisionRequestForm } from "./revision-request-form";
 import type { ReviewReport } from "../types";
 
@@ -10,20 +9,15 @@ const status: Record<ReviewReport["status"], { label: string; tone: "green" | "a
 	{
 		SUBMITTED: { label: "Menunggu ditinjau", tone: "amber" },
 		IN_REVIEW: { label: "Sedang ditinjau", tone: "amber" },
-		REVISION_REQUIRED: { label: "Perlu revisi", tone: "slate" },
-		APPROVED: { label: "Disetujui", tone: "green" },
 	};
 
 type ReviewQueueItemProps = {
-	canPublish: boolean;
 	openRevision: boolean;
 	pending: boolean;
-	publishPending: boolean;
 	report: ReviewReport;
 	revisionNote: string;
 	onApprove: () => void;
 	onOpenRevision: () => void;
-	onPublish: () => void;
 	onRevisionNoteChange: (note: string) => void;
 	onStartReview: () => void;
 	onSubmitRevision: () => void;
@@ -31,16 +25,13 @@ type ReviewQueueItemProps = {
 };
 
 export function ReviewQueueItem({
-	canPublish,
 	openRevision,
 	pending,
-	publishPending,
 	report,
 	revisionNote,
 	onApprove,
 	onCancelRevision,
 	onOpenRevision,
-	onPublish,
 	onRevisionNoteChange,
 	onStartReview,
 	onSubmitRevision,
@@ -76,18 +67,6 @@ export function ReviewQueueItem({
 								Setujui rapor
 							</Button>
 						</>
-					) : null}
-					{report.status === "APPROVED" && canPublish ? (
-						<PublishReportAction
-							reportId={report.id}
-							pending={publishPending}
-							onPublish={onPublish}
-						/>
-					) : null}
-					{report.status === "APPROVED" && !canPublish ? (
-						<span className="text-sm text-slate-500">
-							Menunggu Admin Sekolah menerbitkan rapor.
-						</span>
 					) : null}
 				</div>
 			</div>

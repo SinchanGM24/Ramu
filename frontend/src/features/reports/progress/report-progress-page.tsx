@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardCheck } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,16 +15,8 @@ export function ReportProgressPage() {
 		<>
 			<PageHeader
 				eyebrow="Rapor"
-				title="Pusat rapor"
-				description="Pantau setiap rapor dalam satu semester, lalu lanjutkan tindakan yang tepat pada setiap tahap."
-				action={
-					<Link href="/app/reports/review">
-						<Button variant="secondary">
-							<ClipboardCheck className="mr-1.5 size-4" />
-							Tinjauan rapor
-						</Button>
-					</Link>
-				}
+				title="Pengisian rapor"
+				description="Buat, lengkapi, dan kirim rapor murid untuk ditinjau Kepala Sekolah."
 			/>
 			{progress.error ? (
 				<p role="alert" className="mb-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">
