@@ -2,7 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-* { box-sizing: border-box; }
-html { background: #f8faf9; }
-body { margin: 0; color: #172033; font-family: Arial, Helvetica, sans-serif; }
-button, input, select { font: inherit; }
+:root {
+	--ramu-ivory: #f8f5ed;
+	--ramu-paper: #fffdf8;
+	--ramu-ink: #17251b;
+	--ramu-muted: #647066;
+	--ramu-line: #e5e7dd;
+	--ramu-forest: #174b31;
+	--ramu-forest-deep: #092b1a;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	background: var(--ramu-ivory);
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+	color: var(--ramu-ink);
+	background:
+		radial-gradient(circle at 78% -8%, rgba(181, 214, 188, 0.32), transparent 28rem),
+		var(--ramu-ivory);
+	font-family: "Aptos", "Segoe UI", sans-serif;
+	text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+	-webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+	color: white;
+	background: #245f3f;
+}
+
+.ramu-surface-pattern {
+	background-image:
+		radial-gradient(circle at 1px 1px, rgba(23, 75, 49, 0.06) 1px, transparent 0);
+	background-size: 18px 18px;
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, GraduationCap, LogOut } from "lucide-react";
+import { ChevronDown, GraduationCap, LogOut, Sparkles } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -40,18 +40,33 @@ export function DesktopSidebar() {
 	}
 
 	return (
-		<aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-100 bg-white px-4 py-5 lg:flex">
-			<Link href="/app/dashboard" className="mb-7 shrink-0 flex items-center gap-3 px-2">
-				<span className="grid size-10 place-items-center rounded-xl bg-brand-600 text-white">
-					<GraduationCap size={22} />
+		<aside className="ramu-sidebar fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-brand-900 px-4 py-5 text-brand-50 lg:flex">
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute -bottom-24 -left-24 size-72 rounded-full border border-brand-300/10"
+			/>
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute -bottom-5 -left-8 size-52 rounded-full border border-brand-300/10"
+			/>
+			<Link href="/app/dashboard" className="relative mb-8 flex shrink-0 items-center gap-3 px-2">
+				<span className="grid size-11 place-items-center rounded-2xl bg-[#fffdf8] text-brand-800 shadow-[0_10px_24px_rgba(0,0,0,0.17)]">
+					<GraduationCap size={23} />
 				</span>
 				<span>
-					<strong className="block text-lg tracking-tight text-slate-900">RAMU</strong>
-					<small className="text-xs text-slate-500">Raport Murid</small>
+					<strong className="block text-lg tracking-[-0.03em] text-white">RAMU</strong>
+					<small className="text-xs text-brand-100/75">Raport Murid</small>
 				</span>
 			</Link>
+			<div className="relative mb-5 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3">
+				<div className="flex items-center gap-2 text-xs font-semibold text-brand-100">
+					<Sparkles size={14} />
+					Ruang kerja sekolah
+				</div>
+				<p className="mt-1 truncate text-sm font-semibold text-white">TK Contoh Ceria</p>
+			</div>
 			<nav
-				className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1"
+				className="relative min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1"
 				aria-label="Navigasi aplikasi"
 			>
 				{navigation
@@ -114,22 +129,22 @@ export function DesktopSidebar() {
 						))}
 				</NavigationGroup>
 			</nav>
-			<div className="mt-4 shrink-0 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-				<p>TK Contoh Ceria</p>
-				<strong className="block text-slate-700">
+			<div className="relative mt-4 shrink-0 rounded-2xl border border-white/10 bg-black/10 p-3 text-xs leading-5 text-brand-100/80">
+				<p className="text-brand-100/70">Akun aktif</p>
+				<strong className="block text-white">
 					{session.data?.role === "SCHOOL_ADMIN" ? "Admin Sekolah" : "Akun staf"}
 				</strong>
 				<button
 					type="button"
 					onClick={() => void logout()}
 					disabled={loggingOut}
-					className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-slate-600 hover:bg-white hover:text-red-700 disabled:cursor-wait disabled:opacity-60"
+					className="mt-2 flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-brand-100/80 transition hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-60"
 				>
 					<LogOut size={15} />
 					{loggingOut ? "Mengeluarkan akun…" : "Keluar akun"}
 				</button>
 				{logoutError && (
-					<p role="alert" className="mt-2 leading-4 text-red-700">
+					<p role="alert" className="mt-2 leading-4 text-red-200">
 						{logoutError}
 					</p>
 				)}
@@ -164,10 +179,10 @@ function NavigationGroup({
 				onClick={() => setIsOpen((value) => !value)}
 				aria-expanded={isOpen}
 				className={cn(
-					"flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider transition",
+					"flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[0.14em] transition",
 					active
-						? "text-brand-700 hover:bg-brand-50"
-						: "text-slate-400 hover:bg-slate-50 hover:text-slate-600",
+						? "text-brand-100 hover:bg-white/10"
+						: "text-brand-200/55 hover:bg-white/5 hover:text-brand-100",
 				)}
 			>
 				{label}
@@ -195,8 +210,10 @@ function NavigationLink({
 		<Link
 			href={href}
 			className={cn(
-				"flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
-				active ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-50",
+				"flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+				active
+					? "bg-[#fffdf8] text-brand-900 shadow-[0_8px_20px_rgba(0,0,0,0.13)]"
+					: "text-brand-100/80 hover:bg-white/10 hover:text-white",
 			)}
 		>
 			<Icon size={18} />

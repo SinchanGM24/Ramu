@@ -5,9 +5,24 @@ const config: Config = {
 	theme: {
 		extend: {
 			colors: {
-				brand: { 50: "#eefbf6", 100: "#d5f5e7", 500: "#238a62", 600: "#176f4e", 700: "#125a40" },
+				brand: {
+					50: "#edf6ef",
+					100: "#d9eadc",
+					200: "#b5d6bc",
+					300: "#87ba94",
+					400: "#5c9870",
+					500: "#387953",
+					600: "#245f3f",
+					700: "#174b31",
+					800: "#103923",
+					900: "#092b1a",
+					950: "#051c11",
+				},
 			},
-			boxShadow: { soft: "0 12px 30px rgba(22, 66, 51, 0.08)" },
+			boxShadow: {
+				soft: "0 16px 38px rgba(26, 65, 42, 0.08)",
+				panel: "0 18px 48px rgba(26, 65, 42, 0.1)",
+			},
 		},
 	},
 	plugins: [],

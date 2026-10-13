@@ -14,7 +14,7 @@ export function MobileBottomNav() {
 	return (
 		<nav
 			aria-label="Navigasi utama"
-			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
+			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-brand-950/10 bg-[#fffdf8]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(23,75,49,0.06)] backdrop-blur lg:hidden"
 		>
 			{items.map(({ href, label, icon: Icon }) => {
 				const active = pathname.startsWith(href);
@@ -24,7 +24,7 @@ export function MobileBottomNav() {
 						href={href}
 						className={cn(
 							"flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium",
-							active ? "text-brand-700" : "text-slate-500",
+							active ? "text-brand-800" : "text-slate-500",
 						)}
 					>
 						<Icon size={20} strokeWidth={active ? 2.5 : 2} />
