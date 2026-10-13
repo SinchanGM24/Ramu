@@ -25,7 +25,7 @@ Tenant equals `school`. Application users obtain roles through `school_membershi
 - Public landing, features, pricing, FAQ, login, and school registration.
 - Account, school, plan, tenant creation, and onboarding.
 - School profile, academic years, semesters, classes, teachers, students, and guardian contacts.
-- Tenant-configurable assessment framework and scale.
+- Framework dan skala penilaian PAUD standar yang dibuat otomatis untuk setiap sekolah.
 - Individual student assessment, narratives, growth, attendance summary, extracurricular records, and portfolio.
 - Review, approval, preview, versioned publication, PDF storage, secure parent access, WhatsApp distribution, aggregate analytics, and audit log.
 
@@ -72,7 +72,7 @@ The parent must not edit, comment, upload, chat, access analytics, or see other 
 
 `/app/analytics`, `/app/communication/whatsapp`
 
-`/app/settings/{school,assessment,template,users,subscription}`
+`/app/settings/{school,template,users,subscription}`
 
 ### Teacher workspace
 
@@ -82,7 +82,7 @@ The parent must not edit, comment, upload, chat, access analytics, or see other 
 
 Framework hierarchy: `DevelopmentArea → SubArea → Indicator → Assessment`.
 
-Default scale is `BB`, `MB`, `BSH`, `BSB`, but each tenant can configure its own scale/options. Initial development areas are Nilai Agama dan Moral, Fisik Motorik, Kognitif, Bahasa, Sosial Emosional, and Seni.
+Setiap sekolah otomatis menerima framework PAUD standar dan skala `BB`, `MB`, `BSH`, `BSB`. Framework penilaian tidak dapat dikonfigurasi pada MVP. Area perkembangan awal adalah Nilai Agama dan Moral, Fisik Motorik, Kognitif, Bahasa, Sosial Emosional, dan Seni.
 
 The student workspace shows identity, semester, completion progress, each development area, semester data, and report preview. Area state is visually `complete`, `partial`, or `not-started`. For each indicator the teacher chooses one scale option in one click; the result autosaves. Assessment is strictly one student at a time.
 

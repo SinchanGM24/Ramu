@@ -19,6 +19,7 @@ Use this skill for product, architecture, or implementation work in this reposit
 - A reusable class is `class_groups`. It is the only class concept exposed in ordinary forms. `class_periods` is an internal historical placement record; never render duplicate reusable classes merely because they appear in multiple academic years.
 - Do not reintroduce education levels, next-level progression, promotion/repetition, homeroom/primary-teacher flags, or automatic class advancement. Administrative movement is an explicit transfer or graduation only.
 - Keep requests separate from applied operations: a teacher request is not a student placement, graduation, enrollment, or other applied lifecycle event until its authorized approval transaction succeeds.
+- Every school receives the same default PAUD assessment framework and `BB`/`MB`/`BSH`/`BSB` scale automatically. Do not restore a user-managed framework or assessment-settings workflow in the MVP.
 
 ## Language boundary
 

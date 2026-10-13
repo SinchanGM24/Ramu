@@ -11,9 +11,9 @@ Modul memiliki dua representasi:
 
 Editor boleh modern; preview/PDF mempertahankan struktur laporan, urutan area/subarea/indikator, skala, narasi, dan data akhir semester. Jangan memodelkan domain berdasarkan nomor halaman fisik (`page_12`, dll.). Nomor halaman hanya hasil layout.
 
-Hierarki domain adalah `School → ReportTemplate → ReportLevel → DevelopmentArea → SubArea → Indicator → Assessment`. Template milik tenant dan harus dapat dikonfigurasi. Level minimal `KELOMPOK_A` dan `KELOMPOK_B`; indikator antar level tidak boleh diasumsikan sama atau disalin sebagai fakta kurikulum tanpa verifikasi.
+Hierarki domain adalah `School → DefaultAssessmentFramework → DevelopmentArea → SubArea → Indicator → Assessment`. Setiap sekolah memiliki salinan data framework PAUD standar yang dibuat otomatis. Framework dan skala penilaian tidak dapat dikonfigurasi pada MVP.
 
-Penilaian selalu terikat pada `student`, `academic_year`, `semester`, `report_level`, `indicator`, dan `assessment_value`.
+Penilaian selalu terikat pada `student`, `academic_year`, `semester`, `indicator`, dan `assessment_value`.
 
 ## 2. Semester dan penilaian
 
@@ -35,7 +35,7 @@ Header laporan: **Laporan Perkembangan Anak Didik**, nama, nomor induk, kelompok
 
 ## 4. Struktur template referensi
 
-Seed template `DEFAULT_TK_REPORT_TEMPLATE` untuk level referensi yang telah diverifikasi. Ia memuat area dan subarea berikut, dalam urutan ini:
+Seed template `DEFAULT_TK_REPORT_TEMPLATE` adalah framework standar yang diterapkan otomatis untuk setiap sekolah. Ia memuat area dan subarea berikut, dalam urutan ini:
 
 1. **Nilai-Nilai Agama dan Moral** — agama, gerakan ibadah, doa, perilaku baik/buruk, pembiasaan baik, salam.
 2. **Fisik Motorik** — Motorik Kasar; Motorik Halus; Kesehatan dan Perilaku Keselamatan (pertumbuhan, toilet, alarm bahaya, rambu lalu lintas).
@@ -44,7 +44,7 @@ Seed template `DEFAULT_TK_REPORT_TEMPLATE` untuk level referensi yang telah dive
 5. **SOSEM** — Kesadaran Diri; Tanggungjawab Diri dan Orang Lain; Perilaku Prososial. Editor dapat memakai label **Sosial Emosional**, tetapi template PDF referensi memakai **SOSEM**.
 6. **Seni** — menikmati lagu/suara; tertarik kegiatan seni.
 
-Indikator harus disimpan sebagai data template yang dapat diedit per level, bukan hard-code halaman. Konten indikator mengikuti spesifikasi referensi yang diberikan: Fisik Motorik memiliki indikator motorik kasar, halus, dan keselamatan; Kognitif mencakup pemecahan masalah/logis/simbolik; Bahasa mencakup memahami/mengungkapkan/keaksaraan; SOSEM mencakup kesadaran diri, tanggung jawab, prososial; Seni mencakup musik serta ekspresi/karya seni.
+Indikator harus disimpan sebagai data framework, bukan hard-code halaman. Konten indikator mengikuti spesifikasi referensi yang diberikan: Fisik Motorik memiliki indikator motorik kasar, halus, dan keselamatan; Kognitif mencakup pemecahan masalah/logis/simbolik; Bahasa mencakup memahami/mengungkapkan/keaksaraan; SOSEM mencakup kesadaran diri, tanggung jawab, prososial; Seni mencakup musik serta ekspresi/karya seni.
 
 Setiap **development area** memiliki tepat satu narasi per siswa per semester—bukan narasi per indikator atau subarea. Narasi memakai autosave. Aturan generator draf deterministic, metadata indikator, serta validasinya ditetapkan dalam [docs/SmartNarrativeEngine.md](docs/SmartNarrativeEngine.md); draf tetap dapat disunting guru dan tidak boleh mengubah assessment sumber.
 

@@ -99,9 +99,7 @@ export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 					</Card>
 				))}
 				{work.data?.indicators.length === 0 && (
-					<Card>
-						Framework belum diatur. Admin dapat membuat framework default dari Pengaturan Penilaian.
-					</Card>
+					<Card>Indikator penilaian belum tersedia. Muat ulang halaman beberapa saat lagi.</Card>
 				)}
 			</div>
 		</>

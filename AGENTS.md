@@ -9,6 +9,7 @@
 - Published reports are immutable. Corrections create a new report version; never mutate a published version.
 - Do not implement student ranking. Analytics are aggregated and internal to the school.
 - AI may draft narratives or flag completeness/consistency only. It must never score, approve, publish, rank, or diagnose children.
+- Every school receives the same default PAUD assessment framework and `BB`/`MB`/`BSH`/`BSB` scale automatically. Do not add manual framework creation or assessment-configuration screens in the MVP.
 
 ## Language convention
 

@@ -4,8 +4,8 @@ import { z } from "zod";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
-import { defaultTkIndicatorCount, defaultTkTemplate, DEFAULT_TK_TEMPLATE_NAME } from "./default-tk-template";
-import { seedDefaultTkNarrativeMetadata } from "./seed-default-tk-narrative-metadata";
+import { DEFAULT_TK_TEMPLATE_NAME } from "./default-tk-template";
+import { ensureDefaultTkFramework } from "./ensure-default-tk-framework";
 
 const scoreSchema = z.object({ semesterId: z.string().uuid(), indicatorId: z.string().uuid(), scaleOptionId: z.string().uuid() });
 
@@ -13,43 +13,11 @@ const scoreSchema = z.object({ semesterId: z.string().uuid(), indicatorId: z.str
 export class AssessmentController {
   constructor(private readonly auth: AuthService, private readonly db: DatabaseService, private readonly audit: AuditService) {}
 
-  @Post("frameworks/default")
-  async bootstrap(@Req() request: FastifyRequest) {
-    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
-    return this.db.transaction(async (client) => {
-      const existing = await client.query<{ id: string }>("SELECT id FROM assessment_frameworks WHERE name=$1 AND is_active=true LIMIT 1", [DEFAULT_TK_TEMPLATE_NAME]);
-      if (existing.rowCount) {
-        const metadata = await seedDefaultTkNarrativeMetadata(client, actor.schoolId);
-        return { id: existing.rows[0].id, created: false, indicatorCount: defaultTkIndicatorCount, narrativeMetadataCount: metadata.mapped };
-      }
-
-      await client.query("UPDATE assessment_frameworks SET is_active=false WHERE name=$1", [DEFAULT_TK_TEMPLATE_NAME]);
-      const scale = (await client.query<{ id: string }>("INSERT INTO assessment_scales(school_id,name) VALUES($1,$2) RETURNING id", [actor.schoolId, "Skala Perkembangan TK"])).rows[0];
-      for (const [position, code] of ["BB", "MB", "BSH", "BSB"].entries()) {
-        await client.query("INSERT INTO assessment_scale_options(school_id,scale_id,code,label,position) VALUES($1,$2,$3,$4,$5)", [actor.schoolId, scale.id, code, code, position + 1]);
-      }
-      const framework = (await client.query<{ id: string }>("INSERT INTO assessment_frameworks(school_id,scale_id,name) VALUES($1,$2,$3) RETURNING id", [actor.schoolId, scale.id, DEFAULT_TK_TEMPLATE_NAME])).rows[0];
-
-      for (const [areaPosition, area] of defaultTkTemplate.entries()) {
-        const savedArea = (await client.query<{ id: string }>("INSERT INTO development_areas(school_id,framework_id,name,position) VALUES($1,$2,$3,$4) RETURNING id", [actor.schoolId, framework.id, area.name, areaPosition + 1])).rows[0];
-        for (const [subAreaPosition, subArea] of area.subAreas.entries()) {
-          const savedSubArea = (await client.query<{ id: string }>("INSERT INTO sub_areas(school_id,development_area_id,name,position) VALUES($1,$2,$3,$4) RETURNING id", [actor.schoolId, savedArea.id, subArea.name, subAreaPosition + 1])).rows[0];
-          for (const [indicatorPosition, description] of subArea.indicators.entries()) {
-            await client.query("INSERT INTO indicators(school_id,sub_area_id,description,position) VALUES($1,$2,$3,$4)", [actor.schoolId, savedSubArea.id, description, indicatorPosition + 1]);
-          }
-        }
-      }
-
-      const metadata = await seedDefaultTkNarrativeMetadata(client, actor.schoolId);
-      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "assessment_framework.default_created", entityType: "assessment_framework", entityId: framework.id, metadata: { indicatorCount: defaultTkIndicatorCount, narrativeMetadataCount: metadata.mapped } }, client);
-      return { id: framework.id, created: true, indicatorCount: defaultTkIndicatorCount, narrativeMetadataCount: metadata.mapped };
-    }, actor.schoolId);
-  }
-
   @Get("students/:studentId")
   async workspace(@Req() request: FastifyRequest, @Param("studentId") studentId: string, @Query("semesterId") semesterId: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
+      await ensureDefaultTkFramework(client, actor.schoolId);
       await this.assertTeacherAssignment(client, actor.role, actor.userId, studentId, semesterId);
       const student = (await client.query<{ id: string; name: string }>("SELECT id,name FROM students WHERE id=$1 AND school_id=$2", [studentId, actor.schoolId])).rows[0];
       if (!student) return null;
