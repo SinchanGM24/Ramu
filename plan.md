@@ -12,9 +12,9 @@ Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
 
 ## Rute publik
 
-- [ ] Belum dimulai — `/`
-- [ ] Belum dimulai — `/login`
-- [ ] Belum dimulai — `/register`
+- [x] Dalam pengerjaan — `/`
+- [x] Dalam pengerjaan — `/login`
+- [x] Dalam pengerjaan — `/register`
 - [ ] Belum dimulai — `/r/[token]`
 
 ## Rute aplikasi

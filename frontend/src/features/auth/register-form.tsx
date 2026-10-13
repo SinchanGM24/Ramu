@@ -45,44 +45,47 @@ export function RegisterForm() {
 			}
 		>
 			<form onSubmit={submit} className="space-y-4">
-				<label className="block text-sm font-semibold">
+				<label className="block text-sm font-semibold text-[#314137]">
 					Nama Anda
 					<input
 						required
 						name="name"
-						className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-brand-500"
+						className="mt-1.5 w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
 					/>
 				</label>
-				<label className="block text-sm font-semibold">
+				<label className="block text-sm font-semibold text-[#314137]">
 					Nama sekolah
 					<input
 						required
 						name="schoolName"
-						className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-brand-500"
+						className="mt-1.5 w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
 					/>
 				</label>
-				<label className="block text-sm font-semibold">
+				<label className="block text-sm font-semibold text-[#314137]">
 					Email
 					<input
 						required
 						name="email"
 						type="email"
-						className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-brand-500"
+						className="mt-1.5 w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
 					/>
 				</label>
-				<label className="block text-sm font-semibold">
+				<label className="block text-sm font-semibold text-[#314137]">
 					Kata sandi
 					<input
 						required
 						name="password"
 						minLength={8}
 						type="password"
-						className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-brand-500"
+						className="mt-1.5 w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
 					/>
 					<span className="mt-1 block text-xs font-normal text-slate-500">Minimal 8 karakter.</span>
 				</label>
 				{error && (
-					<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+					<p
+						role="alert"
+						className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700"
+					>
 						{error}
 					</p>
 				)}

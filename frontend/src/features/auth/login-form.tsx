@@ -47,27 +47,30 @@ export function LoginForm() {
 			}
 		>
 			<form onSubmit={submit} className="space-y-5">
-				<label className="block text-sm font-semibold text-slate-700">
+				<label className="block text-sm font-semibold text-[#314137]">
 					Email
 					<input
 						required
 						name="email"
 						type="email"
 						placeholder="nama@sekolah.id"
-						className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:border-brand-500"
+						className="mt-2 w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
 					/>
 				</label>
-				<label className="block text-sm font-semibold text-slate-700">
+				<label className="block text-sm font-semibold text-[#314137]">
 					Kata sandi
 					<input
 						required
 						name="password"
 						type="password"
-						className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:border-brand-500"
+						className="mt-2 w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-3 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
 					/>
 				</label>
 				{error && (
-					<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+					<p
+						role="alert"
+						className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700"
+					>
 						{error}
 					</p>
 				)}
