@@ -40,14 +40,14 @@ export function DesktopSidebar() {
 	}
 
 	return (
-		<aside className="ramu-sidebar fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-brand-900 px-4 py-5 text-brand-50 lg:flex">
+		<aside className="ramu-sidebar fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-[#2c704d] px-4 py-5 text-brand-50 shadow-[12px_0_36px_rgba(23,75,49,0.12)] lg:flex">
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute -bottom-24 -left-24 size-72 rounded-full border border-brand-300/10"
+				className="pointer-events-none absolute -bottom-24 -left-24 size-72 rounded-full border border-brand-100/25"
 			/>
 			<div
 				aria-hidden="true"
-				className="pointer-events-none absolute -bottom-5 -left-8 size-52 rounded-full border border-brand-300/10"
+				className="pointer-events-none absolute -bottom-5 -left-8 size-52 rounded-full border border-brand-100/20"
 			/>
 			<Link href="/app/dashboard" className="relative mb-8 flex shrink-0 items-center gap-3 px-2">
 				<span className="grid size-11 place-items-center rounded-2xl bg-[#fffdf8] text-brand-800 shadow-[0_10px_24px_rgba(0,0,0,0.17)]">
@@ -58,8 +58,8 @@ export function DesktopSidebar() {
 					<small className="text-xs text-brand-100/75">Raport Murid</small>
 				</span>
 			</Link>
-			<div className="relative mb-5 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-3">
-				<div className="flex items-center gap-2 text-xs font-semibold text-brand-100">
+			<div className="relative mb-5 rounded-2xl border border-white/20 bg-white/[0.10] px-3 py-3">
+				<div className="flex items-center gap-2 text-xs font-semibold text-white/80">
 					<Sparkles size={14} />
 					Ruang kerja sekolah
 				</div>
@@ -129,8 +129,8 @@ export function DesktopSidebar() {
 						))}
 				</NavigationGroup>
 			</nav>
-			<div className="relative mt-4 shrink-0 rounded-2xl border border-white/10 bg-black/10 p-3 text-xs leading-5 text-brand-100/80">
-				<p className="text-brand-100/70">Akun aktif</p>
+			<div className="relative mt-4 shrink-0 rounded-2xl border border-white/20 bg-white/[0.08] p-3 text-xs leading-5 text-white/85">
+				<p className="text-white/70">Akun aktif</p>
 				<strong className="block text-white">
 					{session.data?.role === "SCHOOL_ADMIN" ? "Admin Sekolah" : "Akun staf"}
 				</strong>
@@ -138,7 +138,7 @@ export function DesktopSidebar() {
 					type="button"
 					onClick={() => void logout()}
 					disabled={loggingOut}
-					className="mt-2 flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-brand-100/80 transition hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-60"
+					className="mt-2 flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-white/85 transition hover:bg-white/15 hover:text-white disabled:cursor-wait disabled:opacity-60"
 				>
 					<LogOut size={15} />
 					{loggingOut ? "Mengeluarkan akun…" : "Keluar akun"}
@@ -181,8 +181,8 @@ function NavigationGroup({
 				className={cn(
 					"flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[0.14em] transition",
 					active
-						? "text-brand-100 hover:bg-white/10"
-						: "text-brand-200/55 hover:bg-white/5 hover:text-brand-100",
+						? "text-white hover:bg-white/15"
+						: "text-white/70 hover:bg-white/10 hover:text-white",
 				)}
 			>
 				{label}
@@ -213,7 +213,7 @@ function NavigationLink({
 				"flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
 				active
 					? "bg-[#fffdf8] text-brand-900 shadow-[0_8px_20px_rgba(0,0,0,0.13)]"
-					: "text-brand-100/80 hover:bg-white/10 hover:text-white",
+					: "text-white/85 hover:bg-white/10 hover:text-white",
 			)}
 		>
 			<Icon size={18} />
