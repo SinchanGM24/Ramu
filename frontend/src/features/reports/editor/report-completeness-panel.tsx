@@ -15,11 +15,19 @@ type Completeness = {
 
 type ReportCompletenessPanelProps = {
 	compact?: boolean;
+	feedback?: { message: string; tone: "error" | "success" };
+	onSubmitFailed?: (message: string) => void;
+	onSubmitted?: () => void;
+	reportStatus: string;
 	reportId: string;
 };
 
 export function ReportCompletenessPanel({
 	compact = false,
+	feedback,
+	onSubmitFailed,
+	onSubmitted,
+	reportStatus,
 	reportId,
 }: ReportCompletenessPanelProps) {
 	const queryClient = useQueryClient();
@@ -32,10 +40,19 @@ export function ReportCompletenessPanel({
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["report-completeness", reportId] });
 			queryClient.invalidateQueries({ queryKey: ["report-workspace", reportId] });
+			onSubmitted?.();
+		},
+		onError: (error) => {
+			onSubmitFailed?.(
+				error instanceof Error ? error.message : "Rapor tidak dapat dikirim. Coba lagi.",
+			);
 		},
 	});
-	if (completeness.isLoading)
-		return <Card className="mb-4 text-sm text-slate-500">Memeriksa kelengkapan rapor…</Card>;
+	if (completeness.isLoading) {
+		return compact ? null : (
+			<Card className="mb-4 text-sm text-slate-500">Memeriksa kelengkapan rapor…</Card>
+		);
+	}
 	if (completeness.isError || !completeness.data) return null;
 	const data = completeness.data;
 	const missing = [
@@ -43,6 +60,7 @@ export function ReportCompletenessPanel({
 		...data.missingNarratives.map((item) => `Narasi: ${item}`),
 		...(data.missingSemesterData ? ["Data kehadiran"] : []),
 	];
+	const submitted = reportStatus === "SUBMITTED";
 
 	function goToFirstMissingField() {
 		const selector = data.missingAssessments.length
@@ -67,13 +85,9 @@ export function ReportCompletenessPanel({
 	}
 
 	if (compact) {
+		if (submitted) return null;
 		return (
-			<div className="mt-6 flex flex-col items-start justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
-				<p className="text-sm text-slate-600">
-					{data.complete
-						? "Rapor telah lengkap dan siap dikirim untuk ditinjau."
-						: "Periksa kembali kelengkapan rapor sebelum mengirim."}
-				</p>
+			<div className="mt-6 flex justify-end border-t border-slate-200 pt-5">
 				<Button disabled={submit.isPending} onClick={handleSubmit}>
 					{submit.isPending ? "Mengirim…" : "Kirim untuk ditinjau"}
 				</Button>
@@ -83,6 +97,7 @@ export function ReportCompletenessPanel({
 
 	return (
 		<Card
+			id="report-submission-status"
 			className={`mb-4 ${data.complete ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}
 		>
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -92,12 +107,18 @@ export function ReportCompletenessPanel({
 					</span>
 					<div>
 						<h2 className="font-bold text-slate-900">
-							{data.complete ? "Rapor siap dikirim untuk ditinjau" : "Rapor belum lengkap"}
+							{submitted
+								? "Rapor telah dikirim untuk ditinjau"
+								: data.complete
+									? "Rapor siap dikirim untuk ditinjau"
+									: "Rapor belum lengkap"}
 						</h2>
 						<p className="mt-1 text-sm text-slate-600">
-							{data.complete
-								? "Semua indikator, narasi, dan data akhir semester sudah tersedia."
-								: "Lengkapi data berikut sebelum mengirim rapor."}
+							{submitted
+								? "Rapor menunggu tinjauan Kepala Sekolah."
+								: data.complete
+									? "Semua indikator, narasi, dan data akhir semester sudah tersedia."
+									: "Lengkapi data berikut sebelum mengirim rapor."}
 						</p>
 						{!data.complete && (
 							<ul className="mt-2 list-disc pl-5 text-xs text-slate-600">
@@ -109,15 +130,20 @@ export function ReportCompletenessPanel({
 						)}
 					</div>
 				</div>
-				<Button disabled={submit.isPending} onClick={handleSubmit}>
-					{submit.isPending ? "Mengirim…" : "Kirim untuk ditinjau"}
-				</Button>
+				{!submitted ? (
+					<Button disabled={submit.isPending} onClick={handleSubmit}>
+						{submit.isPending ? "Mengirim…" : "Kirim untuk ditinjau"}
+					</Button>
+				) : null}
 			</div>
-			{submit.isError && (
-				<p className="mt-3 text-sm text-red-700">
-					Rapor tidak dapat dikirim. Periksa kembali kelengkapannya.
+			{feedback ? (
+				<p
+					role={feedback.tone === "error" ? "alert" : "status"}
+					className={`mt-3 text-sm font-medium ${feedback.tone === "error" ? "text-red-700" : "text-emerald-700"}`}
+				>
+					{feedback.message}
 				</p>
-			)}
+			) : null}
 		</Card>
 	);
 }
