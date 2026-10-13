@@ -40,7 +40,7 @@ export function ParentReportViewer({ token }: { token: string }) {
 	async function download() {
 		if (demo) return window.print();
 		const response = await fetch(
-			`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/parent/report-pdf`,
+			`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001"}/api/parent/report-pdf`,
 			{ credentials: "include" },
 		);
 		if (!response.ok) {
