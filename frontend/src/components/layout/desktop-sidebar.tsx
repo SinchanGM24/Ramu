@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { GraduationCap, LogOut } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, GraduationCap, LogOut } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authSessionQueryOptions } from "@/features/auth/session";
@@ -40,8 +40,8 @@ export function DesktopSidebar() {
 	}
 
 	return (
-		<aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-100 bg-white px-4 py-5 lg:block">
-			<Link href="/app/dashboard" className="mb-9 flex items-center gap-3 px-2">
+		<aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-100 bg-white px-4 py-5 lg:flex">
+			<Link href="/app/dashboard" className="mb-7 shrink-0 flex items-center gap-3 px-2">
 				<span className="grid size-10 place-items-center rounded-xl bg-brand-600 text-white">
 					<GraduationCap size={22} />
 				</span>
@@ -50,7 +50,10 @@ export function DesktopSidebar() {
 					<small className="text-xs text-slate-500">Raport Murid</small>
 				</span>
 			</Link>
-			<nav className="flex h-[calc(100%-4.5rem)] flex-col space-y-1" aria-label="Navigasi aplikasi">
+			<nav
+				className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1"
+				aria-label="Navigasi aplikasi"
+			>
 				{navigation
 					.filter((item) => item.roles.includes(session.data?.role as AppRole))
 					.map(({ href, label, icon: Icon }) => (
@@ -62,7 +65,10 @@ export function DesktopSidebar() {
 							active={pathname.startsWith(href)}
 						/>
 					))}
-				<NavigationGroup label="Akademik">
+				<NavigationGroup
+					label="Akademik"
+					active={academicNavigation.some((item) => pathname.startsWith(item.href))}
+				>
 					{academicNavigation
 						.filter((item) => item.roles.includes(session.data?.role as AppRole))
 						.map(({ href, label, icon: Icon }) => (
@@ -75,7 +81,10 @@ export function DesktopSidebar() {
 							/>
 						))}
 				</NavigationGroup>
-				<NavigationGroup label="Rapor">
+				<NavigationGroup
+					label="Rapor"
+					active={reportNavigation.some((item) => pathname.startsWith(item.href))}
+				>
 					{reportNavigation
 						.filter((item) => item.roles.includes(session.data?.role as AppRole))
 						.map(({ href, label, icon: Icon }) => (
@@ -88,7 +97,10 @@ export function DesktopSidebar() {
 							/>
 						))}
 				</NavigationGroup>
-				<NavigationGroup label="Pengaturan">
+				<NavigationGroup
+					label="Pengaturan"
+					active={settingsNavigation.some((item) => pathname.startsWith(item.href))}
+				>
 					{settingsNavigation
 						.filter((item) => item.roles.includes(session.data?.role as AppRole))
 						.map(({ href, label, icon: Icon }) => (
@@ -102,7 +114,7 @@ export function DesktopSidebar() {
 						))}
 				</NavigationGroup>
 			</nav>
-			<div className="absolute inset-x-4 bottom-5 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+			<div className="mt-4 shrink-0 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
 				<p>TK Contoh Ceria</p>
 				<strong className="block text-slate-700">
 					{session.data?.role === "SCHOOL_ADMIN" ? "Admin Sekolah" : "Akun staf"}
@@ -126,13 +138,41 @@ export function DesktopSidebar() {
 	);
 }
 
-function NavigationGroup({ label, children }: { label: string; children: React.ReactNode }) {
+function NavigationGroup({
+	label,
+	active,
+	children,
+}: {
+	label: string;
+	active: boolean;
+	children: ReactNode;
+}) {
+	const [isOpen, setIsOpen] = useState(active);
+
+	useEffect(() => {
+		if (active) setIsOpen(true);
+	}, [active]);
+
 	return (
 		<div className="mt-5">
-			<p className="px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+			<button
+				type="button"
+				onClick={() => setIsOpen((value) => !value)}
+				aria-expanded={isOpen}
+				className={cn(
+					"flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wider transition",
+					active
+						? "text-brand-700 hover:bg-brand-50"
+						: "text-slate-400 hover:bg-slate-50 hover:text-slate-600",
+				)}
+			>
 				{label}
-			</p>
-			<div className="space-y-1">{children}</div>
+				<ChevronDown
+					aria-hidden="true"
+					className={cn("size-4 transition-transform", isOpen && "rotate-180")}
+				/>
+			</button>
+			{isOpen ? <div className="mt-1 space-y-1">{children}</div> : null}
 		</div>
 	);
 }
