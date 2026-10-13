@@ -16,6 +16,7 @@ export type Recipient = {
 	relationship: string;
 	phone: string;
 	is_primary: boolean;
+	student_lifecycle_status: "ACTIVE" | "GRADUATED";
 };
 
 export type ManualDispatch = {

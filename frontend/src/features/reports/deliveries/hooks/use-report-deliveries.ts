@@ -7,6 +7,7 @@ export function useReportDeliveries(reportId: string) {
 	const queryClient = useQueryClient();
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [notice, setNotice] = useState("");
+	const [noticeIsError, setNoticeIsError] = useState(false);
 	const deliveries = useQuery({
 		queryKey: ["reports", reportId, "deliveries"],
 		queryFn: () => api<Delivery[]>(`/reports/${reportId}/deliveries`),
@@ -33,21 +34,28 @@ export function useReportDeliveries(reportId: string) {
 				body: JSON.stringify({ guardianContactIds: selectedIds }),
 			}),
 		onSuccess: (created) => {
+			setNoticeIsError(false);
 			setNotice(`${created.length} kontak masuk ke antrean pengiriman.`);
 			void refresh();
 		},
-		onError: (error) =>
+		onError: (error) => {
+			setNoticeIsError(true);
 			setNotice(
 				error instanceof Error ? error.message : "Pengiriman belum dapat dimasukkan ke antrean.",
-			),
+			);
+		},
 	});
 	const retry = useMutation({
 		mutationFn: (deliveryId: string) => api(`/deliveries/${deliveryId}/retry`, { method: "POST" }),
 		onSuccess: () => {
+			setNoticeIsError(false);
 			setNotice("Pengiriman kembali masuk ke antrean.");
 			void refresh();
 		},
-		onError: () => setNotice("Pengiriman belum dapat dimasukkan kembali ke antrean."),
+		onError: () => {
+			setNoticeIsError(true);
+			setNotice("Pengiriman belum dapat dimasukkan kembali ke antrean.");
+		},
 	});
 	const manualDispatch = useMutation({
 		mutationFn: (deliveryId: string) =>
@@ -56,19 +64,24 @@ export function useReportDeliveries(reportId: string) {
 
 	function openWhatsApp(deliveryId: string) {
 		const popup = window.open("", "_blank");
+		if (!popup) {
+			setNoticeIsError(true);
+			setNotice(
+				"Browser memblokir jendela WhatsApp. Izinkan pop-up untuk situs ini, lalu coba lagi.",
+			);
+			return;
+		}
 
 		manualDispatch.mutate(deliveryId, {
 			onSuccess: ({ whatsAppUrl }) => {
-				if (popup) {
-					popup.location.href = whatsAppUrl;
-				} else {
-					window.location.href = whatsAppUrl;
-				}
+				popup.location.href = whatsAppUrl;
+				setNoticeIsError(false);
 				setNotice("Chat WhatsApp wali telah dibuka.");
 				void refresh();
 			},
 			onError: (error) => {
-				popup?.close();
+				popup.close();
+				setNoticeIsError(true);
 				setNotice(error instanceof Error ? error.message : "Chat WhatsApp belum dapat dibuka.");
 			},
 		});
@@ -90,6 +103,7 @@ export function useReportDeliveries(reportId: string) {
 	return {
 		deliveries,
 		notice,
+		noticeIsError,
 		queue,
 		recipients,
 		manualDispatch,

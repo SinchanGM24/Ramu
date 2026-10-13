@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { DeliveryHistoryList } from "./components/delivery-history-list";
 import { DeliveryRecipientSelector } from "./components/delivery-recipient-selector";
 import { useReportDeliveries } from "./hooks/use-report-deliveries";
+import type { Recipient } from "./types";
 
 export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 	const delivery = useReportDeliveries(reportId);
@@ -25,8 +26,8 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 			/>
 			{delivery.notice ? (
 				<p
-					role="status"
-					className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium ${delivery.queue.isError || delivery.retry.isError ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"}`}
+					role={delivery.noticeIsError ? "alert" : "status"}
+					className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium ${delivery.noticeIsError ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"}`}
 				>
 					{delivery.notice}
 				</p>
@@ -70,13 +71,7 @@ function RecipientPanel({
 	error: boolean;
 	loading: boolean;
 	pending: boolean;
-	recipients: {
-		id: string;
-		name: string;
-		relationship: string;
-		phone: string;
-		is_primary: boolean;
-	}[];
+	recipients: Recipient[];
 	selectedIds: string[];
 	onQueue: () => void;
 	onReload: () => void;

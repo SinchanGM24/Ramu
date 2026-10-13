@@ -55,6 +55,8 @@ Tujuan: admin dapat menyelesaikan rapor dari progres sampai wali menerimanya tan
    - Sediakan kirim ulang untuk pengiriman gagal — selesai.
    - Tampilkan riwayat pengiriman per rapor — selesai.
    - Mode tanpa API membuka chat WhatsApp personal dengan tautan dan PIN unik, lalu mencatat bahwa chat telah dibuka. Status diterima/dibaca tetap memerlukan provider resmi — selesai.
+   - Pengiriman dan pembuatan tautan wali dibatasi untuk Admin Sekolah atau Guru pada kelas yang ditugaskan; Kepala Sekolah tidak dapat menjalankan aksi kirim — selesai.
+   - Nomor tidak valid dan pop-up browser yang diblokir gagal tanpa mengubah status pengiriman; rapor murid pada Arsip tetap dapat dibagikan — selesai.
 
 Kriteria selesai:
 

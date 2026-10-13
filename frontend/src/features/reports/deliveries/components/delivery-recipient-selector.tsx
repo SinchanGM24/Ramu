@@ -20,6 +20,10 @@ export function DeliveryRecipientSelector({
 	onToggleAll,
 	onToggleRecipient,
 }: DeliveryRecipientSelectorProps) {
+	const isArchived = recipients.some(
+		(recipient) => recipient.student_lifecycle_status === "GRADUATED",
+	);
+
 	return (
 		<Card className="mb-5">
 			<div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
@@ -39,6 +43,11 @@ export function DeliveryRecipientSelector({
 					</button>
 				) : null}
 			</div>
+			{isArchived ? (
+				<p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+					Murid ini berada di Arsip. Rapor yang telah diterbitkan tetap dapat dibagikan kepada wali.
+				</p>
+			) : null}
 			{recipients.length ? (
 				<div className="mt-3 divide-y divide-slate-100">
 					{recipients.map((recipient) => {
