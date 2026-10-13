@@ -1,12 +1,4 @@
-import {
-	BookOpen,
-	ClipboardList,
-	LayoutDashboard,
-	Send,
-	School,
-	UserCircle,
-	Users,
-} from "lucide-react";
+import { BookOpen, ClipboardList, LayoutDashboard, School, UserCircle, Users } from "lucide-react";
 export type AppRole = "SCHOOL_ADMIN" | "TEACHER" | "PRINCIPAL";
 export const navigation = [
 	{
@@ -20,27 +12,6 @@ export const navigation = [
 		label: "Akademik",
 		icon: BookOpen,
 		roles: ["SCHOOL_ADMIN", "PRINCIPAL"] as AppRole[],
-	},
-];
-
-export const reportNavigation = [
-	{
-		href: "/app/reports/progress",
-		label: "Pengisian rapor",
-		icon: ClipboardList,
-		roles: ["SCHOOL_ADMIN", "TEACHER"] as AppRole[],
-	},
-	{
-		href: "/app/reports/review",
-		label: "Tinjauan rapor",
-		icon: ClipboardList,
-		roles: ["SCHOOL_ADMIN", "PRINCIPAL"] as AppRole[],
-	},
-	{
-		href: "/app/reports/publication",
-		label: "Publikasi & kirim",
-		icon: Send,
-		roles: ["SCHOOL_ADMIN", "TEACHER"] as AppRole[],
 	},
 ];
 
