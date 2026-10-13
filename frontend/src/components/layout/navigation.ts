@@ -87,15 +87,15 @@ export const settingsNavigation = [
 		roles: ["SCHOOL_ADMIN", "PRINCIPAL"] as AppRole[],
 	},
 	{
-		href: "/app/settings/profile",
-		label: "Profil akun",
-		icon: UserCircle,
-		roles: ["SCHOOL_ADMIN", "TEACHER", "PRINCIPAL"] as AppRole[],
-	},
-	{
 		href: "/app/settings/staff",
 		label: "Kelola akun",
 		icon: Users,
 		roles: ["SCHOOL_ADMIN"] as AppRole[],
+	},
+	{
+		href: "/app/settings/profile",
+		label: "Profil akun",
+		icon: UserCircle,
+		roles: ["SCHOOL_ADMIN", "TEACHER", "PRINCIPAL"] as AppRole[],
 	},
 ];
