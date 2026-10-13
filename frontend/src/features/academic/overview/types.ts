@@ -14,4 +14,9 @@ export type StaffMember = {
 	role: "TEACHER" | "PRINCIPAL" | "SCHOOL_ADMIN";
 	is_active: boolean;
 };
-export type TeacherAssignment = { id: string; teacher_name: string; ended_at?: string | null };
+export type TeacherAssignment = {
+	id: string;
+	teacher_name: string;
+	teacher_user_id: string;
+	ended_at?: string | null;
+};
