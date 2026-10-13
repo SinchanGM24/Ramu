@@ -22,7 +22,10 @@ export function ClassManagementDialog({
 	const [teacher, setTeacher] = useState("");
 	const [error, setError] = useState("");
 	const [isActive, setIsActive] = useState(period.is_active);
-	const staff = useQuery({ queryKey: ["staff"], queryFn: () => api<StaffMember[]>("/staff") });
+	const staff = useQuery({
+		queryKey: ["staff", "assignment-options"],
+		queryFn: () => api<{ items: StaffMember[] }>("/staff?limit=100"),
+	});
 	const assignments = useQuery({
 		queryKey: ["assignments", period.id],
 		queryFn: () => api<TeacherAssignment[]>(`/staff/class-periods/${period.id}/assignments`),
@@ -142,7 +145,7 @@ export function ClassManagementDialog({
 					className={`${inputClass} min-w-0 flex-1`}
 				>
 					<option value="">Pilih guru</option>
-					{staff.data
+					{staff.data?.items
 						?.filter((account) => account.role === "TEACHER" && account.is_active)
 						.map((account) => (
 							<option key={account.id} value={account.id}>
