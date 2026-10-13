@@ -62,7 +62,7 @@ export function DesktopSidebar() {
 							href={href}
 							label={label}
 							Icon={Icon}
-							active={pathname.startsWith(href)}
+							active={isPrimaryNavigationActive(pathname, href)}
 						/>
 					))}
 				<NavigationGroup
@@ -136,6 +136,10 @@ export function DesktopSidebar() {
 			</div>
 		</aside>
 	);
+}
+
+function isPrimaryNavigationActive(pathname: string, href: string) {
+	return pathname === href;
 }
 
 function NavigationGroup({
