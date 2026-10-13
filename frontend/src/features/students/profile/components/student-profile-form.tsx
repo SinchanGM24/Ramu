@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import type { StudentProfile } from "../types";
 
 const inputClass =
-	"mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500";
+	"mt-1 w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50";
 
 type StudentProfileFormProps = {
 	pending: boolean;
@@ -31,8 +31,8 @@ export function StudentProfileForm({ pending, student, onSubmit }: StudentProfil
 
 	return (
 		<Card>
-			<h2 className="text-lg font-bold">Keterangan anak didik</h2>
-			<p className="mt-1 text-sm text-slate-500">
+			<h2 className="text-lg font-bold tracking-[-0.02em] text-brand-950">Keterangan anak didik</h2>
+			<p className="mt-1 text-sm leading-6 text-[#637065]">
 				Kelas dikelola melalui penempatan kelas agar riwayat rapor tetap aman.
 			</p>
 			<form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2">
@@ -108,7 +108,7 @@ function Field({
 	wide?: boolean;
 }) {
 	return (
-		<label className={`block text-sm font-medium text-slate-700 ${wide ? "md:col-span-2" : ""}`}>
+		<label className={`block text-sm font-medium text-[#314137] ${wide ? "md:col-span-2" : ""}`}>
 			<span>{label}</span>
 			{children}
 		</label>

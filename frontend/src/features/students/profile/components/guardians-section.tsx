@@ -39,8 +39,8 @@ export function GuardiansSection({ guardians, studentId }: GuardiansSectionProps
 		<Card>
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<h2 className="text-lg font-bold">Orang tua/wali</h2>
-					<p className="mt-1 text-sm text-slate-500">
+					<h2 className="text-lg font-bold tracking-[-0.02em] text-brand-950">Orang tua/wali</h2>
+					<p className="mt-1 text-sm leading-6 text-[#637065]">
 						Tandai kontak yang menerima rapor saat diterbitkan.
 					</p>
 				</div>
@@ -55,7 +55,9 @@ export function GuardiansSection({ guardians, studentId }: GuardiansSectionProps
 					Tambah kontak
 				</Button>
 			</div>
-			{notice ? <p className="mt-4 text-sm text-slate-600">{notice}</p> : null}
+			{notice ? (
+				<p className="mt-4 rounded-xl bg-brand-50 p-3 text-sm text-brand-800">{notice}</p>
+			) : null}
 			<div className="mt-4 space-y-3">
 				{guardians.length ? (
 					guardians.map((guardian) => (
@@ -66,10 +68,10 @@ export function GuardiansSection({ guardians, studentId }: GuardiansSectionProps
 								setEditing(guardian);
 								setAdding(false);
 							}}
-							className="flex w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left hover:border-brand-300"
+							className="flex w-full items-center justify-between rounded-2xl border border-[#e2e4da] bg-[#fdfdf9] p-4 text-left transition hover:border-brand-300 hover:bg-brand-50/40"
 						>
 							<span>
-								<span className="block font-semibold text-slate-900">
+								<span className="block font-semibold text-brand-950">
 									{guardian.name}
 									{guardian.is_primary ? (
 										<span className="ml-2 rounded-full bg-brand-50 px-2 py-1 text-xs text-brand-700">
@@ -82,7 +84,7 @@ export function GuardiansSection({ guardians, studentId }: GuardiansSectionProps
 										</span>
 									) : null}
 								</span>
-								<span className="mt-1 block text-sm text-slate-600">
+								<span className="mt-1 block text-sm text-[#637065]">
 									{guardian.relationship} · {guardian.phone}
 									{guardian.occupation ? ` · ${guardian.occupation}` : ""}
 								</span>
@@ -91,7 +93,7 @@ export function GuardiansSection({ guardians, studentId }: GuardiansSectionProps
 						</button>
 					))
 				) : (
-					<p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+					<p className="rounded-xl bg-[#f7f7f1] p-4 text-sm text-[#637065]">
 						Belum ada data orang tua/wali.
 					</p>
 				)}

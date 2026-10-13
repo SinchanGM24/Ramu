@@ -7,25 +7,28 @@ type EnrollmentHistoryProps = { enrollments: Enrollment[]; publishedReports: Pub
 export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentHistoryProps) {
 	return (
 		<Card>
-			<h2 className="text-lg font-bold">Riwayat kelas</h2>
+			<h2 className="text-lg font-bold tracking-[-0.02em] text-brand-950">Riwayat kelas</h2>
 			<div className="mt-4 space-y-2">
 				{enrollments.length ? (
 					enrollments.map((enrollment) => (
-						<div key={enrollment.id} className="rounded-xl bg-slate-50 p-3 text-sm">
-							<b>{enrollment.academic_year_name}</b>
-							<p className="text-slate-600">
+						<div
+							key={enrollment.id}
+							className="rounded-xl border border-[#e7e7dc] bg-[#f7f7f1] p-3 text-sm"
+						>
+							<b className="text-brand-950">{enrollment.academic_year_name}</b>
+							<p className="text-[#637065]">
 								{enrollment.class_name ?? "Belum ditempatkan"} ·{" "}
 								{enrollmentStatusLabel(enrollment.status)}
 							</p>
 						</div>
 					))
 				) : (
-					<p className="text-sm text-slate-500">Belum ada riwayat penempatan kelas.</p>
+					<p className="text-sm text-[#637065]">Belum ada riwayat penempatan kelas.</p>
 				)}
 			</div>
-			<div className="mt-6 border-t border-slate-100 pt-5">
-				<h3 className="font-semibold text-slate-900">Rapor terbit</h3>
-				<p className="mt-1 text-sm text-slate-500">
+			<div className="mt-6 border-t border-[#e7e7dc] pt-5">
+				<h3 className="font-semibold text-brand-950">Rapor terbit</h3>
+				<p className="mt-1 text-sm text-[#637065]">
 					Hanya rapor yang sudah diterbitkan ditampilkan sebagai riwayat.
 				</p>
 				<div className="mt-3 space-y-2">
@@ -34,13 +37,13 @@ export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentH
 							<Link
 								key={report.id}
 								href={`/app/reports/${report.id}/preview`}
-								className="flex items-center justify-between rounded-xl border border-slate-200 p-3 text-sm transition hover:border-brand-300 hover:bg-brand-50"
+								className="flex items-center justify-between rounded-xl border border-[#e7e7dc] p-3 text-sm transition hover:border-brand-300 hover:bg-brand-50/40"
 							>
 								<span>
-									<span className="block font-semibold text-slate-800">
+									<span className="block font-semibold text-brand-950">
 										{report.academic_year_name} · {report.semester_name}
 									</span>
-									<span className="mt-1 block text-xs text-slate-500">
+									<span className="mt-1 block text-xs text-[#637065]">
 										Diterbitkan{" "}
 										{new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(
 											new Date(report.published_at),
@@ -52,7 +55,7 @@ export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentH
 							</Link>
 						))
 					) : (
-						<p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">
+						<p className="rounded-xl bg-[#f7f7f1] p-3 text-sm text-[#637065]">
 							Belum ada rapor yang diterbitkan.
 						</p>
 					)}

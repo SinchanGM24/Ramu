@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { EnrollmentHistory } from "./components/enrollment-history";
 import { GuardiansSection } from "./components/guardians-section";
+import { StudentIdentityCard } from "./components/student-identity-card";
 import { StudentProfileForm } from "./components/student-profile-form";
 import type { StudentProfile } from "./types";
 
@@ -53,6 +54,7 @@ export function StudentProfilePage({ id }: { id: string }) {
 				}
 			/>
 			{notice ? <ProfileNotice notice={notice} /> : null}
+			<StudentIdentityCard student={value} />
 			<div className="space-y-6">
 				<StudentProfileForm
 					student={value}
@@ -86,7 +88,7 @@ function StudentNotFound() {
 function ProfileNotice({ notice }: { notice: string }) {
 	return (
 		<p
-			className={`mb-5 rounded-xl p-3 text-sm ${notice.endsWith("tersimpan.") ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}
+			className={`mb-5 rounded-xl border p-3 text-sm ${notice.endsWith("tersimpan.") ? "border-emerald-100 bg-emerald-50 text-emerald-800" : "border-red-100 bg-red-50 text-red-700"}`}
 		>
 			{notice}
 		</p>
