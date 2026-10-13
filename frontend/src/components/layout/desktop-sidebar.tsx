@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, GraduationCap, LogOut, Sparkles } from "lucide-react";
+import { ChevronDown, GraduationCap, LogOut } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -58,13 +58,6 @@ export function DesktopSidebar() {
 					<small className="text-xs text-brand-100/75">Raport Murid</small>
 				</span>
 			</Link>
-			<div className="relative mb-5 rounded-2xl border border-white/20 bg-white/[0.10] px-3 py-3">
-				<div className="flex items-center gap-2 text-xs font-semibold text-white/80">
-					<Sparkles size={14} />
-					Ruang kerja sekolah
-				</div>
-				<p className="mt-1 truncate text-sm font-semibold text-white">TK Contoh Ceria</p>
-			</div>
 			<nav
 				className="relative min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1"
 				aria-label="Navigasi aplikasi"
