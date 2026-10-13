@@ -18,15 +18,28 @@ export function ProfilePage() {
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		const data = new FormData(event.currentTarget);
+		const password = String(data.get("password") || "");
+		const passwordConfirmation = String(data.get("passwordConfirmation") || "");
+		const currentPassword = String(data.get("currentPassword") || "");
 		setMessage("");
 		setError("");
+		if (password && !currentPassword) {
+			setError("Masukkan kata sandi saat ini untuk mengubah kata sandi.");
+			return;
+		}
+		if (password && password !== passwordConfirmation) {
+			setError("Konfirmasi kata sandi baru tidak sama.");
+			return;
+		}
 		try {
 			await api("/auth/profile", {
 				method: "PATCH",
 				body: JSON.stringify({
 					name: data.get("name"),
 					phone: data.get("phone") || undefined,
-					password: data.get("password") || undefined,
+					currentPassword: currentPassword || undefined,
+					password: password || undefined,
+					passwordConfirmation: passwordConfirmation || undefined,
 				}),
 			});
 			setMessage("Profil berhasil diperbarui.");
@@ -95,12 +108,31 @@ export function ProfilePage() {
 						/>
 					</label>
 					<label className="block text-sm font-semibold">
-						Kata sandi baru
+						Kata sandi saat ini
 						<span className="mt-1 block text-xs font-normal text-slate-500">
-							Kosongkan jika tidak ingin mengganti.
+							Wajib diisi hanya saat Anda ingin mengganti kata sandi.
 						</span>
 						<input
+							name="currentPassword"
+							type="password"
+							autoComplete="current-password"
+							className={`${inputClass} mt-1`}
+						/>
+					</label>
+					<label className="block text-sm font-semibold">
+						Kata sandi baru
+						<input
 							name="password"
+							minLength={8}
+							type="password"
+							autoComplete="new-password"
+							className={`${inputClass} mt-1`}
+						/>
+					</label>
+					<label className="block text-sm font-semibold">
+						Ulangi kata sandi baru
+						<input
+							name="passwordConfirmation"
 							minLength={8}
 							type="password"
 							autoComplete="new-password"

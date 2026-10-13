@@ -92,7 +92,7 @@ export function StaffFormDialog({
 					{creating ? "Kata sandi awal" : "Kata sandi baru"}
 					{!creating && (
 						<span className="mt-1 block text-xs font-normal text-slate-500">
-							Kosongkan jika tidak ingin mengganti.
+							Kosongkan jika tidak ingin mengganti. Admin Sekolah dapat mengatur ulang langsung.
 						</span>
 					)}
 					<input

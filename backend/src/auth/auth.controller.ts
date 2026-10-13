@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -12,6 +13,7 @@ import {
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { DatabaseService } from "../database/database.service";
+import { AuditService } from "../audit/audit.service";
 import { AuthService } from "./auth.service";
 import { ensureDefaultTkFramework } from "../assessment/ensure-default-tk-framework";
 
@@ -25,17 +27,38 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
-const profileSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  phone: z.string().trim().max(40).optional(),
-  password: z.string().min(8).max(128).optional(),
-});
+const profileSchema = z
+  .object({
+    name: z.string().trim().min(2).max(120),
+    phone: z.string().trim().max(40).optional(),
+    password: z.string().min(8).max(128).optional(),
+    currentPassword: z.string().min(1).max(128).optional(),
+    passwordConfirmation: z.string().min(8).max(128).optional(),
+  })
+  .superRefine((input, context) => {
+    if (!input.password) return;
+    if (!input.currentPassword) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["currentPassword"],
+        message: "Kata sandi saat ini wajib diisi.",
+      });
+    }
+    if (input.passwordConfirmation !== input.password) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["passwordConfirmation"],
+        message: "Konfirmasi kata sandi baru tidak sama.",
+      });
+    }
+  });
 
 @Controller("auth")
 export class AuthController {
   constructor(
     private readonly db: DatabaseService,
     private readonly auth: AuthService,
+    private readonly audit: AuditService,
   ) {}
 
   @Post("register-school")
@@ -144,14 +167,47 @@ export class AuthController {
   async updateProfile(@Req() request: FastifyRequest, @Body() body: unknown) {
     const actor = this.auth.require(request);
     const input = profileSchema.parse(body);
-    const passwordHash = input.password
-      ? await this.auth.hashPassword(input.password)
-      : null;
-    return (
-      await this.db.query(
-        "UPDATE users SET name=$2,phone=$3,password_hash=COALESCE($4,password_hash),updated_at=now() WHERE id=$1 RETURNING id,name,email,phone",
-        [actor.userId, input.name, input.phone || null, passwordHash],
-      )
-    ).rows[0];
+    return this.db.transaction(async (client) => {
+      let passwordHash: string | null = null;
+
+      if (input.password) {
+        const user = (
+          await client.query<{ password_hash: string }>(
+            "SELECT password_hash FROM users WHERE id=$1",
+            [actor.userId],
+          )
+        ).rows[0];
+        if (
+          !user ||
+          !(await this.auth.verifyPassword(
+            user.password_hash,
+            input.currentPassword!,
+          ))
+        ) {
+          throw new BadRequestException("Kata sandi saat ini tidak sesuai.");
+        }
+        passwordHash = await this.auth.hashPassword(input.password);
+      }
+
+      const updated = (
+        await client.query(
+          "UPDATE users SET name=$2,phone=$3,password_hash=COALESCE($4,password_hash),updated_at=now() WHERE id=$1 RETURNING id,name,email,phone",
+          [actor.userId, input.name, input.phone || null, passwordHash],
+        )
+      ).rows[0];
+      if (input.password) {
+        await this.audit.record(
+          {
+            schoolId: actor.schoolId,
+            actorUserId: actor.userId,
+            action: "auth.password_changed",
+            entityType: "user",
+            entityId: actor.userId,
+          },
+          client,
+        );
+      }
+      return updated;
+    }, actor.schoolId);
   }
 }
