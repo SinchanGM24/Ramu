@@ -60,7 +60,11 @@ export function ReportReviewPage() {
 			? transition.error.message
 			: transition.error
 				? "Tindakan tidak dapat diproses. Coba lagi."
-				: undefined;
+				: publish.error instanceof ApiError
+					? publish.error.message
+					: publish.error
+						? "Rapor belum dapat diterbitkan. Coba lagi."
+						: undefined;
 	return (
 		<>
 			<PageHeader

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, InternalServerErrorException, Logger, Param, Post, Put, Query, Req } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { createHash, randomBytes, randomInt } from "crypto";
 import { z } from "zod";
@@ -15,6 +15,8 @@ const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
 
 @Controller("reports")
 export class ReportsController {
+  private readonly logger = new Logger(ReportsController.name);
+
   constructor(private readonly auth: AuthService, private readonly db: DatabaseService, private readonly audit: AuditService, private readonly pdf: ReportPdfService) {}
 
   @Get("progress")
@@ -48,7 +50,13 @@ export class ReportsController {
       const teachers = (await client.query("SELECT teacher.id,teacher.name,teacher.phone FROM teacher_class_assignments assignment JOIN users teacher ON teacher.id=assignment.teacher_user_id WHERE assignment.class_period_id=(SELECT class_period_id FROM student_enrollments WHERE id=$1) AND assignment.ended_at IS NULL ORDER BY teacher.name", [report.student_enrollment_id])).rows;
       const snapshot = { report: { id: report.id, status: report.status }, school: { name: report.school_name, address: report.school_address, logo_storage_key: report.school_logo_storage_key }, student: { name: report.student_name, nickname: report.nickname, student_number: report.student_number, birth_date: report.birth_date, birth_place: report.birth_place, gender: report.gender, religion: report.religion, child_order: report.child_order, address: report.address, class_name: report.class_name }, semester: { name: report.semester_name, academic_year_name: report.academic_year_name }, teachers, assessments: assessmentRows, narratives, growth, attendance, guardians };
       const versionNumber = (await client.query<{ next: number }>("SELECT COALESCE(max(version_number),0)+1 AS next FROM report_versions WHERE report_id=$1", [id])).rows[0].next;
-      const pdfStorageKey = await this.pdf.storePublishedReport({ schoolId: actor.schoolId, reportId: id, versionNumber, snapshot });
+      let pdfStorageKey: string;
+      try {
+        pdfStorageKey = await this.pdf.storePublishedReport({ schoolId: actor.schoolId, reportId: id, versionNumber, snapshot });
+      } catch (error) {
+        this.logger.error(`Gagal membuat atau menyimpan PDF untuk rapor ${id}`, error instanceof Error ? error.stack : undefined);
+        throw new InternalServerErrorException("PDF rapor belum dapat dibuat atau disimpan. Coba terbitkan kembali.");
+      }
       const version = (await client.query("INSERT INTO report_versions(school_id,report_id,version_number,snapshot,pdf_storage_key,published_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *", [actor.schoolId, id, versionNumber, snapshot, pdfStorageKey, actor.userId])).rows[0];
       const token = randomBytes(32).toString("base64url"), pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
       await client.query("INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash) VALUES($1,$2,$3,$4)", [actor.schoolId, version.id, createHash("sha256").update(token).digest("hex"), createHash("sha256").update(pin).digest("hex")]);
