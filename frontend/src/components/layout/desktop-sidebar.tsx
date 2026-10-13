@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, GraduationCap, LogOut } from "lucide-react";
+import { ChevronDown, ClipboardList, GraduationCap, LogOut } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -67,6 +67,14 @@ export function DesktopSidebar() {
 							active={isPrimaryNavigationActive(pathname, href)}
 						/>
 					))}
+				<NavigationLink
+					href={
+						session.data?.role === "PRINCIPAL" ? "/app/reports/review" : "/app/reports/progress"
+					}
+					label="Rapor"
+					Icon={ClipboardList}
+					active={pathname.startsWith("/app/reports")}
+				/>
 				<NavigationGroup
 					label="Akademik"
 					active={academicNavigation.some((item) => pathname.startsWith(item.href))}
