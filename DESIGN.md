@@ -18,13 +18,15 @@ Dokumen ini adalah acuan visual seluruh frontend RAMU. Semua antarmuka memakai B
 | Teks utama | `#17251b` |
 | Teks sekunder | `#637065` |
 | Border | `#e5e7dd` |
-| Forest utama | `brand-700` / `#2c704d` |
-| Forest gelap | `brand-900` / `#1e553a` |
+| Hijau interaktif | `brand-700` / `#174b31` |
+| Hijau permukaan dominan | `#2c704d` |
 | Sukses | hijau lembut |
 | Peringatan | amber lembut |
 | Bahaya | merah lembut |
 
 Gunakan radius `rounded-xl` untuk kontrol dan `rounded-2xl` untuk panel. Bayangan menggunakan `shadow-soft` atau `shadow-panel`; jangan memakai shadow hitam kasar.
+
+Gunakan `brand-*` untuk tombol, hover, link, focus ring, dan aksen. Untuk permukaan besar yang gelap—sidebar, panel autentikasi, hero status, dan header parent viewer—gunakan `#2c704d` agar tetap jelas tanpa terasa terlalu gelap.
 
 ## Komponen
 

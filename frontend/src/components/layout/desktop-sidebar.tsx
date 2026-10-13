@@ -40,7 +40,7 @@ export function DesktopSidebar() {
 	}
 
 	return (
-		<aside className="ramu-sidebar fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-brand-700 px-4 py-5 text-brand-50 shadow-[12px_0_36px_rgba(44,112,77,0.12)] lg:flex">
+		<aside className="ramu-sidebar fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-[#2c704d] px-4 py-5 text-brand-50 shadow-[12px_0_36px_rgba(44,112,77,0.12)] lg:flex">
 			<div
 				aria-hidden="true"
 				className="pointer-events-none absolute -bottom-24 -left-24 size-72 rounded-full border border-brand-100/25"

@@ -8,8 +8,8 @@
 	--ramu-ink: #17251b;
 	--ramu-muted: #647066;
 	--ramu-line: #e5e7dd;
-	--ramu-forest: #2c704d;
-	--ramu-forest-deep: #1e553a;
+	--ramu-forest: #174b31;
+	--ramu-forest-deep: #092b1a;
 }
 
 * {
@@ -48,7 +48,7 @@ textarea {
 
 ::selection {
 	color: white;
-	background: #337a51;
+	background: #245f3f;
 }
 
 .ramu-surface-pattern {

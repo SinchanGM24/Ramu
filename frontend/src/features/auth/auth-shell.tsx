@@ -16,7 +16,7 @@ export function AuthShell({
 }) {
 	return (
 		<main className="grid min-h-screen bg-[#f8f5ed] lg:grid-cols-[0.9fr_1.1fr]">
-			<section className="relative hidden overflow-hidden bg-brand-900 p-12 text-white lg:flex lg:flex-col">
+			<section className="relative hidden overflow-hidden bg-[#2c704d] p-12 text-white lg:flex lg:flex-col">
 				<div
 					aria-hidden="true"
 					className="absolute -right-32 top-16 size-80 rounded-full border border-brand-200/15"

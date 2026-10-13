@@ -13,7 +13,7 @@ export function ParentReportContent({ error, report, onDownload }: ParentReportC
 		<main className="min-h-screen bg-brand-50">
 			<ParentReportToolbar studentName={report.student?.name} onDownload={onDownload} />
 			<article className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
-				<section className="rounded-2xl bg-brand-700 p-6 text-white">
+				<section className="rounded-2xl bg-[#2c704d] p-6 text-white">
 					<p>Laporan Perkembangan Anak Didik</p>
 					<h1 className="mt-2 text-2xl font-bold">{report.student?.name}</h1>
 					<p className="mt-2 text-sm">

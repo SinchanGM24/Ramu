@@ -3,7 +3,7 @@ import { ShieldCheck } from "lucide-react";
 
 export function WorkspaceStatusCard() {
 	return (
-		<aside className="relative overflow-hidden rounded-2xl bg-brand-900 p-6 text-white shadow-panel">
+		<aside className="relative overflow-hidden rounded-2xl bg-[#2c704d] p-6 text-white shadow-panel">
 			<div
 				aria-hidden="true"
 				className="absolute -right-8 -top-8 size-32 rounded-full border-[12px] border-brand-300/15"
