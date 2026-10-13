@@ -46,7 +46,9 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 				loading={delivery.deliveries.isLoading}
 				error={delivery.deliveries.isError}
 				rows={delivery.deliveries.data ?? []}
+				pendingManualDispatch={delivery.manualDispatch.isPending}
 				pendingRetry={delivery.retry.isPending}
+				onManualDispatch={delivery.openWhatsApp}
 				onReload={() => void delivery.deliveries.refetch()}
 				onRetry={(id) => delivery.retry.mutate(id)}
 			/>

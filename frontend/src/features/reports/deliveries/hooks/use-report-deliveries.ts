@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Delivery, Recipient } from "../types";
+import type { Delivery, ManualDispatch, Recipient } from "../types";
 
 export function useReportDeliveries(reportId: string) {
 	const queryClient = useQueryClient();
@@ -49,6 +49,30 @@ export function useReportDeliveries(reportId: string) {
 		},
 		onError: () => setNotice("Pengiriman belum dapat dimasukkan kembali ke antrean."),
 	});
+	const manualDispatch = useMutation({
+		mutationFn: (deliveryId: string) =>
+			api<ManualDispatch>(`/deliveries/${deliveryId}/open-whatsapp`, { method: "POST" }),
+	});
+
+	function openWhatsApp(deliveryId: string) {
+		const popup = window.open("", "_blank");
+
+		manualDispatch.mutate(deliveryId, {
+			onSuccess: ({ whatsAppUrl }) => {
+				if (popup) {
+					popup.location.href = whatsAppUrl;
+				} else {
+					window.location.href = whatsAppUrl;
+				}
+				setNotice("Chat WhatsApp wali telah dibuka.");
+				void refresh();
+			},
+			onError: (error) => {
+				popup?.close();
+				setNotice(error instanceof Error ? error.message : "Chat WhatsApp belum dapat dibuka.");
+			},
+		});
+	}
 
 	function toggleRecipient(id: string) {
 		setSelectedIds((current) =>
@@ -68,6 +92,8 @@ export function useReportDeliveries(reportId: string) {
 		notice,
 		queue,
 		recipients,
+		manualDispatch,
+		openWhatsApp,
 		retry,
 		selectedIds,
 		toggleAllRecipients,

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
+import { createHash, randomBytes, randomInt } from "crypto";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
 import { AuditService } from "../audit/audit.service";
@@ -9,6 +10,19 @@ import { assertReportAccess } from "../reports/report-authorization";
 const deliveryRequestSchema = z.object({
   guardianContactIds: z.array(z.string().uuid()).min(1).max(20).optional(),
 });
+
+const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+
+function whatsappPhone(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  const normalized = digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
+
+  if (normalized.length < 10 || normalized.length > 15) {
+    throw new Error("Nomor WhatsApp wali tidak valid");
+  }
+
+  return normalized;
+}
 
 @Controller()
 export class ReportDeliveriesController {
@@ -152,6 +166,80 @@ export class ReportDeliveriesController {
         metadata: { reportVersionId: delivery.report_version_id },
       }, client);
       return delivery;
+    }, actor.schoolId);
+  }
+
+  @Post("deliveries/:deliveryId/open-whatsapp")
+  async openWhatsApp(@Req() request: FastifyRequest, @Param("deliveryId") deliveryId: string) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+
+    return this.db.transaction(async (client) => {
+      const delivery = (await client.query<{
+        id: string;
+        status: "QUEUED" | "SENT" | "DELIVERED" | "READ" | "FAILED";
+        report_id: string;
+        report_version_id: string;
+        student_name: string;
+        guardian_name: string;
+        recipient_phone: string;
+        school_name: string;
+      }>(`SELECT delivery.id, delivery.status, delivery.report_version_id,
+          report.id AS report_id, student.name AS student_name,
+          guardian.name AS guardian_name, delivery.recipient_phone,
+          school.name AS school_name
+        FROM report_deliveries delivery
+        JOIN report_versions version ON version.id=delivery.report_version_id
+        JOIN reports report ON report.id=version.report_id
+        JOIN students student ON student.id=report.student_id
+        JOIN guardian_contacts guardian ON guardian.id=delivery.guardian_contact_id
+        JOIN schools school ON school.id=delivery.school_id
+        WHERE delivery.id=$1 AND delivery.school_id=$2
+        FOR UPDATE`, [deliveryId, actor.schoolId])).rows[0];
+
+      if (!delivery) throw new Error("Pengiriman tidak ditemukan");
+      if (actor.role === "TEACHER") await assertReportAccess(client, actor, delivery.report_id);
+      if (delivery.status !== "QUEUED") {
+        throw new Error("Chat WhatsApp untuk pengiriman ini sudah pernah dibuka");
+      }
+
+      const token = randomBytes(32).toString("base64url");
+      const pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      const origin = (process.env.FRONTEND_ORIGIN || "http://localhost:3001").replace(/\/$/, "");
+      const reportLink = `${origin}/r/${token}`;
+
+      await client.query(
+        `INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash)
+         VALUES($1,$2,$3,$4)`,
+        [actor.schoolId, delivery.report_version_id, hash(token), hash(pin)],
+      );
+      await client.query(
+        `UPDATE report_deliveries
+         SET status='SENT', sent_at=now(), attempt_count=attempt_count+1, updated_at=now()
+         WHERE id=$1 AND school_id=$2`,
+        [delivery.id, actor.schoolId],
+      );
+      await this.audit.record({
+        schoolId: actor.schoolId,
+        actorUserId: actor.userId,
+        action: "report_delivery.whatsapp_opened",
+        entityType: "report_delivery",
+        entityId: delivery.id,
+        metadata: { reportVersionId: delivery.report_version_id },
+      }, client);
+
+      const message = [
+        `Assalamu'alaikum Bapak/Ibu ${delivery.guardian_name},`,
+        `Rapor perkembangan ${delivery.student_name} dari ${delivery.school_name} telah tersedia.`,
+        "",
+        `Tautan rapor: ${reportLink}`,
+        `PIN: ${pin}`,
+        "",
+        "Silakan simpan tautan ini untuk membuka rapor kembali kapan saja.",
+      ].join("\n");
+
+      return {
+        whatsAppUrl: `https://wa.me/${whatsappPhone(delivery.recipient_phone)}?text=${encodeURIComponent(message)}`,
+      };
     }, actor.schoolId);
   }
 }

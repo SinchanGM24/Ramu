@@ -51,9 +51,10 @@ Tujuan: admin dapat menyelesaikan rapor dari progres sampai wali menerimanya tan
 
 3. Pengiriman kepada wali — selesai
    - Admin dapat memilih kontak penerima yang aktif untuk setiap rapor — selesai.
-   - Tampilkan status pengiriman dalam Bahasa Indonesia: Menunggu dikirim, Terkirim, Dibaca, Gagal — selesai.
+   - Tampilkan status pengiriman melalui ikon: kirim netral sebelum chat dibuka dan centang setelah chat WhatsApp dibuka — selesai.
    - Sediakan kirim ulang untuk pengiriman gagal — selesai.
    - Tampilkan riwayat pengiriman per rapor — selesai.
+   - Mode tanpa API membuka chat WhatsApp personal dengan tautan dan PIN unik, lalu mencatat bahwa chat telah dibuka. Status diterima/dibaca tetap memerlukan provider resmi — selesai.
 
 Kriteria selesai:
 

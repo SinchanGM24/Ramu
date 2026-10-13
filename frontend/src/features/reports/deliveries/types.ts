@@ -17,3 +17,7 @@ export type Recipient = {
 	phone: string;
 	is_primary: boolean;
 };
+
+export type ManualDispatch = {
+	whatsAppUrl: string;
+};
