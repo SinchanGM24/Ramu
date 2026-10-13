@@ -92,16 +92,13 @@ export function SemesterDataForm({
 			<div>
 				<p className="text-xs font-bold text-brand-700">DATA AKHIR SEMESTER</p>
 				<h2 className="mt-1 text-lg font-bold text-slate-900">Pertumbuhan dan kehadiran</h2>
-				<p className="mt-1 text-sm text-slate-600">
-					Data pertumbuhan bersifat opsional. Lengkapi kehadiran sebelum mengirim rapor.
-				</p>
 			</div>
 			<form className="mt-5 space-y-5" onSubmit={submit}>
 				<fieldset disabled={!editable || save.isPending}>
 					<legend className="text-sm font-semibold text-slate-800">Data pertumbuhan</legend>
 					<div className="mt-3 grid gap-4 sm:grid-cols-3">
 						<NumberField
-							label="Berat badan (kg, opsional)"
+							label="Berat badan (kg)"
 							min="0"
 							name="weightKg"
 							step="0.01"
@@ -109,7 +106,7 @@ export function SemesterDataForm({
 							onChange={(value) => update("weightKg", value)}
 						/>
 						<NumberField
-							label="Tinggi badan (cm, opsional)"
+							label="Tinggi badan (cm)"
 							min="0"
 							name="heightCm"
 							step="0.01"
@@ -117,7 +114,7 @@ export function SemesterDataForm({
 							onChange={(value) => update("heightCm", value)}
 						/>
 						<NumberField
-							label="Lingkar kepala (cm, opsional)"
+							label="Lingkar kepala (cm)"
 							min="0"
 							name="headCircumferenceCm"
 							step="0.01"
