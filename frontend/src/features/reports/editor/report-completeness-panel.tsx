@@ -13,7 +13,15 @@ type Completeness = {
 	missingSemesterData: boolean;
 };
 
-export function ReportCompletenessPanel({ reportId }: { reportId: string }) {
+type ReportCompletenessPanelProps = {
+	compact?: boolean;
+	reportId: string;
+};
+
+export function ReportCompletenessPanel({
+	compact = false,
+	reportId,
+}: ReportCompletenessPanelProps) {
 	const queryClient = useQueryClient();
 	const completeness = useQuery({
 		queryKey: ["report-completeness", reportId],
@@ -35,6 +43,44 @@ export function ReportCompletenessPanel({ reportId }: { reportId: string }) {
 		...data.missingNarratives.map((item) => `Narasi: ${item}`),
 		...(data.missingSemesterData ? ["Data pertumbuhan dan kehadiran"] : []),
 	];
+
+	function goToFirstMissingField() {
+		const selector = data.missingAssessments.length
+			? "[data-report-missing-assessment='true']"
+			: data.missingNarratives.length
+				? "[data-report-missing-narrative='true']"
+				: "[data-report-semester-data='true'] input";
+		const target = document.querySelector<HTMLElement>(selector);
+
+		if (!target) return;
+		target.closest("details")?.setAttribute("open", "");
+		target.scrollIntoView({ behavior: "smooth", block: "center" });
+		window.setTimeout(() => target.focus({ preventScroll: true }), 300);
+	}
+
+	function handleSubmit() {
+		if (!data.complete) {
+			goToFirstMissingField();
+			return;
+		}
+		submit.mutate();
+	}
+
+	if (compact) {
+		return (
+			<div className="mt-6 flex flex-col items-start justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+				<p className="text-sm text-slate-600">
+					{data.complete
+						? "Rapor telah lengkap dan siap dikirim untuk ditinjau."
+						: "Periksa kembali kelengkapan rapor sebelum mengirim."}
+				</p>
+				<Button disabled={submit.isPending} onClick={handleSubmit}>
+					{submit.isPending ? "Mengirim…" : "Kirim untuk ditinjau"}
+				</Button>
+			</div>
+		);
+	}
+
 	return (
 		<Card
 			className={`mb-4 ${data.complete ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}
@@ -63,7 +109,7 @@ export function ReportCompletenessPanel({ reportId }: { reportId: string }) {
 						)}
 					</div>
 				</div>
-				<Button disabled={!data.complete || submit.isPending} onClick={() => submit.mutate()}>
+				<Button disabled={submit.isPending} onClick={handleSubmit}>
 					{submit.isPending ? "Mengirim…" : "Kirim untuk ditinjau"}
 				</Button>
 			</div>

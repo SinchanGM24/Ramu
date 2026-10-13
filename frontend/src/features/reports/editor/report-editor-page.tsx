@@ -5,7 +5,9 @@ import { DevelopmentAreaCard } from "./components/development-area-card";
 import { ReportEditorHeader } from "./components/report-editor-header";
 import { ReportEditorProgressCard } from "./components/report-editor-progress-card";
 import { ScaleGuide } from "./components/scale-guide";
+import { SemesterDataForm } from "./components/semester-data-form";
 import { useReportWorkspace } from "./hooks/use-report-workspace";
+import { ReportCompletenessPanel } from "./report-completeness-panel";
 import { getAreaProgress } from "./utils";
 
 export function ReportEditorPage({ id }: { id: string }) {
@@ -22,6 +24,7 @@ export function ReportEditorPage({ id }: { id: string }) {
 	return (
 		<>
 			<ReportEditorHeader reportId={id} report={report} />
+			<ReportCompletenessPanel reportId={id} />
 			<ReportEditorProgressCard done={done} total={total} status={report.status} />
 			<ScaleGuide scales={scales} />
 			<div className="mt-4 space-y-4">
@@ -41,6 +44,16 @@ export function ReportEditorPage({ id }: { id: string }) {
 						refresh={refresh}
 					/>
 				))}
+			</div>
+			<div className="mt-4">
+				<SemesterDataForm
+					attendance={workspace.data.attendance}
+					editable={editable}
+					growth={workspace.data.growth}
+					reportId={id}
+					onSaved={refresh}
+				/>
+				<ReportCompletenessPanel compact reportId={id} />
 			</div>
 		</>
 	);

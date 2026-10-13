@@ -17,6 +17,10 @@ export type ReportWorkspace = {
 	};
 	scales: ReportScale[];
 	areas: ReportArea[];
-	growth: { weight_kg: string | number; height_cm: string | number } | null;
+	growth: {
+		weight_kg: string | number;
+		height_cm: string | number;
+		head_circumference_cm?: string | number | null;
+	} | null;
 	attendance: { sick_days: number; permission_days: number; unexcused_days: number } | null;
 };

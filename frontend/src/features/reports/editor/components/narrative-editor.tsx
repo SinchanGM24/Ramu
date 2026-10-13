@@ -102,6 +102,7 @@ export function NarrativeEditor({
 				</p>
 			))}
 			<textarea
+				data-report-missing-narrative={area.narrative.trim() ? undefined : "true"}
 				value={value}
 				disabled={!editable}
 				onChange={(event) => setValue(event.target.value)}

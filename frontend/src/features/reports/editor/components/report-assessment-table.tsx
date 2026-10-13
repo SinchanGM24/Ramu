@@ -78,6 +78,9 @@ export function ReportAssessmentTable({
 											>
 												<input
 													id={inputId}
+													data-report-missing-assessment={
+														indicator.scaleOptionId ? undefined : "true"
+													}
 													name={`indicator-${indicator.id}`}
 													type="radio"
 													value={scale.id}
