@@ -12,6 +12,7 @@ import { SemesterDataForm } from "./components/semester-data-form";
 import { useReportWorkspace } from "./hooks/use-report-workspace";
 import { ReportCompletenessPanel } from "./report-completeness-panel";
 import { getAreaProgress } from "./utils";
+import { ReportRevisionNote } from "../components/report-revision-note";
 
 export function ReportEditorPage({ id }: { id: string }) {
 	const { assessment, pendingScaleOptionIds, refresh, workspace } = useReportWorkspace(id);
@@ -56,6 +57,9 @@ export function ReportEditorPage({ id }: { id: string }) {
 	return (
 		<>
 			<ReportEditorHeader reportId={id} report={report} />
+			{report.status === "REVISION_REQUIRED" ? (
+				<ReportRevisionNote note={report.revision_note} />
+			) : null}
 			<ReportCompletenessPanel
 				feedback={submissionFeedback}
 				onSubmitFailed={handleSubmitFailed}

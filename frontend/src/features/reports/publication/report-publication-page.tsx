@@ -69,12 +69,10 @@ export function ReportPublicationPage() {
 				pending={publication.publish.isPending}
 				reports={publication.pagedReports}
 				search={publication.search}
-				status={publication.status}
 				total={publication.filteredReports.length}
 				onPageChange={publication.setPage}
 				onPublish={(reportId) => publication.publish.mutate(reportId)}
 				onSearchChange={publication.setSearch}
-				onStatusChange={publication.setStatus}
 			/>
 		</>
 	);

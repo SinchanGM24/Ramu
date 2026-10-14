@@ -82,6 +82,7 @@ export class ReportsController {
               GROUP BY narrative.report_id
             )
             SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status,
+              (SELECT log.metadata->>'note' FROM audit_logs log WHERE log.school_id=report.school_id AND log.entity_type='report' AND log.entity_id=report.id AND log.action='report.revision' ORDER BY log.created_at DESC LIMIT 1) AS revision_note,
               CASE WHEN report.id IS NULL THEN 0 ELSE COALESCE(ROUND(100.0*(COALESCE(assessment_progress.assessment_count,0)+COALESCE(narrative_progress.narrative_count,0)+CASE WHEN attendance.id IS NULL THEN 0 ELSE 1 END)/NULLIF(framework_totals.indicator_count+framework_totals.narrative_count+1,0)),0)::int END AS completion_percent
             FROM student_enrollments enrollment
             JOIN students student ON student.id=enrollment.student_id AND student.school_id=enrollment.school_id
@@ -265,6 +266,8 @@ export class ReportsController {
           action: `report.${input.action}`,
           entityType: "report",
           entityId: id,
+          metadata:
+            input.action === "revision" ? { note: input.note } : undefined,
         },
         client,
       );
@@ -505,7 +508,7 @@ export class ReportsController {
     return this.db.transaction(async (client) => {
       const report = (
         await client.query(
-          "SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key IS NOT NULL AS school_has_logo,s.name AS student_name,s.student_number,grouping.name AS class_name,sem.name AS semester_name FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.id=$1",
+          "SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key IS NOT NULL AS school_has_logo,s.name AS student_name,s.student_number,grouping.name AS class_name,sem.name AS semester_name,(SELECT log.metadata->>'note' FROM audit_logs log WHERE log.school_id=r.school_id AND log.entity_type='report' AND log.entity_id=r.id AND log.action='report.revision' ORDER BY log.created_at DESC LIMIT 1) AS revision_note FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.id=$1",
           [id],
         )
       ).rows[0];

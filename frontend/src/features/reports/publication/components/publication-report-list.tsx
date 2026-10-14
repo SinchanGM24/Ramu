@@ -15,12 +15,10 @@ type PublicationReportListProps = {
 	pending: boolean;
 	reports: PublicationReport[];
 	search: string;
-	status: PublicationStatus;
 	total: number;
 	onPageChange: (page: number) => void;
 	onPublish: (reportId: string) => void;
 	onSearchChange: (value: string) => void;
-	onStatusChange: (status: PublicationStatus) => void;
 };
 
 const statusCopy: Record<PublicationStatus, { label: string; tone: "green" | "amber" }> = {
@@ -36,12 +34,10 @@ export function PublicationReportList({
 	pending,
 	reports,
 	search,
-	status,
 	total,
 	onPageChange,
 	onPublish,
 	onSearchChange,
-	onStatusChange,
 }: PublicationReportListProps) {
 	return (
 		<Card className="overflow-hidden p-0">
@@ -58,7 +54,7 @@ export function PublicationReportList({
 					<span>{counts.published} telah terbit</span>
 				</div>
 			</div>
-			<div className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
+			<div className="px-5 py-4 sm:px-6">
 				<label className="relative block">
 					<span className="sr-only">Cari nama murid</span>
 					<Search
@@ -72,28 +68,6 @@ export function PublicationReportList({
 						className="w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] py-2.5 pl-10 pr-3 text-sm text-[#17251b] outline-none transition placeholder:text-[#899188] focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
 					/>
 				</label>
-				<div className="flex gap-2" role="tablist" aria-label="Tahap publikasi rapor">
-					{(
-						[
-							["APPROVED", "Siap diterbitkan", counts.approved],
-							["PUBLISHED", "Sudah diterbitkan", counts.published],
-						] as const
-					).map(([value, label, count]) => (
-						<button
-							key={value}
-							type="button"
-							role="tab"
-							aria-selected={status === value}
-							onClick={() => onStatusChange(value)}
-							className={`whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold ${status === value ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-						>
-							{label}{" "}
-							<span className={status === value ? "text-brand-100" : "text-slate-400"}>
-								{count}
-							</span>
-						</button>
-					))}
-				</div>
 			</div>
 			<div className="hidden border-t border-[#edf0e8] md:block">
 				<table className="w-full text-left text-sm">

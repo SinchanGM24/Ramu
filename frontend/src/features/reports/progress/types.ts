@@ -10,6 +10,7 @@ export type ProgressItem = {
 	id: string;
 	name: string;
 	report_id?: string;
+	revision_note?: string | null;
 	status?: ReportStatus;
 	completion_percent: number;
 };

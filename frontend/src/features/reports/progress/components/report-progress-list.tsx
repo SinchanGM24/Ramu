@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { ReportRevisionNote } from "@/features/reports/components/report-revision-note";
 import type { ProgressItem } from "../types";
 import { getReportDestination, pageSize, statusCopy } from "../utils";
 
@@ -48,7 +49,7 @@ export function ReportProgressList({
 				</div>
 				<div className="flex items-center gap-2 rounded-lg bg-[#f0f4ed] px-3 py-1.5 text-sm font-semibold text-[#526156]">
 					<UsersRound className="size-4" />
-					{counts.total} murid
+					{counts.notCreated + counts.draft} murid
 				</div>
 			</div>
 			<div className="px-5 py-4 sm:px-6">
@@ -97,7 +98,12 @@ export function ReportProgressList({
 										key={item.id}
 										className="border-b border-[#edf0e8] transition-colors hover:bg-[#f8faf5] last:border-0"
 									>
-										<td className="px-5 py-4 font-semibold text-[#17251b]">{item.name}</td>
+										<td className="px-5 py-4 font-semibold text-[#17251b]">
+											{item.name}
+											{item.status === "REVISION_REQUIRED" ? (
+												<ReportRevisionNote compact note={item.revision_note} />
+											) : null}
+										</td>
 										<td className="px-5 py-4">
 											{item.status ? (
 												<StatusBadge tone={statusCopy[item.status].tone}>
@@ -142,7 +148,12 @@ export function ReportProgressList({
 								className="rounded-2xl border border-[#e7e9df] bg-[#fffefa] p-4"
 							>
 								<div className="flex items-start justify-between gap-3">
-									<h3 className="font-semibold text-[#17251b]">{item.name}</h3>
+									<div>
+										<h3 className="font-semibold text-[#17251b]">{item.name}</h3>
+										{item.status === "REVISION_REQUIRED" ? (
+											<ReportRevisionNote compact note={item.revision_note} />
+										) : null}
+									</div>
 									{item.status ? (
 										<StatusBadge tone={statusCopy[item.status].tone}>
 											{statusCopy[item.status].label}

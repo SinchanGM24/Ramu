@@ -3,14 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { authSessionQueryOptions } from "@/features/auth/session";
-import type { PublicationReport, PublicationStatus, Semester } from "../types";
+import type { PublicationReport, Semester } from "../types";
 
 const pageSize = 10;
 
 export function useReportPublication() {
 	const queryClient = useQueryClient();
 	const [semesterId, setSemesterId] = useState("");
-	const [status, setStatus] = useState<PublicationStatus>("APPROVED");
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [notice, setNotice] = useState("");
@@ -37,7 +36,6 @@ export function useReportPublication() {
 		mutationFn: (reportId: string) => api(`/reports/${reportId}/publish`, { method: "POST" }),
 		onSuccess: async () => {
 			setNotice("Rapor berhasil diterbitkan dan siap dikirim kepada wali.");
-			setStatus("PUBLISHED");
 			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
 			await queryClient.invalidateQueries({ queryKey: ["reports"] });
 		},
@@ -60,17 +58,15 @@ export function useReportPublication() {
 	);
 	const filteredReports = useMemo(
 		() =>
-			reports.filter(
-				(item) =>
-					item.status === status &&
-					item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
+			reports.filter((item) =>
+				item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
 			),
-		[debouncedSearch, reports, status],
+		[debouncedSearch, reports],
 	);
 
 	useEffect(() => {
 		setPage(1);
-	}, [debouncedSearch, semesterId, status]);
+	}, [debouncedSearch, semesterId]);
 
 	return {
 		canPublish: session.data?.role === "SCHOOL_ADMIN",
@@ -93,8 +89,6 @@ export function useReportPublication() {
 		setPage,
 		setSearch,
 		setSemesterId,
-		setStatus,
-		status,
 	};
 }
 

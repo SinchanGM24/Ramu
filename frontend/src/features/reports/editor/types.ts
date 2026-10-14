@@ -14,6 +14,7 @@ export type ReportWorkspace = {
 		class_name?: string | null;
 		semester_name: string;
 		academic_year_name: string;
+		revision_note?: string | null;
 	};
 	scales: ReportScale[];
 	areas: ReportArea[];

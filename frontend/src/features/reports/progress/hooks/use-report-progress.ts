@@ -31,7 +31,10 @@ export function useReportProgress() {
 	useEffect(() => {
 		setPage(1);
 	}, [semesterId, debouncedSearch]);
-	const filteredItems = items.filter((item) =>
+	const editableItems = items.filter(
+		(item) => !item.status || ["DRAFT", "REVISION_REQUIRED"].includes(item.status),
+	);
+	const filteredItems = editableItems.filter((item) =>
 		item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
 	);
 	const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);
