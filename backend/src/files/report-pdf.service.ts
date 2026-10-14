@@ -224,26 +224,117 @@ export class ReportPdfService {
         value === null || value === undefined || value === ""
           ? "-"
           : String(value);
-      const text = (value: string) => {
-        ensureSpace(26);
-        document
-          .font("Helvetica")
-          .fontSize(10)
-          .fillColor("#1f2937")
-          .text(value);
-      };
       const heading = (value: string) => {
-        ensureSpace(52);
+        ensureSpace(40);
+        document.moveDown(0.7);
+        const y = document.y;
+        document.fillColor("#e7f0eb").rect(left, y, contentWidth, 25).fill();
         document
-          .moveDown(0.7)
-          .font("Helvetica-Bold")
-          .fontSize(12)
           .fillColor("#173f35")
-          .text(value);
-        document.font("Helvetica").fontSize(10).fillColor("#1f2937");
+          .font("Helvetica-Bold")
+          .fontSize(10)
+          .text(value, left + 8, y + 8, { width: contentWidth - 16 });
+        document.y = y + 25;
       };
-      const label = (name: string, value: unknown) =>
-        text(`${name}: ${emptyValue(value)}`);
+      const drawInfoGrid = (
+        items: Array<{ label: string; value: unknown; fullWidth?: boolean }>,
+      ) => {
+        const gap = 8;
+        const columnWidth = (contentWidth - gap) / 2;
+        const cellHeight = (
+          item: { label: string; value: unknown },
+          width: number,
+        ) => {
+          document.font("Helvetica").fontSize(9);
+          const valueHeight = document.heightOfString(emptyValue(item.value), {
+            width: width - 16,
+          });
+          return Math.max(42, valueHeight + 25);
+        };
+        const drawCell = (
+          x: number,
+          y: number,
+          width: number,
+          height: number,
+          item: { label: string; value: unknown },
+        ) => {
+          document.save();
+          document.fillColor("#fbfcf9").rect(x, y, width, height).fill();
+          document
+            .strokeColor("#cbd5d1")
+            .lineWidth(0.45)
+            .rect(x, y, width, height)
+            .stroke();
+          document
+            .fillColor("#637065")
+            .font("Helvetica-Bold")
+            .fontSize(7)
+            .text(item.label.toUpperCase(), x + 8, y + 7, {
+              width: width - 16,
+            });
+          document
+            .fillColor("#1f2937")
+            .font("Helvetica")
+            .fontSize(9)
+            .text(emptyValue(item.value), x + 8, y + 18, { width: width - 16 });
+          document.restore();
+        };
+
+        let index = 0;
+        while (index < items.length) {
+          const first = items[index];
+          const second = first.fullWidth ? undefined : items[index + 1];
+          const firstWidth = second ? columnWidth : contentWidth;
+          const rowHeight = Math.max(
+            cellHeight(first, firstWidth),
+            second ? cellHeight(second, columnWidth) : 0,
+          );
+          ensureSpace(rowHeight + 2);
+          const y = document.y;
+          drawCell(left, y, firstWidth, rowHeight, first);
+          if (second)
+            drawCell(
+              left + columnWidth + gap,
+              y,
+              columnWidth,
+              rowHeight,
+              second,
+            );
+          document.y = y + rowHeight;
+          index += second ? 2 : 1;
+        }
+      };
+      const drawListBlock = (title: string, values: string[]) => {
+        const content = values.length ? values.join("\n") : "-";
+        document.font("Helvetica").fontSize(9);
+        const height = Math.max(
+          48,
+          document.heightOfString(content, { width: contentWidth - 16 }) + 31,
+        );
+        ensureSpace(height + 6);
+        document.moveDown(0.45);
+        const y = document.y;
+        document
+          .fillColor("#fbfcf9")
+          .rect(left, y, contentWidth, height)
+          .fill();
+        document
+          .strokeColor("#cbd5d1")
+          .lineWidth(0.45)
+          .rect(left, y, contentWidth, height)
+          .stroke();
+        document
+          .fillColor("#173f35")
+          .font("Helvetica-Bold")
+          .fontSize(9)
+          .text(title, left + 8, y + 8, { width: contentWidth - 16 });
+        document
+          .fillColor("#1f2937")
+          .font("Helvetica")
+          .fontSize(9)
+          .text(content, left + 8, y + 21, { width: contentWidth - 16 });
+        document.y = y + height;
+      };
       const drawAssessmentTable = (
         title: string,
         number: number,
@@ -261,6 +352,7 @@ export class ReportPdfService {
             bold?: boolean;
             center?: boolean;
             fill?: string;
+            mark?: boolean;
             size?: number;
           },
         ) => {
@@ -276,7 +368,13 @@ export class ReportPdfService {
             .stroke();
           document
             .fillColor("#1f2937")
-            .font(options?.bold ? "Helvetica-Bold" : "Helvetica")
+            .font(
+              options?.mark
+                ? "ZapfDingbats"
+                : options?.bold
+                  ? "Helvetica-Bold"
+                  : "Helvetica",
+            )
             .fontSize(options?.size || 8);
           const textWidth = width - 10;
           const textHeight = document.heightOfString(value, {
@@ -355,11 +453,12 @@ export class ReportPdfService {
               y,
               columnWidths[scaleIndex + 2],
               rowHeight,
-              selectedScale === scale ? "X" : "",
+              selectedScale === scale ? "3" : "",
               {
                 bold: true,
                 center: true,
-                size: 10,
+                mark: selectedScale === scale,
+                size: 12,
               },
             );
             x += columnWidths[scaleIndex + 2];
@@ -407,51 +506,40 @@ export class ReportPdfService {
         .text("LAPORAN PERKEMBANGAN ANAK DIDIK", {
           align: "center",
         });
-      document
-        .moveDown(0.6)
-        .font("Helvetica")
-        .fontSize(10)
-        .fillColor("#1f2937")
-        .text(
-          `Nama: ${student.name || "-"} | Nomor induk: ${student.student_number || "-"}`,
-          { align: "center" },
-        );
       document.text(
-        `Kelas: ${student.class_name || "-"} | Semester: ${snapshot.semester?.name || "-"}`,
-        { align: "center" },
-      );
-      document.text(
-        `Tahun Pelajaran: ${snapshot.semester?.academic_year_name || "-"}`,
+        `Kelas: ${student.class_name || "-"}  |  Semester: ${snapshot.semester?.name || "-"}  |  Tahun Pelajaran: ${snapshot.semester?.academic_year_name || "-"}`,
         { align: "center" },
       );
 
       heading("Keterangan Anak Didik");
-      label("Nama anak didik", student.name);
-      label("Nama panggilan", student.nickname);
-      label("Nomor induk", student.student_number);
-      label(
-        "Jenis kelamin",
-        student.gender === "MALE"
-          ? "Laki-laki"
-          : student.gender === "FEMALE"
-            ? "Perempuan"
-            : "-",
-      );
-      label(
-        "Tempat, tanggal lahir",
-        student.birth_place
-          ? `${student.birth_place}, ${birthDate}`
-          : birthDate,
-      );
-      label("Agama", student.religion);
-      label("Anak ke", student.child_order);
-      label("Alamat", student.address);
-      guardians.forEach((guardian) => {
-        label(
-          `Orang tua/wali (${guardian.relationship || "-"})`,
-          `${guardian.name || "-"}${guardian.occupation ? `, ${guardian.occupation}` : ""}${guardian.phone ? `, ${guardian.phone}` : ""}`,
-        );
-      });
+      drawInfoGrid([
+        { label: "Nama anak didik", value: student.name },
+        { label: "Nama panggilan", value: student.nickname },
+        { label: "Nomor induk", value: student.student_number },
+        {
+          label: "Jenis kelamin",
+          value:
+            student.gender === "MALE"
+              ? "Laki-laki"
+              : student.gender === "FEMALE"
+                ? "Perempuan"
+                : "-",
+        },
+        {
+          label: "Tempat, tanggal lahir",
+          value: student.birth_place
+            ? `${student.birth_place}, ${birthDate}`
+            : birthDate,
+        },
+        { label: "Agama", value: student.religion },
+        { label: "Anak ke", value: student.child_order },
+        { label: "Alamat", value: student.address, fullWidth: true },
+        ...guardians.map((guardian) => ({
+          label: `Orang tua/wali (${guardian.relationship || "-"})`,
+          value: `${guardian.name || "-"}${guardian.occupation ? `, ${guardian.occupation}` : ""}${guardian.phone ? `, ${guardian.phone}` : ""}`,
+          fullWidth: true,
+        })),
+      ]);
 
       ensureSpace(80);
       document.moveDown(0.7);
@@ -502,19 +590,13 @@ export class ReportPdfService {
       areas.forEach((items, area) => {
         drawAssessmentTable(area, areaNumber, items);
         areaNumber += 1;
-        ensureSpace(72);
-        document
-          .moveDown(0.35)
-          .font("Helvetica-Bold")
-          .fontSize(9)
-          .fillColor("#173f35")
-          .text("Narasi Perkembangan");
         const narrative = narratives.get(area) || "-";
         const narrativeHeight = Math.max(
-          42,
-          document.heightOfString(narrative, { width: contentWidth - 16 }) + 16,
+          50,
+          document.heightOfString(narrative, { width: contentWidth - 16 }) + 30,
         );
-        if (document.y + narrativeHeight > pageBottom()) document.addPage();
+        ensureSpace(narrativeHeight + 30);
+        document.moveDown(0.4);
         const narrativeY = document.y;
         document
           .fillColor("#f6faf7")
@@ -529,66 +611,69 @@ export class ReportPdfService {
           .fillColor("#1f2937")
           .font("Helvetica")
           .fontSize(9)
-          .text(narrative, left + 8, narrativeY + 8, {
+          .text(narrative, left + 8, narrativeY + 25, {
+            width: contentWidth - 16,
+          });
+        document
+          .fillColor("#173f35")
+          .font("Helvetica-Bold")
+          .fontSize(9)
+          .text("Narasi Perkembangan", left + 8, narrativeY + 8, {
             width: contentWidth - 16,
           });
         document.y = narrativeY + narrativeHeight;
       });
 
       heading("Data Akhir Semester");
-      label(
-        "Berat badan",
-        snapshot.growth?.weight_kg == null
-          ? "-"
-          : `${snapshot.growth.weight_kg} kg`,
+      drawInfoGrid([
+        {
+          label: "Berat badan",
+          value:
+            snapshot.growth?.weight_kg == null
+              ? "-"
+              : `${snapshot.growth.weight_kg} kg`,
+        },
+        {
+          label: "Tinggi badan",
+          value:
+            snapshot.growth?.height_cm == null
+              ? "-"
+              : `${snapshot.growth.height_cm} cm`,
+        },
+        {
+          label: "Kehadiran",
+          value: `Sakit ${snapshot.attendance?.sick_days ?? "-"} hari, Izin ${snapshot.attendance?.permission_days ?? "-"} hari, Tanpa keterangan ${snapshot.attendance?.unexcused_days ?? "-"} hari`,
+          fullWidth: true,
+        },
+      ]);
+      drawListBlock(
+        "Ekstrakurikuler",
+        snapshot.extracurricular?.length
+          ? snapshot.extracurricular.map(
+              (activity) =>
+                `${activity.activity_name || "Kegiatan"}: ${activity.grade || "-"}`,
+            )
+          : ["Tidak ada data ekstrakurikuler."],
       );
-      label(
-        "Tinggi badan",
-        snapshot.growth?.height_cm == null
-          ? "-"
-          : `${snapshot.growth.height_cm} cm`,
+      drawListBlock(
+        "Portofolio Perkembangan",
+        snapshot.portfolio?.length
+          ? snapshot.portfolio.map(
+              (item) =>
+                `${item.original_filename || "Foto kegiatan"}${item.caption ? `: ${item.caption}` : ""}`,
+            )
+          : ["Tidak ada portofolio yang disertakan."],
       );
-      label(
-        "Kehadiran",
-        `Sakit ${snapshot.attendance?.sick_days ?? "-"} hari, Izin ${snapshot.attendance?.permission_days ?? "-"} hari, Tanpa keterangan ${snapshot.attendance?.unexcused_days ?? "-"} hari`,
-      );
-      document
-        .moveDown(0.5)
-        .font("Helvetica-Bold")
-        .fontSize(10)
-        .text("Ekstrakurikuler")
-        .font("Helvetica");
-      if (snapshot.extracurricular?.length) {
-        snapshot.extracurricular.forEach((activity) =>
-          text(
-            `${activity.activity_name || "Kegiatan"}: ${activity.grade || "-"}`,
-          ),
-        );
-      } else {
-        text("Tidak ada data ekstrakurikuler.");
-      }
-      document
-        .moveDown(0.5)
-        .font("Helvetica-Bold")
-        .text("Portofolio Perkembangan")
-        .font("Helvetica");
-      if (snapshot.portfolio?.length) {
-        snapshot.portfolio.forEach((item) =>
-          text(
-            `${item.original_filename || "Foto kegiatan"}${item.caption ? `: ${item.caption}` : ""}`,
-          ),
-        );
-      } else {
-        text("Tidak ada portofolio yang disertakan.");
-      }
 
       const teachers = snapshot.teachers || [];
       heading("Guru yang Bertanggung Jawab");
-      teachers.forEach((teacher) =>
-        label(
-          "Guru",
-          `${teacher.name || "-"}${teacher.phone ? `, ${teacher.phone}` : ""}`,
-        ),
+      drawInfoGrid(
+        teachers.length
+          ? teachers.map((teacher) => ({
+              label: "Guru",
+              value: `${teacher.name || "-"}${teacher.phone ? `, ${teacher.phone}` : ""}`,
+            }))
+          : [{ label: "Guru", value: "-" }],
       );
       ensureSpace(140);
       document
