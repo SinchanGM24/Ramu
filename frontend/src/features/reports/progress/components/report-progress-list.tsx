@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UsersRound } from "lucide-react";
+import { Search, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PaginationControls } from "@/components/shared/pagination-controls";
@@ -50,26 +50,33 @@ export function ReportProgressList({
 		{ id: "WORKING", label: "Sedang dikerjakan", count: counts.draft },
 	];
 	return (
-		<Card>
-			<div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+		<Card className="overflow-hidden p-0">
+			<div className="flex flex-col gap-4 border-b border-[#e7e7dc] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
 				<div>
-					<h2 className="font-bold text-slate-900">Rapor yang perlu diisi</h2>
-					<p className="mt-1 text-sm text-slate-500">
+					<h2 className="font-bold text-[#17251b]">Rapor yang perlu diisi</h2>
+					<p className="mt-1 text-sm text-[#637065]">
 						Pilih murid untuk membuat draf atau melanjutkan pengisian rapor.
 					</p>
 				</div>
-				<div className="flex items-center gap-2 text-sm text-slate-500">
+				<div className="flex items-center gap-2 rounded-lg bg-[#f0f4ed] px-3 py-1.5 text-sm font-semibold text-[#526156]">
 					<UsersRound className="size-4" />
 					{counts.total} murid
 				</div>
 			</div>
-			<div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-				<input
-					value={search}
-					onChange={(event) => onSearchChange(event.target.value)}
-					placeholder="Cari nama murid"
-					className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
-				/>
+			<div className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
+				<label className="relative block">
+					<span className="sr-only">Cari nama murid</span>
+					<Search
+						className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#7b867d]"
+						aria-hidden="true"
+					/>
+					<input
+						value={search}
+						onChange={(event) => onSearchChange(event.target.value)}
+						placeholder="Cari nama murid"
+						className="w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] py-2.5 pl-10 pr-3 text-sm text-[#17251b] outline-none transition placeholder:text-[#899188] focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+					/>
+				</label>
 				<div
 					className="flex gap-2 overflow-x-auto pb-1"
 					role="tablist"
@@ -82,7 +89,7 @@ export function ReportProgressList({
 							role="tab"
 							aria-selected={filter === item.id}
 							onClick={() => onFilterChange(item.id)}
-							className={`whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition ${filter === item.id ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+							className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${filter === item.id ? "bg-brand-700 text-white shadow-[0_6px_14px_rgba(23,75,49,0.16)]" : "bg-[#f0f3ed] text-[#5d695f] hover:bg-[#e5eadf]"}`}
 						>
 							{item.label}{" "}
 							<span className={filter === item.id ? "text-brand-100" : "text-slate-400"}>
@@ -92,9 +99,9 @@ export function ReportProgressList({
 					))}
 				</div>
 			</div>
-			<div className="mt-4 overflow-x-auto">
+			<div className="overflow-x-auto border-t border-[#edf0e8]">
 				<table className="w-full text-left text-sm">
-					<thead className="border-b text-xs text-slate-500">
+					<thead className="border-b border-[#e7e9df] bg-[#f5f7f1] text-xs text-[#667168]">
 						<tr>
 							<th className="pb-3 font-semibold">Murid</th>
 							<th className="pb-3 font-semibold">Tahap rapor</th>
@@ -104,13 +111,13 @@ export function ReportProgressList({
 					<tbody>
 						{loading ? (
 							<tr>
-								<td colSpan={3} className="py-8 text-slate-500">
+								<td colSpan={3} className="px-5 py-10 text-[#68746a]">
 									Memuat rapor murid…
 								</td>
 							</tr>
 						) : !items.length ? (
 							<tr>
-								<td colSpan={3} className="py-10 text-center text-slate-500">
+								<td colSpan={3} className="px-5 py-12 text-center text-[#68746a]">
 									Tidak ada murid pada filter ini.
 								</td>
 							</tr>
@@ -118,18 +125,21 @@ export function ReportProgressList({
 							items.map((item) => {
 								const next = getReportDestination(item);
 								return (
-									<tr key={item.id} className="border-b border-slate-100 last:border-0">
-										<td className="py-4 font-semibold text-slate-900">{item.name}</td>
-										<td className="py-4">
+									<tr
+										key={item.id}
+										className="border-b border-[#edf0e8] transition-colors hover:bg-[#f8faf5] last:border-0"
+									>
+										<td className="px-5 py-4 font-semibold text-[#17251b]">{item.name}</td>
+										<td className="px-5 py-4">
 											{item.status ? (
 												<StatusBadge tone={statusCopy[item.status].tone}>
 													{statusCopy[item.status].label}
 												</StatusBadge>
 											) : (
-												<span className="text-slate-500">Belum dibuat</span>
+												<span className="text-[#68746a]">Belum dibuat</span>
 											)}
 										</td>
-										<td className="py-4 text-right">
+										<td className="px-5 py-4 text-right">
 											{next ? (
 												<Link href={next.href}>
 													<Button variant="secondary">{next.label}</Button>
@@ -145,12 +155,14 @@ export function ReportProgressList({
 					</tbody>
 				</table>
 			</div>
-			<PaginationControls
-				page={page}
-				pageSize={pageSize}
-				total={total}
-				onPageChange={onPageChange}
-			/>
+			<div className="px-5 py-4 sm:px-6">
+				<PaginationControls
+					page={page}
+					pageSize={pageSize}
+					total={total}
+					onPageChange={onPageChange}
+				/>
+			</div>
 		</Card>
 	);
 }

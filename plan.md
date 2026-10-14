@@ -29,6 +29,8 @@ Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
 
 ## Rute rapor
 
+Progres batch saat ini: halaman Pengisian Rapor sedang memperoleh desain baru; tampilan formal, editor, data penilaian, dan workflow tidak diubah.
+
 - [ ] Belum dimulai — `/app/reports/progress`
 - [ ] Belum dimulai — `/app/reports/review`
 - [ ] Belum dimulai — `/app/reports/publication`

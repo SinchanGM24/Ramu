@@ -56,17 +56,17 @@ export function ReportWorkflowNavigation() {
 	return (
 		<nav
 			aria-label="Tahapan pengelolaan rapor"
-			className="mb-6 flex gap-2 overflow-x-auto border-b border-slate-200 pb-3"
+			className="mb-7 flex gap-1 overflow-x-auto rounded-2xl border border-[#e5e7dc] bg-[#f3f5ef] p-1.5 shadow-[0_5px_14px_rgba(42,72,48,0.05)]"
 		>
 			{availableItems.map((item) => (
 				<Link
 					key={item.href}
 					href={item.href}
 					className={cn(
-						"whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition",
+						"whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-semibold transition sm:px-4",
 						isActive(pathname, item.href)
-							? "bg-brand-600 text-white"
-							: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+							? "bg-[#fffdf8] text-brand-800 shadow-[0_3px_10px_rgba(27,65,40,0.12)]"
+							: "text-[#667168] hover:bg-white/70 hover:text-[#17251b]",
 					)}
 				>
 					{item.label}
