@@ -37,40 +37,42 @@ export function SchoolProfileForm({
 				event.preventDefault();
 				onSubmit();
 			}}
-			className="mt-6 space-y-5"
+			className="mt-6 space-y-6"
 		>
-			<label className="block text-sm font-semibold text-[#35443a]">
-				Nama sekolah
-				<input
-					required
-					minLength={2}
-					maxLength={160}
-					value={name}
-					onChange={(event) => onNameChange(event.target.value)}
-					className="mt-1.5 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-				/>
-			</label>
-			<label className="block text-sm font-semibold text-[#35443a]">
-				Alamat sekolah
-				<textarea
-					value={address}
-					onChange={(event) => onAddressChange(event.target.value)}
-					maxLength={500}
-					rows={3}
-					className="mt-1.5 w-full resize-y rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-					placeholder="Alamat lengkap sekolah"
-				/>
-			</label>
-			<label className="block text-sm font-semibold text-[#35443a]">
-				Nomor telepon
-				<input
-					value={phone}
-					onChange={(event) => onPhoneChange(event.target.value)}
-					maxLength={40}
-					className="mt-1.5 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-					placeholder="Contoh: 021-12345678"
-				/>
-			</label>
+			<div className="grid gap-5 md:grid-cols-2">
+				<label className="block text-sm font-semibold text-[#35443a]">
+					Nama sekolah
+					<input
+						required
+						minLength={2}
+						maxLength={160}
+						value={name}
+						onChange={(event) => onNameChange(event.target.value)}
+						className="mt-1.5 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+					/>
+				</label>
+				<label className="block text-sm font-semibold text-[#35443a]">
+					Nomor telepon
+					<input
+						value={phone}
+						onChange={(event) => onPhoneChange(event.target.value)}
+						maxLength={40}
+						className="mt-1.5 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+						placeholder="Contoh: 021-12345678"
+					/>
+				</label>
+				<label className="block text-sm font-semibold text-[#35443a] md:col-span-2">
+					Alamat sekolah
+					<textarea
+						value={address}
+						onChange={(event) => onAddressChange(event.target.value)}
+						maxLength={500}
+						rows={2}
+						className="mt-1.5 w-full resize-y rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+						placeholder="Alamat lengkap sekolah"
+					/>
+				</label>
+			</div>
 			<div className="border-t border-[#e7e9df] pt-5">
 				<p className="text-sm font-semibold text-[#35443a]">Logo sekolah</p>
 				<p className="mt-1 text-sm leading-6 text-[#68746a]">

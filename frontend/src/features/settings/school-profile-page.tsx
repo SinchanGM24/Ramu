@@ -90,7 +90,7 @@ export function SchoolProfilePage() {
 			{school.isLoading ? (
 				<Card>Memuat profil sekolah…</Card>
 			) : (
-				<Card className="max-w-3xl overflow-hidden p-0">
+				<Card className="overflow-hidden p-0">
 					<div className="flex flex-col gap-5 border-b border-[#e7e7dc] bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_58%,#edf5ec_100%)] px-5 py-6 sm:flex-row sm:items-start sm:px-6">
 						<span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 shadow-[0_8px_18px_rgba(23,75,49,0.1)]">
 							<Building2 size={21} />
