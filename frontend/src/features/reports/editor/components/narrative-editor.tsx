@@ -77,9 +77,9 @@ export function NarrativeEditor({
 	}, [complete, area.narrative]);
 
 	return (
-		<div className="mt-5">
+		<div className="mt-6 border-t border-[#e7e9df] pt-5">
 			<div className="flex justify-between gap-2">
-				<b className="text-sm">Narasi perkembangan</b>
+				<b className="text-sm text-[#35443a]">Narasi perkembangan</b>
 				<Button
 					type="button"
 					variant="secondary"
@@ -107,7 +107,7 @@ export function NarrativeEditor({
 				disabled={!editable}
 				onChange={(event) => setValue(event.target.value)}
 				onBlur={() => void persist(value)}
-				className="mt-2 min-h-32 w-full rounded-xl border p-3 text-sm"
+				className="mt-2 min-h-32 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] p-3 text-sm text-[#17251b] outline-none transition placeholder:text-[#899188] focus:border-brand-500 focus:ring-2 focus:ring-brand-100 disabled:bg-[#f4f6f0]"
 				placeholder="Lengkapi semua indikator untuk membuat draf otomatis."
 			/>
 			<ConfirmationDialog

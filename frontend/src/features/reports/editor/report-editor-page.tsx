@@ -55,7 +55,7 @@ export function ReportEditorPage({ id }: { id: string }) {
 			/>
 			<ReportEditorProgressCard done={done} total={total} status={report.status} />
 			<ScaleGuide scales={scales} />
-			<div className="mt-4 space-y-4">
+			<div className="mt-6 space-y-5">
 				{areas.map((area, index) => (
 					<DevelopmentAreaCard
 						key={area.id}
@@ -73,7 +73,7 @@ export function ReportEditorPage({ id }: { id: string }) {
 					/>
 				))}
 			</div>
-			<div className="mt-4">
+			<div className="mt-5">
 				<SemesterDataForm
 					attendance={workspace.data.attendance}
 					editable={editable}

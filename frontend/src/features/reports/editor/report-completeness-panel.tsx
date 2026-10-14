@@ -87,7 +87,7 @@ export function ReportCompletenessPanel({
 	if (compact) {
 		if (submitted) return null;
 		return (
-			<div className="mt-6 flex justify-end border-t border-slate-200 pt-5">
+			<div className="mt-6 flex justify-end border-t border-[#e7e9df] pt-5">
 				<Button disabled={submit.isPending} onClick={handleSubmit}>
 					{submit.isPending ? "Mengirim…" : "Kirim untuk ditinjau"}
 				</Button>
@@ -98,7 +98,7 @@ export function ReportCompletenessPanel({
 	return (
 		<Card
 			id="report-submission-status"
-			className={`mb-4 ${data.complete ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}
+			className={`mb-5 ${data.complete ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}
 		>
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="flex gap-3">
@@ -106,14 +106,14 @@ export function ReportCompletenessPanel({
 						{data.complete ? <CheckCircle2 /> : <CircleAlert />}
 					</span>
 					<div>
-						<h2 className="font-bold text-slate-900">
+						<h2 className="font-bold text-[#17251b]">
 							{submitted
 								? "Rapor telah dikirim untuk ditinjau"
 								: data.complete
 									? "Rapor siap dikirim untuk ditinjau"
 									: "Rapor belum lengkap"}
 						</h2>
-						<p className="mt-1 text-sm text-slate-600">
+						<p className="mt-1 text-sm leading-6 text-[#526156]">
 							{submitted
 								? "Rapor menunggu tinjauan Kepala Sekolah."
 								: data.complete

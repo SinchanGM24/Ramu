@@ -32,12 +32,14 @@ export function DevelopmentAreaCard({
 	const complete = progress.assessed === progress.total;
 
 	return (
-		<Card>
+		<Card className="border-[#e5e7dc] bg-[#fffefa]">
 			<div className="flex justify-between gap-3">
 				<div>
-					<p className="text-xs font-bold text-brand-700">{number}. ASPEK PERKEMBANGAN</p>
-					<h2 className="mt-1 text-lg font-bold">{area.name}</h2>
-					<p className="text-sm text-slate-500">
+					<p className="text-xs font-bold tracking-[0.08em] text-brand-700">
+						{number}. ASPEK PERKEMBANGAN
+					</p>
+					<h2 className="mt-1 text-lg font-bold text-[#17251b]">{area.name}</h2>
+					<p className="mt-1 text-sm text-[#637065]">
 						{progress.assessed}/{progress.total} indikator dinilai
 					</p>
 				</div>
@@ -53,9 +55,9 @@ export function DevelopmentAreaCard({
 				<details
 					key={subArea.id}
 					open={index === 0}
-					className="mt-4 overflow-hidden rounded-xl border"
+					className="mt-4 overflow-hidden rounded-xl border border-[#e4e7de] bg-[#fffdf8]"
 				>
-					<summary className="flex cursor-pointer list-none justify-between bg-slate-50 p-4 font-semibold">
+					<summary className="flex cursor-pointer list-none justify-between bg-[#f4f6f0] p-4 font-semibold text-[#35443a] transition hover:bg-[#edf2e9]">
 						{subArea.name}
 						<ChevronDown className="size-4" />
 					</summary>
