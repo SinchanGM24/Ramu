@@ -45,10 +45,10 @@ export function DeliveryHistoryList({
 
 	if (!rows.length) {
 		return (
-			<Card className="py-10 text-center">
+			<Card className="py-12 text-center">
 				<Clock3 className="mx-auto size-9 text-brand-600" />
-				<h2 className="mt-3 font-bold text-slate-900">Belum ada pengiriman dalam antrean</h2>
-				<p className="mt-1 text-sm text-slate-500">
+				<h2 className="mt-3 font-bold text-[#17251b]">Belum ada pengiriman dalam antrean</h2>
+				<p className="mt-1 text-sm leading-6 text-[#637065]">
 					Pilih kontak wali di atas, lalu masukkan ke antrean pengiriman.
 				</p>
 			</Card>
@@ -57,17 +57,17 @@ export function DeliveryHistoryList({
 
 	return (
 		<section>
-			<h2 className="mb-3 text-lg font-bold text-slate-900">Riwayat pengiriman</h2>
+			<h2 className="mb-3 text-lg font-bold text-[#17251b]">Riwayat pengiriman</h2>
 			<div className="space-y-4">
 				{rows.map((delivery) => (
 					<Card
 						key={delivery.id}
-						className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+						className="flex flex-col gap-4 border-[#e5e7dc] bg-[#fffefa] sm:flex-row sm:items-center sm:justify-between"
 					>
 						<div className="min-w-0">
 							<div className="flex flex-wrap items-center gap-2">
-								<h3 className="font-bold text-slate-900">{delivery.guardian_name}</h3>
-								<span className="text-sm text-slate-500">{delivery.relationship}</span>
+								<h3 className="font-bold text-[#17251b]">{delivery.guardian_name}</h3>
+								<span className="text-sm text-[#637065]">{delivery.relationship}</span>
 							</div>
 							<p className="mt-2 text-sm text-slate-600">
 								{delivery.recipient_phone} · Versi rapor {delivery.version_number}

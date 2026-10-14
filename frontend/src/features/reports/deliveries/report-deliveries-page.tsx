@@ -27,7 +27,7 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 			{delivery.notice ? (
 				<p
 					role={delivery.noticeIsError ? "alert" : "status"}
-					className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium ${delivery.noticeIsError ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"}`}
+					className={`mb-5 rounded-2xl border px-4 py-3 text-sm font-medium ${delivery.noticeIsError ? "border-red-100 bg-red-50 text-red-700" : "border-emerald-100 bg-emerald-50 text-emerald-800"}`}
 				>
 					{delivery.notice}
 				</p>

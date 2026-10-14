@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PaginationControls } from "@/components/shared/pagination-controls";
@@ -43,11 +44,11 @@ export function PublicationReportList({
 	onStatusChange,
 }: PublicationReportListProps) {
 	return (
-		<Card>
-			<div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+		<Card className="overflow-hidden p-0">
+			<div className="flex flex-col gap-4 border-b border-[#e7e7dc] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
 				<div>
-					<h2 className="font-bold text-slate-900">Daftar publikasi rapor</h2>
-					<p className="mt-1 text-sm text-slate-500">
+					<h2 className="font-bold text-[#17251b]">Daftar publikasi rapor</h2>
+					<p className="mt-1 text-sm text-[#637065]">
 						Terbitkan rapor yang sudah disetujui, lalu kirimkan kepada wali.
 					</p>
 				</div>
@@ -57,13 +58,20 @@ export function PublicationReportList({
 					<span>{counts.published} telah terbit</span>
 				</div>
 			</div>
-			<div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-				<input
-					value={search}
-					onChange={(event) => onSearchChange(event.target.value)}
-					placeholder="Cari nama murid"
-					className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
-				/>
+			<div className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
+				<label className="relative block">
+					<span className="sr-only">Cari nama murid</span>
+					<Search
+						className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#7b867d]"
+						aria-hidden="true"
+					/>
+					<input
+						value={search}
+						onChange={(event) => onSearchChange(event.target.value)}
+						placeholder="Cari nama murid"
+						className="w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] py-2.5 pl-10 pr-3 text-sm text-[#17251b] outline-none transition placeholder:text-[#899188] focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+					/>
+				</label>
 				<div className="flex gap-2" role="tablist" aria-label="Tahap publikasi rapor">
 					{(
 						[
@@ -87,9 +95,9 @@ export function PublicationReportList({
 					))}
 				</div>
 			</div>
-			<div className="mt-4 overflow-x-auto">
+			<div className="overflow-x-auto border-t border-[#edf0e8]">
 				<table className="w-full text-left text-sm">
-					<thead className="border-b text-xs text-slate-500">
+					<thead className="border-b border-[#e7e9df] bg-[#f5f7f1] text-xs text-[#667168]">
 						<tr>
 							<th className="pb-3 font-semibold">Murid</th>
 							<th className="pb-3 font-semibold">Tahap</th>
@@ -99,26 +107,29 @@ export function PublicationReportList({
 					<tbody>
 						{loading ? (
 							<tr>
-								<td colSpan={3} className="py-8 text-slate-500">
+								<td colSpan={3} className="px-5 py-10 text-[#68746a]">
 									Memuat daftar publikasi rapor…
 								</td>
 							</tr>
 						) : !reports.length ? (
 							<tr>
-								<td colSpan={3} className="py-10 text-center text-slate-500">
+								<td colSpan={3} className="px-5 py-12 text-center text-[#68746a]">
 									Tidak ada rapor pada tahap ini.
 								</td>
 							</tr>
 						) : (
 							reports.map((report) => (
-								<tr key={report.report_id} className="border-b border-slate-100 last:border-0">
-									<td className="py-4 font-semibold text-slate-900">{report.name}</td>
-									<td className="py-4">
+								<tr
+									key={report.report_id}
+									className="border-b border-[#edf0e8] transition-colors hover:bg-[#f8faf5] last:border-0"
+								>
+									<td className="px-5 py-4 font-semibold text-[#17251b]">{report.name}</td>
+									<td className="px-5 py-4">
 										<StatusBadge tone={statusCopy[report.status].tone}>
 											{statusCopy[report.status].label}
 										</StatusBadge>
 									</td>
-									<td className="py-4 text-right">
+									<td className="px-5 py-4 text-right">
 										{report.status === "APPROVED" ? (
 											canPublish ? (
 												<PublishReportAction
@@ -143,7 +154,9 @@ export function PublicationReportList({
 					</tbody>
 				</table>
 			</div>
-			<PaginationControls page={page} pageSize={10} total={total} onPageChange={onPageChange} />
+			<div className="px-5 py-4 sm:px-6">
+				<PaginationControls page={page} pageSize={10} total={total} onPageChange={onPageChange} />
+			</div>
 		</Card>
 	);
 }

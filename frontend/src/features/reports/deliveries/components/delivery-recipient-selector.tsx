@@ -25,11 +25,11 @@ export function DeliveryRecipientSelector({
 	);
 
 	return (
-		<Card className="mb-5">
-			<div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+		<Card className="mb-5 border-[#e5e7dc] bg-[#fffefa]">
+			<div className="flex flex-col gap-3 border-b border-[#e7e9df] pb-4 sm:flex-row sm:items-start sm:justify-between">
 				<div>
-					<h2 className="font-bold text-slate-900">Pilih penerima</h2>
-					<p className="mt-1 text-sm text-slate-500">
+					<h2 className="font-bold text-[#17251b]">Pilih penerima</h2>
+					<p className="mt-1 text-sm leading-6 text-[#637065]">
 						Hanya kontak yang ditandai sebagai penerima rapor pada profil murid yang muncul di sini.
 					</p>
 				</div>
@@ -49,7 +49,7 @@ export function DeliveryRecipientSelector({
 				</p>
 			) : null}
 			{recipients.length ? (
-				<div className="mt-3 divide-y divide-slate-100">
+				<div className="mt-3 divide-y divide-[#edf0e8]">
 					{recipients.map((recipient) => {
 						const selected = selectedIds.includes(recipient.id);
 						return (
@@ -59,7 +59,7 @@ export function DeliveryRecipientSelector({
 								role="checkbox"
 								aria-checked={selected}
 								onClick={() => onToggleRecipient(recipient.id)}
-								className={`flex w-full items-center gap-3 px-1 py-3 text-left ${selected ? "text-slate-900" : "text-slate-500"}`}
+								className={`flex w-full items-center gap-3 rounded-xl px-2 py-3 text-left transition hover:bg-[#f5f7f1] ${selected ? "text-[#17251b]" : "text-[#637065]"}`}
 							>
 								<span
 									aria-hidden="true"
@@ -90,8 +90,8 @@ export function DeliveryRecipientSelector({
 					murid terlebih dahulu.
 				</div>
 			)}
-			<div className="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-				<p className="text-sm text-slate-500">{selectedIds.length} kontak dipilih</p>
+			<div className="mt-4 flex flex-col gap-2 border-t border-[#e7e9df] pt-4 sm:flex-row sm:items-center sm:justify-between">
+				<p className="text-sm text-[#637065]">{selectedIds.length} kontak dipilih</p>
 				<Button disabled={!selectedIds.length || pending} onClick={onQueue}>
 					<Send className="mr-1.5 size-4" />
 					{pending ? "Memasukkan ke antrean…" : "Masukkan ke antrean"}
