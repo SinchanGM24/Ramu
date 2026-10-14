@@ -58,7 +58,7 @@ export function LandingPage() {
 				</nav>
 			</header>
 
-			<section className="relative mx-auto grid max-w-7xl gap-10 px-5 pb-20 pt-8 sm:px-8 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:items-center lg:gap-6 lg:pb-28 lg:pt-14">
+			<section className="relative mx-auto grid max-w-7xl gap-10 px-5 pb-20 pt-8 sm:px-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center lg:gap-3 lg:pb-28 lg:pt-14">
 				<div
 					aria-hidden="true"
 					className="pointer-events-none absolute -left-44 top-0 size-[32rem] rounded-full border border-brand-300/30"
@@ -104,35 +104,33 @@ export function LandingPage() {
 					</ul>
 				</div>
 
-				<div className="relative min-h-[24rem] sm:min-h-[31rem] lg:min-h-[38rem]">
+				<div className="relative min-h-[25rem] sm:min-h-[32rem] lg:min-h-[39rem]">
 					<div
 						aria-hidden="true"
-						className="absolute inset-x-3 bottom-6 top-9 rounded-[3rem] bg-[#e2ead9]"
+						className="absolute inset-x-2 bottom-2 top-3 rounded-[48%] bg-[radial-gradient(circle_at_50%_45%,#edf2df_0%,#dfe9d4_42%,transparent_70%)]"
 					/>
 					<div
 						aria-hidden="true"
-						className="absolute right-2 top-0 size-32 rounded-full border-[15px] border-[#d2dfc7] sm:size-44"
+						className="absolute -right-2 top-[8%] size-36 rounded-full border-[15px] border-[#d2dfc7]/80 sm:size-48"
 					/>
 					<div
 						aria-hidden="true"
-						className="absolute bottom-2 left-0 size-16 rounded-full bg-[#d8a44a]/25 blur-sm"
+						className="absolute bottom-[11%] left-[8%] size-20 rounded-full bg-[#d8a44a]/20 blur-md"
 					/>
+					<div aria-hidden="true" className="absolute bottom-[9%] right-[10%] text-[#70956e]/45">
+						<Leaf className="size-20 rotate-[26deg]" strokeWidth={1} />
+					</div>
 					<Image
 						src="/brand/ramu-landing-campus.png"
 						alt="Ilustrasi sekolah PAUD, buku, dan lembar perkembangan murid"
 						width={1536}
 						height={1024}
 						priority
-						className="absolute -right-[8%] -top-[2%] z-10 h-auto w-[116%] max-w-none object-contain sm:-right-[4%] sm:w-[110%] lg:-right-[9%] lg:w-[119%]"
+						className="absolute -right-[10%] top-1/2 z-10 h-auto w-[124%] max-w-none -translate-y-1/2 object-contain sm:-right-[6%] sm:w-[116%] lg:-right-[12%] lg:w-[126%]"
 					/>
-					<aside className="absolute bottom-0 left-0 z-20 max-w-[16rem] rounded-tr-[1.8rem] border border-white/80 bg-[#fffdf8]/95 px-4 py-4 shadow-[0_16px_36px_rgba(31,58,35,0.14)] backdrop-blur-sm sm:max-w-[18rem] sm:px-5">
-						<p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-700">
-							Satu ruang kerja
-						</p>
-						<p className="mt-1.5 text-sm font-semibold leading-5 text-brand-950">
-							Dari catatan harian hingga rapor yang siap dibagikan.
-						</p>
-					</aside>
+					<p className="absolute bottom-[7%] left-[5%] z-20 max-w-[12rem] border-l-2 border-[#d49b42] pl-3 text-xs font-semibold leading-5 text-brand-950 sm:max-w-[14rem] sm:text-sm">
+						Setiap cerita tumbuh kembang tersimpan dengan rapi.
+					</p>
 				</div>
 			</section>
 
@@ -140,7 +138,7 @@ export function LandingPage() {
 				id="cara-kerja"
 				className="border-y border-brand-950/10 bg-[#fffdf8] px-5 py-6 sm:px-8 lg:py-10"
 			>
-				<div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#2c704d] lg:grid-cols-[0.82fr_1.18fr]">
+				<div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#3f7955] lg:grid-cols-[0.82fr_1.18fr]">
 					<div className="relative overflow-hidden px-7 py-11 text-[#fffdf8] sm:px-10 sm:py-14">
 						<div
 							aria-hidden="true"
@@ -193,8 +191,12 @@ export function LandingPage() {
 				</div>
 			</section>
 
-			<section className="px-5 py-16 sm:px-8 lg:py-20">
-				<div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 border-y border-brand-950/10 py-10 sm:py-12 lg:flex-row lg:items-end">
+			<section className="relative px-5 py-16 sm:px-8 lg:py-20">
+				<div
+					aria-hidden="true"
+					className="absolute bottom-12 left-0 size-48 rounded-full border border-brand-200/60"
+				/>
+				<div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 border-y border-brand-950/10 py-10 sm:py-12 lg:flex-row lg:items-end">
 					<div>
 						<p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-700">
 							Mulai dengan rapi
