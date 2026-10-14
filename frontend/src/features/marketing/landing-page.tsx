@@ -139,7 +139,7 @@ export function LandingPage() {
 				className="border-y border-brand-950/10 bg-[#fffdf8] px-5 py-6 sm:px-8 lg:py-10"
 			>
 				<div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#3f7955] lg:grid-cols-[0.82fr_1.18fr]">
-					<div className="relative overflow-hidden px-7 py-11 text-[#fffdf8] sm:px-10 sm:py-14">
+					<div className="relative flex min-h-full flex-col justify-center overflow-hidden px-7 py-11 text-[#fffdf8] sm:px-10 sm:py-14">
 						<div
 							aria-hidden="true"
 							className="absolute -bottom-16 -left-12 size-52 rounded-full border-[24px] border-white/10"
@@ -160,16 +160,18 @@ export function LandingPage() {
 							Setiap langkah memiliki pemilik yang jelas, agar guru dapat fokus pada anak dan
 							sekolah tetap memegang kendali.
 						</p>
-						<Image
-							src="/brand/ramu-report-journey.png"
-							alt="Ilustrasi catatan guru, rapor yang ditinjau, dan rapor dibuka melalui telepon"
-							width={2048}
-							height={768}
-							className="relative mt-8 h-auto w-full max-w-md"
-						/>
 					</div>
-					<div className="bg-[#f6f3e9] px-7 py-4 sm:px-10 sm:py-7">
-						<div className="relative">
+					<div className="bg-[#f6f3e9]">
+						<div className="border-b border-brand-950/10 px-7 pt-6 sm:px-10 sm:pt-8">
+							<Image
+								src="/brand/ramu-report-journey.png"
+								alt="Ilustrasi catatan guru, rapor yang ditinjau, dan rapor dibuka melalui telepon"
+								width={2048}
+								height={768}
+								className="mx-auto h-auto w-full max-w-2xl"
+							/>
+						</div>
+						<div className="relative px-7 py-4 sm:px-10 sm:py-7">
 							<div
 								aria-hidden="true"
 								className="absolute bottom-11 left-5 top-11 w-px bg-brand-200 sm:left-6"
