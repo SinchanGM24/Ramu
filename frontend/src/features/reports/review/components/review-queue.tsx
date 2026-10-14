@@ -24,7 +24,7 @@ export function ReviewQueue(props: ReviewQueueProps) {
 	if (props.loading) return <Card>Memuat antrean rapor…</Card>;
 	if (props.error)
 		return (
-			<Card>
+			<Card className="max-w-xl border-red-100">
 				<p className="text-red-700">Antrean rapor tidak dapat dimuat.</p>
 				<Button className="mt-4" variant="secondary" onClick={props.onRetry}>
 					Coba lagi
@@ -33,10 +33,12 @@ export function ReviewQueue(props: ReviewQueueProps) {
 		);
 	if (!props.queue.length)
 		return (
-			<Card className="py-10 text-center">
+			<Card className="py-12 text-center">
 				<ClipboardCheck className="mx-auto size-9 text-brand-600" />
-				<h2 className="mt-3 font-bold text-slate-900">Belum ada rapor untuk ditinjau</h2>
-				<p className="mt-1 text-sm text-slate-500">Rapor yang dikirim guru akan muncul di sini.</p>
+				<h2 className="mt-3 font-bold text-[#17251b]">Belum ada rapor untuk ditinjau</h2>
+				<p className="mt-1 text-sm leading-6 text-[#637065]">
+					Rapor yang dikirim guru akan muncul di sini.
+				</p>
 			</Card>
 		);
 	return (

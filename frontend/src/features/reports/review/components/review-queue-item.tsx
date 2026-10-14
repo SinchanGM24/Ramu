@@ -37,16 +37,16 @@ export function ReviewQueueItem({
 	onSubmitRevision,
 }: ReviewQueueItemProps) {
 	return (
-		<Card>
+		<Card className="border-[#e5e7dc] bg-[#fffefa]">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<div className="flex flex-wrap items-center gap-2">
-						<h2 className="font-bold text-slate-900">{report.student_name}</h2>
+						<h2 className="font-bold text-[#17251b]">{report.student_name}</h2>
 						<StatusBadge tone={status[report.status].tone}>
 							{status[report.status].label}
 						</StatusBadge>
 					</div>
-					<p className="mt-1 text-sm text-slate-500">
+					<p className="mt-1 text-sm text-[#637065]">
 						{report.semester_name} · Dikirim {submittedAt(report.submitted_at)}
 					</p>
 				</div>
