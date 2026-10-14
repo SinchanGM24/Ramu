@@ -4,17 +4,17 @@ Dokumen ini mencatat pekerjaan frontend-only. Redesign tidak mengubah API, datab
 
 Status:
 
-- `Selesai`: implementasi visual dan komposisi halaman sudah diperbarui.
-- `Perlu verifikasi`: implementasi selesai, tetapi masih menunggu pengecekan visual lintas ukuran layar dan alur per peran.
-- `Belum dimulai`: belum ada pekerjaan khusus pada area tersebut.
+- `Selesai`: implementasi dan pemeriksaan statis sudah selesai.
+- `Perlu uji browser lokal`: kode telah diperiksa, tetapi masih membutuhkan interaksi nyata pada browser.
 
 ## Fondasi bersama
 
 - [x] Selesai — Token warna, permukaan ivory, aksen forest, shadow, radius, dan spacing global.
 - [x] Selesai — Button, Card, Page Header, status, pagination, dialog, dan switch yang dipakai ulang.
+- [x] Selesai — Loading dan empty state bersama untuk halaman data utama.
 - [x] Selesai — Shell aplikasi: sidebar, topbar, navigasi seluler, state aktif, dan navigasi berbasis peran.
+- [x] Selesai — Drawer menu seluler; Escape, backdrop, dan scroll-lock ditangani.
 - [x] Selesai — Aset ilustrasi orisinal RAMU untuk landing dan autentikasi.
-- [ ] Perlu verifikasi — Konsistensi state loading, kosong, error, sukses, tooltip, dan dialog pada seluruh rute.
 
 ## Rute publik dan autentikasi
 
@@ -52,18 +52,17 @@ Catatan: preview, rapor terbit, PDF, dan viewer wali mempertahankan struktur for
 - [x] Selesai — `/app/settings/staff`
 - [x] Selesai — `/app/settings/profile`
 
-## Verifikasi akhir yang tersisa
+## Verifikasi akhir
 
-- [ ] Belum dimulai — Audit visual desktop, tablet, dan ponsel pada seluruh rute.
-- [ ] Belum dimulai — Uji alur Admin Sekolah: akademik, murid, lifecycle, publikasi, dan pengiriman.
-- [ ] Belum dimulai — Uji alur Guru: kelas penugasan, pengisian individu, narasi, dan pengajuan.
-- [ ] Belum dimulai — Uji alur Kepala Sekolah: tinjauan dan persetujuan rapor serta pengajuan lifecycle.
-- [ ] Belum dimulai — Uji akses wali melalui token dan PIN pada ponsel.
-- [ ] Perlu verifikasi — Build, pemeriksaan tipe, lint, format, dan tes tersedia.
-- [ ] Belum dimulai — Laporan redesign akhir, hasil pemeriksaan, serta keterbatasan yang tersisa.
+- [x] Selesai — Audit statis rute, responsivitas kelas Tailwind, dan navigasi berbasis peran.
+- [x] Selesai — Format, lint, type-check frontend, build backend, dan 41 test backend.
+- [x] Selesai — Laporan hasil serta keterbatasan pada `docs/REDESIGN_VERIFICATION.md`.
+- [ ] Perlu uji browser lokal — Audit visual nyata desktop, tablet, dan ponsel untuk setiap rute.
+- [ ] Perlu uji browser lokal — Alur nyata Admin Sekolah, Guru, Kepala Sekolah, dan wali memakai data uji.
 
 ## Catatan pemeriksaan terakhir
 
-- `npm run format:check -w frontend` lulus pada batch Portfolio Rapor.
-- `npm run build -w frontend` telah melewati kompilasi serta pemeriksaan tipe pada batch Portfolio Rapor; peringatan dependency `useEffect` pada editor narasi telah dibersihkan.
+- `npm run format:check -w frontend`, `npm run lint -w frontend`, dan `npx tsc -p frontend/tsconfig.json --noEmit` lulus.
+- `npm run build -w backend` serta `npm test` lulus; 14 berkas test dan 41 test backend berhasil.
+- `npm run build -w frontend` berhasil melewati kompilasi serta pemeriksaan tipe, tetapi proses tidak melanjutkan ekspor halaman dalam lingkungan eksekusi ini. Catatan lengkap ada pada laporan verifikasi.
 - Folder lokal `design/` berisi referensi desain pengguna dan sengaja tidak termasuk commit aplikasi.
