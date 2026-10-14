@@ -30,9 +30,9 @@ export function ActiveYearCard({
 		<Card className="relative overflow-hidden border-brand-100 bg-brand-50/50">
 			<div
 				aria-hidden="true"
-				className="absolute -right-10 -top-12 size-36 rounded-full border-[12px] border-brand-200/45"
+				className="pointer-events-none absolute -right-10 -top-12 z-0 size-36 rounded-full border-[12px] border-brand-200/45"
 			/>
-			<div className="flex flex-wrap items-center justify-between gap-4">
+			<div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
 				<div className="flex items-center gap-3">
 					<span className="relative grid size-11 place-items-center rounded-2xl bg-white text-brand-700 shadow-sm">
 						<CalendarDays size={20} />
