@@ -94,13 +94,17 @@ export function MobileTopbar() {
 							/>
 							<MobileNavigationSection
 								title="Rapor"
-								items={[
-									{
-										href: reportHref,
-										label: "Rapor",
-										icon: GraduationCap,
-									},
-								]}
+								items={
+									role
+										? [
+												{
+													href: reportHref,
+													label: "Rapor",
+													icon: GraduationCap,
+												},
+											]
+										: []
+								}
 								onNavigate={() => setOpen(false)}
 								pathname={pathname}
 							/>
