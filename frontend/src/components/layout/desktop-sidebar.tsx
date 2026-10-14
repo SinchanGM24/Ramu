@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, ClipboardList, GraduationCap, LogOut } from "lucide-react";
+import { ChevronDown, ClipboardList, GraduationCap } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authSessionQueryOptions } from "@/features/auth/session";
 import { cn } from "@/lib/utils";
+import { ActiveAccountCard } from "./active-account-card";
 import { academicNavigation, navigation, settingsNavigation, type AppRole } from "./navigation";
 
 export function DesktopSidebar() {
@@ -108,25 +109,14 @@ export function DesktopSidebar() {
 						))}
 				</NavigationGroup>
 			</nav>
-			<div className="relative mt-4 shrink-0 rounded-2xl border border-white/20 bg-white/[0.08] p-3 text-xs leading-5 text-white/85">
-				<p className="text-white/70">Akun aktif</p>
-				<strong className="block text-white">
-					{session.data?.role === "SCHOOL_ADMIN" ? "Admin Sekolah" : "Akun staf"}
-				</strong>
-				<button
-					type="button"
-					onClick={() => void logout()}
-					disabled={loggingOut}
-					className="mt-2 flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-semibold text-white/85 transition hover:bg-white/15 hover:text-white disabled:cursor-wait disabled:opacity-60"
-				>
-					<LogOut size={15} />
-					{loggingOut ? "Mengeluarkan akun…" : "Keluar akun"}
-				</button>
-				{logoutError && (
-					<p role="alert" className="mt-2 leading-4 text-red-200">
-						{logoutError}
-					</p>
-				)}
+			<div className="relative mt-4 shrink-0">
+				<ActiveAccountCard
+					email={session.data?.email}
+					role={session.data?.role}
+					isLoggingOut={loggingOut}
+					logoutError={logoutError}
+					onLogout={() => void logout()}
+				/>
 			</div>
 		</aside>
 	);
@@ -174,6 +164,7 @@ function NavigationGroup({
 		</div>
 	);
 }
+
 function NavigationLink({
 	href,
 	label,
