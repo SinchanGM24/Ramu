@@ -11,18 +11,18 @@ Dokumen ini adalah acuan visual seluruh frontend RAMU. Semua antarmuka memakai B
 
 ## Token
 
-| Peran | Nilai |
-| --- | --- |
-| Latar aplikasi | `#f8f5ed` |
-| Permukaan utama | `#fffdf8` |
-| Teks utama | `#17251b` |
-| Teks sekunder | `#637065` |
-| Border | `#e5e7dd` |
-| Hijau interaktif | `brand-700` / `#174b31` |
-| Hijau permukaan dominan | `#2c704d` |
-| Sukses | hijau lembut |
-| Peringatan | amber lembut |
-| Bahaya | merah lembut |
+| Peran                   | Nilai                   |
+| ----------------------- | ----------------------- |
+| Latar aplikasi          | `#f8f5ed`               |
+| Permukaan utama         | `#fffdf8`               |
+| Teks utama              | `#17251b`               |
+| Teks sekunder           | `#637065`               |
+| Border                  | `#e5e7dd`               |
+| Hijau interaktif        | `brand-700` / `#174b31` |
+| Hijau permukaan dominan | `#2c704d`               |
+| Sukses                  | hijau lembut            |
+| Peringatan              | amber lembut            |
+| Bahaya                  | merah lembut            |
 
 Gunakan radius `rounded-xl` untuk kontrol dan `rounded-2xl` untuk panel. Bayangan menggunakan `shadow-soft` atau `shadow-panel`; jangan memakai shadow hitam kasar.
 
@@ -47,9 +47,9 @@ Gunakan `brand-*` untuk tombol, hover, link, focus ring, dan aksen. Untuk permuk
 
 Gunakan ilustrasi orisinal yang dibuat khusus untuk RAMU dan simpan di `frontend/public/brand/`. Jangan menggunakan screenshot referensi sebagai aset aplikasi, jangan memakai data murid/sekolah nyata, dan selalu beri `alt` untuk gambar bermakna.
 
-Ilustrasi hanya dipakai jika membantu orientasi, empty state, landing, autentikasi, atau identitas sekolah. Pilih tema sekolah, belajar, buku, kelas, alat tulis, atau botani pendukung. Hindari ilustrasi pada tabel padat, form kerja, editor rapor, preview formal, dan PDF.
+Ilustrasi hanya dipakai jika membantu orientasi, empty state, landing, autentikasi, atau identitas sekolah. Pilih tema sekolah, belajar, buku, kelas, alat tulis, atau botani pendukung. Hindari ilustrasi pada tabel padat, form kerja, editor raport, preview formal, dan PDF.
 
 - Setiap aset diberi nama deskriptif dan dicatat di `frontend/public/brand/README.md`, termasuk lokasi pemakaian dan prompt ringkas pembuatannya.
 - Jika suatu saat aset orisinal tidak memadai, sumber eksternal hanya boleh digunakan setelah lisensi komersialnya jelas dan dicatat di `ATTRIBUTION.md`.
 - Jangan menggunakan foto stok generik, wajah anak nyata, gambar tanpa lisensi jelas, atau aset yang tidak dapat dipakai secara komersial.
-- Jangan menaruh ilustrasi pada tabel padat, editor rapor, preview formal, PDF, maupun area tindakan yang berisiko mengganggu fokus pengguna.
+- Jangan menaruh ilustrasi pada tabel padat, editor raport, preview formal, PDF, maupun area tindakan yang berisiko mengganggu fokus pengguna.

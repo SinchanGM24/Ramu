@@ -64,7 +64,7 @@ export function ReviewQueueItem({
 							</Button>
 							<Button disabled={pending} onClick={onApprove}>
 								<Check className="mr-1 size-4" />
-								Setujui rapor
+								Setujui raport
 							</Button>
 						</>
 					) : null}

@@ -44,7 +44,7 @@ export function StudentProfilePage({ id }: { id: string }) {
 			<PageHeader
 				eyebrow="Data murid"
 				title={`Profil ${value.name}`}
-				description="Data ini tampil sebagai identitas baca-saja pada editor, pratinjau, dan rapor terbit."
+				description="Data ini tampil sebagai identitas baca-saja pada editor, pratinjau, dan raport terbit."
 				action={
 					<Link href="/app/academic/students">
 						<Button variant="secondary">

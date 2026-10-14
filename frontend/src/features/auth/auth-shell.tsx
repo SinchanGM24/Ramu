@@ -40,7 +40,7 @@ export function AuthShell({
 						Satu ruang kerja aman untuk guru, sekolah, dan wali murid.
 					</p>
 					<ul className="mt-10 space-y-3 text-sm text-brand-100/85">
-						{["Penilaian per murid", "Tinjauan sekolah", "Akses rapor aman"].map((item) => (
+						{["Penilaian per murid", "Tinjauan sekolah", "Akses raport aman"].map((item) => (
 							<li key={item} className="flex items-center gap-3">
 								<CheckCircle2 size={17} className="text-brand-200" />
 								{item}

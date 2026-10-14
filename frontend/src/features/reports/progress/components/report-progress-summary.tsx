@@ -8,7 +8,7 @@ export function ReportProgressSummary({ counts }: { counts: ProgressCounts }) {
 			icon: <FilePenLine className="size-5" />,
 			label: "Perlu diisi",
 			value: counts.notCreated + counts.draft,
-			description: "Draf baru atau rapor yang perlu direvisi",
+			description: "Draf baru atau raport yang perlu direvisi",
 		},
 	];
 	return (

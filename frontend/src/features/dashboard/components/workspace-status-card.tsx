@@ -17,9 +17,9 @@ export function WorkspaceStatusCard({
 				: "Sekolah aktif";
 	const description =
 		role === "TEACHER"
-			? "Data murid dan rapor yang tampil dibatasi pada kelas penugasan Anda."
+			? "Data murid dan raport yang tampil dibatasi pada kelas penugasan Anda."
 			: role === "PRINCIPAL"
-				? "Gunakan antrean tinjauan untuk menyetujui rapor dan pengajuan dari guru."
+				? "Gunakan antrean tinjauan untuk menyetujui raport dan pengajuan dari guru."
 				: "Data dan akses sekolah tetap terisolasi aman untuk setiap sekolah.";
 	const href =
 		role === "TEACHER"
@@ -31,7 +31,7 @@ export function WorkspaceStatusCard({
 		role === "TEACHER"
 			? "Lihat murid saya"
 			: role === "PRINCIPAL"
-				? "Buka tinjauan rapor"
+				? "Buka tinjauan raport"
 				: "Lihat profil sekolah";
 
 	return (

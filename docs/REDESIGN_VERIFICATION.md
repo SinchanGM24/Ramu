@@ -8,7 +8,7 @@ Seluruh rute frontend yang ditemukan telah ditinjau dan memperoleh sistem visual
 
 - Publik: `/`, `/login`, `/register`, dan `/r/[token]`.
 - Workspace: dashboard, akademik, data/profil murid, perpindahan, kelulusan, arsip, serta penilaian individual.
-- Rapor: progress, editor, portfolio, review, publikasi, pengiriman, preview, dan rapor terbit.
+- Raport: progress, editor, portfolio, review, publikasi, pengiriman, preview, dan raport terbit.
 - Pengaturan: profil sekolah, kelola akun, dan profil akun.
 
 Rute Next tetap tipis. Komponen halaman, dialog, tabel, filter, dan hooks berada di domain `features` atau komponen bersama sesuai tanggung jawabnya.
@@ -19,7 +19,7 @@ Rute Next tetap tipis. Komponen halaman, dialog, tabel, filter, dan hooks berada
 - Shell aplikasi: sidebar desktop, topbar seluler, navigasi bawah, dan drawer menu seluler berbasis role.
 - Komponen bersama: Button, Card, PageHeader, ModalDialog, ConfirmationDialog, StatusBadge, PaginationControls, Switch, LoadingState, dan EmptyState.
 - Ilustrasi orisinal RAMU berada di `frontend/public/brand/`; dipakai hanya pada konteks yang membantu orientasi.
-- Rapor formal, preview, PDF, dan parent viewer mempertahankan struktur dokumen dan print layout tanpa dekorasi yang mengganggu.
+- Raport formal, preview, PDF, dan parent viewer mempertahankan struktur dokumen dan print layout tanpa dekorasi yang mengganggu.
 
 ## Audit responsivitas dan akses
 
@@ -36,15 +36,15 @@ Hak akses dan endpoint tidak diubah. Filter navigasi hanya menggunakan role yang
 
 ## Pemeriksaan teknis
 
-| Pemeriksaan | Hasil |
-| --- | --- |
-| `npm run format:check -w frontend` | Lulus |
-| `npm run lint -w frontend` | Lulus |
-| `npx tsc -p frontend/tsconfig.json --noEmit` | Lulus |
-| `npm run build -w backend` | Lulus |
-| `npm test` | Lulus: 14 berkas, 41 test |
+| Pemeriksaan                                  | Hasil                     |
+| -------------------------------------------- | ------------------------- |
+| `npm run format:check -w frontend`           | Lulus                     |
+| `npm run lint -w frontend`                   | Lulus                     |
+| `npx tsc -p frontend/tsconfig.json --noEmit` | Lulus                     |
+| `npm run build -w backend`                   | Lulus                     |
+| `npm test`                                   | Lulus: 14 berkas, 41 test |
 
-Backend test yang lulus mencakup autentikasi, otorisasi lifecycle, student controller, workflow/otorisasi rapor, akses wali, pengiriman rapor, template PAUD, dan generator narasi.
+Backend test yang lulus mencakup autentikasi, otorisasi lifecycle, student controller, workflow/otorisasi raport, akses wali, pengiriman raport, template PAUD, dan generator narasi.
 
 ## Smoke test runtime
 

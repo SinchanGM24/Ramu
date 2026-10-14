@@ -2,14 +2,22 @@ import { DEFAULT_TK_TEMPLATE_NAME } from "./default-tk-template";
 import { defaultTkNarrativeMetadata } from "./default-tk-narrative-metadata";
 import { DEFAULT_TK_NARRATIVE_METADATA_VERSION } from "./default-tk-narrative-metadata";
 
-type Queryable = { query: (text: string, values?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }> };
+type Queryable = {
+  query: (
+    text: string,
+    values?: unknown[],
+  ) => Promise<{ rows: Array<Record<string, unknown>> }>;
+};
 
 /**
  * Maps the system-owned TK template to curated narrative metadata. This is
  * intentionally keyed by template structure during seed/bootstrap only, never
  * inferred from free-text indicators at narrative-generation time.
  */
-export async function seedDefaultTkNarrativeMetadata(client: Queryable, schoolId: string) {
+export async function seedDefaultTkNarrativeMetadata(
+  client: Queryable,
+  schoolId: string,
+) {
   const indicators = await client.query(
     `SELECT i.id, i.description, area.position AS area_position,
       sub_area.position AS sub_area_position, i.position AS indicator_position
@@ -42,7 +50,16 @@ export async function seedDefaultTkNarrativeMetadata(client: Queryable, schoolId
         recommendation_tags=EXCLUDED.recommendation_tags,
         metadata_version=EXCLUDED.metadata_version,
         updated_at=now()`,
-      [schoolId, indicator.id, metadata.semanticGroup, metadata.competencyConcept, metadata.narrativeLabel, metadata.observationType, metadata.recommendationTags, DEFAULT_TK_NARRATIVE_METADATA_VERSION],
+      [
+        schoolId,
+        indicator.id,
+        metadata.semanticGroup,
+        metadata.competencyConcept,
+        metadata.narrativeLabel,
+        metadata.observationType,
+        metadata.recommendationTags,
+        DEFAULT_TK_NARRATIVE_METADATA_VERSION,
+      ],
     );
   }
 

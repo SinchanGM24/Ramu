@@ -29,13 +29,13 @@ export function ReportEditorPage({ id }: { id: string }) {
 		});
 	}, [submissionFeedback]);
 
-	if (workspace.isLoading) return <LoadingState label="Memuat ruang kerja rapor..." />;
+	if (workspace.isLoading) return <LoadingState label="Memuat ruang kerja raport..." />;
 	if (!workspace.data) {
 		return (
 			<EmptyState
 				icon={FileWarning}
-				title="Rapor tidak dapat dimuat"
-				description="Coba muat ulang halaman. Jika masalah berlanjut, pastikan Anda memiliki akses ke rapor ini."
+				title="Raport tidak dapat dimuat"
+				description="Coba muat ulang halaman. Jika masalah berlanjut, pastikan Anda memiliki akses ke raport ini."
 			/>
 		);
 	}
@@ -46,7 +46,7 @@ export function ReportEditorPage({ id }: { id: string }) {
 	const total = areas.reduce((sum, area) => sum + getAreaProgress(area).total, 0);
 	const handleSubmitted = () => {
 		setSubmissionFeedback({
-			message: "Rapor berhasil dikirim untuk ditinjau Kepala Sekolah.",
+			message: "Raport berhasil dikirim untuk ditinjau Kepala Sekolah.",
 			tone: "success",
 		});
 	};

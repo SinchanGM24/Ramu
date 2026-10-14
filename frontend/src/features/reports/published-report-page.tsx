@@ -42,14 +42,14 @@ export function PublishedReportPage({ id }: { id: string }) {
 		queryKey: ["published-report", id],
 		queryFn: () => api<PublishedVersion | null>(`/reports/${id}/published-version`),
 	});
-	if (query.isLoading) return <LoadingState label="Memuat rapor terbit..." />;
+	if (query.isLoading) return <LoadingState label="Memuat raport terbit..." />;
 	if (!query.data)
 		return (
 			<EmptyState
 				className="max-w-xl"
 				icon={FileWarning}
-				title="Rapor terbit tidak ditemukan"
-				description="Rapor ini belum pernah diterbitkan atau Anda tidak memiliki akses."
+				title="Raport terbit tidak ditemukan"
+				description="Raport ini belum pernah diterbitkan atau Anda tidak memiliki akses."
 			/>
 		);
 	const { snapshot, version_number: versionNumber, published_at: publishedAt } = query.data;
@@ -68,7 +68,7 @@ export function PublishedReportPage({ id }: { id: string }) {
 		<>
 			<div className="print:hidden">
 				<PageHeader
-					eyebrow="Rapor terbit"
+					eyebrow="Raport terbit"
 					title="Laporan Perkembangan Anak Didik"
 					description={`Versi ${versionNumber} diterbitkan pada ${publishedDate}. Tampilan ini memakai snapshot yang tidak dapat diubah.`}
 					action={

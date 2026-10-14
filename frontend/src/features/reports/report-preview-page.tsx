@@ -31,13 +31,13 @@ export function ReportPreviewPage({ id }: { id: string }) {
 		enabled: !published.data,
 	});
 	if (published.data) return <PublishedReportPage id={id} />;
-	if (!query.data) return <Card className="text-sm text-[#68746a]">Memuat pratinjau rapor…</Card>;
+	if (!query.data) return <Card className="text-sm text-[#68746a]">Memuat pratinjau raport…</Card>;
 	const data = query.data;
 	return (
 		<>
 			<div className="print:hidden">
 				<PageHeader
-					eyebrow="Pratinjau rapor"
+					eyebrow="Pratinjau raport"
 					title="Laporan Perkembangan Anak Didik"
 					description="Dokumen baca-saja dengan tabel penilaian formal."
 					action={

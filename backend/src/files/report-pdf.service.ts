@@ -129,7 +129,7 @@ export class ReportPdfService {
         Key: key,
         Body: body,
         ContentType: "application/pdf",
-        ContentDisposition: `attachment; filename="rapor-v${input.versionNumber}.pdf"`,
+        ContentDisposition: `attachment; filename="raport-v${input.versionNumber}.pdf"`,
       }),
     );
 
@@ -140,7 +140,7 @@ export class ReportPdfService {
     const object = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: storageKey }),
     );
-    if (!object.Body) throw new Error("File PDF rapor tidak tersedia");
+    if (!object.Body) throw new Error("File PDF raport tidak tersedia");
     return Buffer.from(await object.Body.transformToByteArray());
   }
 

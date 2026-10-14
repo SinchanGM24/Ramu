@@ -27,9 +27,9 @@ export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentH
 				)}
 			</div>
 			<div className="mt-6 border-t border-[#e7e7dc] pt-5">
-				<h3 className="font-semibold text-brand-950">Rapor terbit</h3>
+				<h3 className="font-semibold text-brand-950">Raport terbit</h3>
 				<p className="mt-1 text-sm text-[#637065]">
-					Hanya rapor yang sudah diterbitkan ditampilkan sebagai riwayat.
+					Hanya raport yang sudah diterbitkan ditampilkan sebagai riwayat.
 				</p>
 				<div className="mt-3 space-y-2">
 					{publishedReports.length ? (
@@ -51,12 +51,12 @@ export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentH
 										· Versi {report.version_number}
 									</span>
 								</span>
-								<span className="font-semibold text-brand-700">Lihat rapor</span>
+								<span className="font-semibold text-brand-700">Lihat raport</span>
 							</Link>
 						))
 					) : (
 						<p className="rounded-xl bg-[#f7f7f1] p-3 text-sm text-[#637065]">
-							Belum ada rapor yang diterbitkan.
+							Belum ada raport yang diterbitkan.
 						</p>
 					)}
 				</div>

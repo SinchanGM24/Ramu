@@ -25,10 +25,10 @@ export function ParentAccessForm({
 				className="w-full max-w-md overflow-hidden rounded-[1.75rem] border border-[#e3e7dc] bg-[#fffdf8] p-6 shadow-panel sm:p-8"
 			>
 				<p className="text-sm font-bold text-brand-700">RAMU · AKSES WALI</p>
-				<h1 className="mt-1 text-xl font-bold">Rapor murid</h1>
+				<h1 className="mt-1 text-xl font-bold">Raport murid</h1>
 				<div className="mt-4 flex items-start gap-3 rounded-2xl bg-[#f2f5ef] p-3.5 text-sm leading-6 text-[#526156]">
 					<KeyRound className="mt-0.5 size-5 shrink-0 text-brand-700" aria-hidden="true" />
-					<span>Masukkan PIN dari sekolah untuk membuka rapor.</span>
+					<span>Masukkan PIN dari sekolah untuk membuka raport.</span>
 				</div>
 				{demo ? (
 					<p className="mt-3 rounded-xl bg-brand-50 p-2 text-xs">
@@ -48,11 +48,11 @@ export function ParentAccessForm({
 					disabled={loading}
 					className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 py-3 font-semibold text-white shadow-[0_8px_18px_rgba(23,75,49,0.18)] transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50"
 				>
-					{loading ? "Memeriksa…" : "Buka rapor"}
+					{loading ? "Memeriksa…" : "Buka raport"}
 				</button>
 				<p className="mt-5 flex items-center justify-center gap-2 text-center text-xs leading-5 text-[#68746a]">
 					<ShieldCheck size={15} className="shrink-0 text-brand-700" />
-					Akses hanya untuk melihat, mengunduh, dan mencetak rapor.
+					Akses hanya untuk melihat, mengunduh, dan mencetak raport.
 				</p>
 			</form>
 		</main>

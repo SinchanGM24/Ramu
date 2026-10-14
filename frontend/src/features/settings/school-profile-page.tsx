@@ -99,9 +99,9 @@ export function SchoolProfilePage() {
 							<p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-700">
 								Identitas sekolah
 							</p>
-							<h2 className="mt-1 font-bold text-[#17251b]">Informasi yang tampil pada rapor</h2>
+							<h2 className="mt-1 font-bold text-[#17251b]">Informasi yang tampil pada raport</h2>
 							<p className="mt-1 max-w-xl text-sm leading-6 text-[#637065]">
-								Nama, alamat, nomor telepon, dan logo akan digunakan saat rapor diterbitkan.
+								Nama, alamat, nomor telepon, dan logo akan digunakan saat raport diterbitkan.
 							</p>
 						</div>
 						<Landmark

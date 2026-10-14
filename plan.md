@@ -1,6 +1,6 @@
 # Checklist redesign UI/UX RAMU
 
-Dokumen ini mencatat pekerjaan frontend-only. Redesign tidak mengubah API, database, RBAC, alur akademik, maupun workflow rapor.
+Dokumen ini mencatat pekerjaan frontend-only. Redesign tidak mengubah API, database, RBAC, alur akademik, maupun workflow raport.
 
 Status:
 
@@ -33,7 +33,7 @@ Status:
 - [x] Selesai — `/app/academic/archive`
 - [x] Selesai — `/app/students/[id]/assessment`
 
-## Rute rapor
+## Rute raport
 
 - [x] Selesai — `/app/reports/progress`
 - [x] Selesai — `/app/reports/review`
@@ -44,7 +44,7 @@ Status:
 - [x] Selesai — `/app/reports/[id]/published`
 - [x] Selesai — `/app/reports/[id]/deliveries`
 
-Catatan: preview, rapor terbit, PDF, dan viewer wali mempertahankan struktur formal serta aturan rapor terbit yang tidak dapat diubah.
+Catatan: preview, raport terbit, PDF, dan viewer wali mempertahankan struktur formal serta aturan raport terbit yang tidak dapat diubah.
 
 ## Rute pengaturan dan akun
 

@@ -15,12 +15,12 @@ type WorkflowItem = {
 const items: WorkflowItem[] = [
 	{
 		href: "/app/reports/progress",
-		label: "Pengisian rapor",
+		label: "Pengisian raport",
 		roles: ["SCHOOL_ADMIN", "TEACHER"],
 	},
 	{
 		href: "/app/reports/review",
-		label: "Tinjauan rapor",
+		label: "Tinjauan raport",
 		roles: ["SCHOOL_ADMIN", "PRINCIPAL"],
 	},
 	{
@@ -55,7 +55,7 @@ export function ReportWorkflowNavigation() {
 
 	return (
 		<nav
-			aria-label="Tahapan pengelolaan rapor"
+			aria-label="Tahapan pengelolaan raport"
 			className="mb-7 flex gap-1 overflow-x-auto rounded-2xl border border-[#e5e7dc] bg-[#f3f5ef] p-1.5 shadow-[0_5px_14px_rgba(42,72,48,0.05)]"
 		>
 			{availableItems.map((item) => (

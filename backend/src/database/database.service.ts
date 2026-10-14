@@ -9,15 +9,24 @@ export class DatabaseService implements OnModuleDestroy {
     await this.pool.end();
   }
 
-  query<T extends QueryResultRow = QueryResultRow>(text: string, values: unknown[] = []) {
+  query<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    values: unknown[] = [],
+  ) {
     return this.pool.query<T>(text, values);
   }
 
-  async transaction<T>(callback: (client: PoolClient) => Promise<T>, schoolId?: string): Promise<T> {
+  async transaction<T>(
+    callback: (client: PoolClient) => Promise<T>,
+    schoolId?: string,
+  ): Promise<T> {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
-      if (schoolId) await client.query("SELECT set_config('app.school_id', $1, true)", [schoolId]);
+      if (schoolId)
+        await client.query("SELECT set_config('app.school_id', $1, true)", [
+          schoolId,
+        ]);
       const result = await callback(client);
       await client.query("COMMIT");
       return result;

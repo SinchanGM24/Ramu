@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 
 const assurances = [
 	"Penilaian individual untuk setiap murid",
-	"Tinjauan rapor yang terarah",
+	"Tinjauan raport yang terarah",
 	"Akses aman untuk setiap wali",
 ];
 
@@ -28,13 +28,13 @@ const steps = [
 	{
 		number: "02",
 		title: "Tinjau bersama",
-		description: "Sekolah memastikan setiap rapor siap sebelum diterbitkan.",
+		description: "Sekolah memastikan setiap raport siap sebelum diterbitkan.",
 		icon: ClipboardCheck,
 	},
 	{
 		number: "03",
 		title: "Bagikan dengan tenang",
-		description: "Wali menerima tautan privat untuk melihat rapor anaknya.",
+		description: "Wali menerima tautan privat untuk melihat raport anaknya.",
 		icon: Send,
 	},
 ];
@@ -75,7 +75,7 @@ export function LandingPage() {
 						Untuk sekolah PAUD
 					</p>
 					<h1 className="mt-5 max-w-2xl font-serif text-5xl font-bold leading-[0.94] tracking-[-0.065em] text-brand-950 sm:text-6xl lg:text-7xl">
-						Rapor yang tumbuh bersama anak.
+						Raport yang tumbuh bersama anak.
 					</h1>
 					<p className="mt-7 max-w-lg text-base leading-8 text-[#566359] sm:text-lg">
 						RAMU membantu guru mencatat perkembangan setiap murid, sekolah meninjau dengan tenang,
@@ -151,10 +151,10 @@ export function LandingPage() {
 							<Leaf className="size-16" strokeWidth={1.15} />
 						</div>
 						<p className="relative text-xs font-bold uppercase tracking-[0.16em] text-[#d7e5cd]">
-							Alur rapor RAMU
+							Alur raport RAMU
 						</p>
 						<h2 className="relative mt-5 max-w-md font-serif text-4xl font-bold leading-[1] tracking-[-0.055em] sm:text-5xl">
-							Dari catatan kelas menjadi rapor yang bermakna.
+							Dari catatan kelas menjadi raport yang bermakna.
 						</h2>
 						<p className="relative mt-6 max-w-sm text-sm leading-7 text-[#e4ecdd] sm:text-base">
 							Setiap langkah memiliki pemilik yang jelas, agar guru dapat fokus pada anak dan
@@ -165,7 +165,7 @@ export function LandingPage() {
 						<div className="border-b border-brand-950/10 px-7 pt-6 sm:px-10 sm:pt-8">
 							<Image
 								src="/brand/ramu-report-journey.png"
-								alt="Ilustrasi catatan guru, rapor yang ditinjau, dan rapor dibuka melalui telepon"
+								alt="Ilustrasi catatan guru, raport yang ditinjau, dan raport dibuka melalui telepon"
 								width={2048}
 								height={768}
 								className="mx-auto h-auto w-full max-w-2xl"
@@ -211,7 +211,7 @@ export function LandingPage() {
 							Mulai dengan rapi
 						</p>
 						<h2 className="mt-3 max-w-2xl font-serif text-4xl font-bold leading-[1] tracking-[-0.055em] text-brand-950 sm:text-5xl">
-							Satu rapor yang disusun dengan baik dapat menjaga cerita tumbuh kembang anak.
+							Satu raport yang disusun dengan baik dapat menjaga cerita tumbuh kembang anak.
 						</h2>
 					</div>
 					<Link href="/register">

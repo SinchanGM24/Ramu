@@ -76,7 +76,7 @@ export function SchoolProfileForm({
 			<div className="border-t border-[#e7e9df] pt-5">
 				<p className="text-sm font-semibold text-[#35443a]">Logo sekolah</p>
 				<p className="mt-1 text-sm leading-6 text-[#68746a]">
-					Tampil pada kop rapor yang diterbitkan setelah pembaruan.
+					Tampil pada kop raport yang diterbitkan setelah pembaruan.
 				</p>
 				<div className="mt-3 flex flex-wrap items-center gap-4">
 					<div className="grid size-20 place-items-center overflow-hidden rounded-2xl border border-[#dfe3d9] bg-[#f5f7f1] shadow-inner">

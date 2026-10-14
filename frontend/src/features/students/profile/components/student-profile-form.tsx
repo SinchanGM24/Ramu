@@ -33,7 +33,7 @@ export function StudentProfileForm({ pending, student, onSubmit }: StudentProfil
 		<Card>
 			<h2 className="text-lg font-bold tracking-[-0.02em] text-brand-950">Keterangan anak didik</h2>
 			<p className="mt-1 text-sm leading-6 text-[#637065]">
-				Kelas dikelola melalui penempatan kelas agar riwayat rapor tetap aman.
+				Kelas dikelola melalui penempatan kelas agar riwayat raport tetap aman.
 			</p>
 			<form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2">
 				<Field label="Nama anak didik">

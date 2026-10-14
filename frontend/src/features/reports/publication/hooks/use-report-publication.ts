@@ -38,7 +38,7 @@ export function useReportPublication() {
 	const publish = useMutation({
 		mutationFn: (reportId: string) => api(`/reports/${reportId}/publish`, { method: "POST" }),
 		onSuccess: async () => {
-			setNotice("Rapor berhasil diterbitkan dan siap dikirim kepada wali.");
+			setNotice("Raport berhasil diterbitkan dan siap dikirim kepada wali.");
 			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
 			await queryClient.invalidateQueries({ queryKey: ["reports"] });
 		},
@@ -60,8 +60,8 @@ export function useReportPublication() {
 		onSuccess: async ({ failures, published }) => {
 			setNotice(
 				failures.length
-					? `${published} rapor berhasil diterbitkan. ${failures.length} rapor belum dapat diterbitkan.`
-					: `${published} rapor berhasil diterbitkan dan siap dikirim kepada wali.`,
+					? `${published} raport berhasil diterbitkan. ${failures.length} raport belum dapat diterbitkan.`
+					: `${published} raport berhasil diterbitkan dan siap dikirim kepada wali.`,
 			);
 			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
 			await queryClient.invalidateQueries({ queryKey: ["reports"] });
@@ -107,7 +107,7 @@ export function useReportPublication() {
 			publish.error instanceof Error
 				? publish.error.message
 				: publish.error
-					? "Rapor belum dapat diterbitkan. Coba lagi."
+					? "Raport belum dapat diterbitkan. Coba lagi."
 					: "",
 		filteredReports,
 		notice,

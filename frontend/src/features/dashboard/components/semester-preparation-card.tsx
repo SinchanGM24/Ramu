@@ -11,11 +11,11 @@ const adminActions = [
 const roleActions: Record<DashboardRole, readonly (readonly [string, string, string])[]> = {
 	SCHOOL_ADMIN: adminActions,
 	TEACHER: [
-		["1", "Lanjutkan pengisian rapor", "/app/reports/progress"],
+		["1", "Lanjutkan pengisian raport", "/app/reports/progress"],
 		["2", "Lihat murid kelas Anda", "/app/academic/students"],
 	],
 	PRINCIPAL: [
-		["1", "Tinjau rapor yang masuk", "/app/reports/review"],
+		["1", "Tinjau raport yang masuk", "/app/reports/review"],
 		["2", "Tinjau pengajuan perpindahan", "/app/academic/lifecycle"],
 	],
 };
@@ -31,7 +31,7 @@ export function SemesterPreparationCard({ role }: { role?: DashboardRole }) {
 				: "Mulai persiapan semester";
 	const description =
 		currentRole === "TEACHER"
-			? "Selesaikan rapor dan data murid pada kelas penugasan Anda."
+			? "Selesaikan raport dan data murid pada kelas penugasan Anda."
 			: currentRole === "PRINCIPAL"
 				? "Selesaikan antrean tinjauan agar proses akademik tetap berjalan."
 				: "Lengkapi data dasar sebelum mengisi penilaian.";

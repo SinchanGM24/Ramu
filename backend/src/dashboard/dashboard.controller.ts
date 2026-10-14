@@ -118,14 +118,14 @@ export class DashboardController {
       },
       {
         id: "missing-reports",
-        label: "Rapor belum dibuat",
+        label: "Raport belum dibuat",
         value: Number(row?.reports_not_created ?? 0),
         description: "Untuk semester aktif",
         href: "/app/reports/progress",
       },
       {
         id: "reports",
-        label: "Rapor sudah dibuat",
+        label: "Raport sudah dibuat",
         value: Number(row?.reports_created ?? 0),
         description: "Untuk semester aktif",
         href: "/app/reports/progress",
@@ -134,7 +134,7 @@ export class DashboardController {
         id: "revisions",
         label: "Perlu revisi",
         value: Number(row?.revisions ?? 0),
-        description: "Rapor yang dikembalikan",
+        description: "Raport yang dikembalikan",
         href: "/app/reports/progress",
       },
     ];
@@ -161,7 +161,7 @@ export class DashboardController {
     return [
       {
         id: "reports-to-review",
-        label: "Rapor perlu ditinjau",
+        label: "Raport perlu ditinjau",
         value: Number(row?.reports_to_review ?? 0),
         description: "Menunggu keputusan Anda",
         href: "/app/reports/review",
@@ -211,7 +211,7 @@ export class DashboardController {
       },
       {
         id: "active-reports",
-        label: "Rapor berjalan",
+        label: "Raport berjalan",
         value: Number(row?.active_reports ?? 0),
         description: "Belum diterbitkan",
         href: "/app/reports/progress",

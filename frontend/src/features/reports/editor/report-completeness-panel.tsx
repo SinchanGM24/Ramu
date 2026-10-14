@@ -44,13 +44,13 @@ export function ReportCompletenessPanel({
 		},
 		onError: (error) => {
 			onSubmitFailed?.(
-				error instanceof Error ? error.message : "Rapor tidak dapat dikirim. Coba lagi.",
+				error instanceof Error ? error.message : "Raport tidak dapat dikirim. Coba lagi.",
 			);
 		},
 	});
 	if (completeness.isLoading) {
 		return compact ? null : (
-			<Card className="mb-4 text-sm text-slate-500">Memeriksa kelengkapan rapor…</Card>
+			<Card className="mb-4 text-sm text-slate-500">Memeriksa kelengkapan raport…</Card>
 		);
 	}
 	if (completeness.isError || !completeness.data) return null;
@@ -108,17 +108,17 @@ export function ReportCompletenessPanel({
 					<div>
 						<h2 className="font-bold text-[#17251b]">
 							{submitted
-								? "Rapor telah dikirim untuk ditinjau"
+								? "Raport telah dikirim untuk ditinjau"
 								: data.complete
-									? "Rapor siap dikirim untuk ditinjau"
-									: "Rapor belum lengkap"}
+									? "Raport siap dikirim untuk ditinjau"
+									: "Raport belum lengkap"}
 						</h2>
 						<p className="mt-1 text-sm leading-6 text-[#526156]">
 							{submitted
-								? "Rapor menunggu tinjauan Kepala Sekolah."
+								? "Raport menunggu tinjauan Kepala Sekolah."
 								: data.complete
 									? "Semua indikator, narasi, dan data akhir semester sudah tersedia."
-									: "Lengkapi data berikut sebelum mengirim rapor."}
+									: "Lengkapi data berikut sebelum mengirim raport."}
 						</p>
 						{!data.complete && (
 							<ul className="mt-2 list-disc pl-5 text-xs text-slate-600">

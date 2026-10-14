@@ -42,9 +42,9 @@ export function ReportProgressList({
 		<Card className="overflow-hidden p-0">
 			<div className="flex flex-col gap-4 border-b border-[#e7e7dc] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
 				<div>
-					<h2 className="font-bold text-[#17251b]">Rapor yang perlu diisi</h2>
+					<h2 className="font-bold text-[#17251b]">Raport yang perlu diisi</h2>
 					<p className="mt-1 text-sm text-[#637065]">
-						Pilih murid untuk membuat draf atau melanjutkan pengisian rapor.
+						Pilih murid untuk membuat draf atau melanjutkan pengisian raport.
 					</p>
 				</div>
 				<div className="flex items-center gap-2 rounded-lg bg-[#f0f4ed] px-3 py-1.5 text-sm font-semibold text-[#526156]">
@@ -72,7 +72,7 @@ export function ReportProgressList({
 					<thead className="border-b border-[#e7e9df] bg-[#f5f7f1] text-xs text-[#667168]">
 						<tr>
 							<th className="pb-3 font-semibold">Murid</th>
-							<th className="pb-3 font-semibold">Tahap rapor</th>
+							<th className="pb-3 font-semibold">Tahap raport</th>
 							<th className="pb-3 font-semibold">Kelengkapan</th>
 							<th className="pb-3 text-right font-semibold">Tindakan</th>
 						</tr>
@@ -81,7 +81,7 @@ export function ReportProgressList({
 						{loading ? (
 							<tr>
 								<td colSpan={4} className="px-5 py-10 text-[#68746a]">
-									Memuat rapor murid…
+									Memuat raport murid…
 								</td>
 							</tr>
 						) : !items.length ? (
@@ -134,7 +134,7 @@ export function ReportProgressList({
 			</div>
 			<div className="space-y-3 border-t border-[#edf0e8] p-4 md:hidden">
 				{loading ? (
-					<p className="py-6 text-center text-sm text-[#68746a]">Memuat rapor murid…</p>
+					<p className="py-6 text-center text-sm text-[#68746a]">Memuat raport murid…</p>
 				) : !items.length ? (
 					<p className="py-8 text-center text-sm text-[#68746a]">
 						Tidak ada murid yang cocok dengan pencarian.

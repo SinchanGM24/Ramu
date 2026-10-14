@@ -1,6 +1,6 @@
 # RAMU
 
-RAMU (*Raport Murid*) is a multi-tenant SaaS for TK/PAUD schools to prepare, review, publish, and securely distribute student reports.
+RAMU (_Raport Murid_) is a multi-tenant SaaS for TK/PAUD schools to prepare, review, publish, and securely distribute student reports.
 
 ## Struktur
 

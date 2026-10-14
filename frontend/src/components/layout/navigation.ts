@@ -19,13 +19,13 @@ export const mobileNavigation = [
 	...navigation,
 	{
 		href: "/app/reports/progress",
-		label: "Rapor",
+		label: "Raport",
 		icon: ClipboardList,
 		roles: ["SCHOOL_ADMIN", "TEACHER"] as AppRole[],
 	},
 	{
 		href: "/app/reports/review",
-		label: "Rapor",
+		label: "Raport",
 		icon: ClipboardList,
 		roles: ["PRINCIPAL"] as AppRole[],
 	},

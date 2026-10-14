@@ -11,7 +11,7 @@ export function ReportPublicationPage() {
 	if (!publication.semesters.data?.length) {
 		return (
 			<Card className="max-w-xl border-dashed text-sm leading-6 text-[#637065]">
-				Belum ada semester untuk menampilkan publikasi rapor.
+				Belum ada semester untuk menampilkan publikasi raport.
 			</Card>
 		);
 	}
@@ -19,9 +19,9 @@ export function ReportPublicationPage() {
 	return (
 		<>
 			<PageHeader
-				eyebrow="Rapor"
-				title="Publikasi & kirim rapor"
-				description="Terbitkan rapor yang sudah disetujui sebagai versi final, lalu kirimkan tautannya kepada wali."
+				eyebrow="Raport"
+				title="Publikasi & kirim raport"
+				description="Terbitkan raport yang sudah disetujui sebagai versi final, lalu kirimkan tautannya kepada wali."
 			/>
 			{publication.notice ? (
 				<p
@@ -44,7 +44,7 @@ export function ReportPublicationPage() {
 					Konteks publikasi
 				</p>
 				<p className="mt-1 text-sm leading-6 text-[#637065]">
-					Pilih semester sebelum menerbitkan versi rapor final atau meninjau riwayat pengiriman.
+					Pilih semester sebelum menerbitkan versi raport final atau meninjau riwayat pengiriman.
 				</p>
 				<label className="mt-4 block max-w-sm text-sm font-semibold text-[#35443a]">
 					Semester

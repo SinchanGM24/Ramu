@@ -44,13 +44,13 @@ export function ParentReportViewer({ token }: { token: string }) {
 			{ credentials: "include" },
 		);
 		if (!response.ok) {
-			setError("PDF rapor belum dapat diunduh.");
+			setError("PDF raport belum dapat diunduh.");
 			return;
 		}
 		const url = URL.createObjectURL(await response.blob());
 		const link = document.createElement("a");
 		link.href = url;
-		link.download = "rapor-anak.pdf";
+		link.download = "raport-anak.pdf";
 		link.click();
 		URL.revokeObjectURL(url);
 	}

@@ -1,6 +1,6 @@
 # RAMU Smart Narrative Engine
 
-Dokumen ini adalah sumber kebenaran untuk generator draf narasi rapor RAMU. Ia melengkapi [PRD](PRD.md) dan `REPORT_SPEC.md`; struktur rapor, workflow, serta batas akses pada kedua dokumen tersebut tetap berlaku.
+Dokumen ini adalah sumber kebenaran untuk generator draf narasi raport RAMU. Ia melengkapi [PRD](PRD.md) dan `REPORT_SPEC.md`; struktur raport, workflow, serta batas akses pada kedua dokumen tersebut tetap berlaku.
 
 ## Tujuan dan batasan
 
@@ -8,7 +8,7 @@ Smart Narrative Engine mengubah hasil penilaian indikator seorang anak dalam sat
 
 - Engine bersifat deterministic dan rule-based; tidak memakai LLM, API AI, model lokal, atau layanan eksternal.
 - Engine tidak pernah mengubah assessment, menyetujui, menerbitkan, memberi peringkat, atau mendiagnosis anak.
-- Narasi adalah draf. Guru selalu dapat menyunting dan menyimpan hasilnya sebelum rapor memasuki workflow berikutnya.
+- Narasi adalah draf. Guru selalu dapat menyunting dan menyimpan hasilnya sebelum raport memasuki workflow berikutnya.
 - Seluruh sumber klaim harus dapat dilacak ke indikator dan nilai yang tersimpan dalam tenant sekolah yang sama.
 - Generator runtime selalu membaca indikator template aktif dari database. Jumlah indikator tidak diasumsikan di dalam engine.
 
@@ -25,7 +25,7 @@ Penilaian guru per indikator
   -> Preview / PDF / viewer wali memakai narasi tersimpan yang sama
 ```
 
-Generator hanya tersedia saat seluruh indikator wajib pada area telah dinilai. Pengiriman rapor tetap menggunakan pemeriksaan kelengkapan yang berlaku.
+Generator hanya tersedia saat seluruh indikator wajib pada area telah dinilai. Pengiriman raport tetap menggunakan pemeriksaan kelengkapan yang berlaku.
 
 ## Kontrak data dan traceability
 
@@ -45,13 +45,13 @@ Input yang identik menghasilkan signature dan narasi yang identik. Signature men
 
 Metadata berada pada data tenant-scoped yang berelasi langsung dengan `indicator_id`, bukan hasil pencocokan substring saat runtime. Metadata minimal memuat:
 
-| Field | Kegunaan |
-| --- | --- |
-| `semanticGroup` | Mengelompokkan kemampuan yang memang berkaitan. |
-| `competencyConcept` | Konsep kemampuan yang dinilai. |
-| `narrativeLabel` | Bentuk kemampuan yang layak disebut pada narasi wali. |
-| `observationType` | Membedakan keterampilan, keselamatan, dan pengukuran fisik. |
-| `recommendationTags` | Rujukan rekomendasi stimulasi yang diizinkan. |
+| Field                | Kegunaan                                                    |
+| -------------------- | ----------------------------------------------------------- |
+| `semanticGroup`      | Mengelompokkan kemampuan yang memang berkaitan.             |
+| `competencyConcept`  | Konsep kemampuan yang dinilai.                              |
+| `narrativeLabel`     | Bentuk kemampuan yang layak disebut pada narasi wali.       |
+| `observationType`    | Membedakan keterampilan, keselamatan, dan pengukuran fisik. |
+| `recommendationTags` | Rujukan rekomendasi stimulasi yang diizinkan.               |
 
 Semua 88 indikator pada template TK default dikurasi melalui seed idempoten. Indikator kustom tanpa metadata tidak diinterpretasikan: engine memakai label asli secara terbatas dan menambahkan warning untuk guru.
 
@@ -88,19 +88,19 @@ Sebelum hasil disimpan, validator memastikan klaim sesuai rating sumber, tidak m
 
 Jika validasi serius gagal, engine mengembalikan warning atau fallback aman dan tidak mengganti narasi aktif. Jika assessment berubah setelah generasi terakhir, editor menampilkan bahwa draf mungkin perlu diperbarui. Menekan generate pada narasi yang sudah ada selalu meminta konfirmasi.
 
-Tidak ada status finalisasi narasi tambahan. Narasi dapat diedit pada status rapor yang diizinkan (`DRAFT` dan `REVISION_REQUIRED`) dan mengikuti pembatasan workflow rapor yang ada.
+Tidak ada status finalisasi narasi tambahan. Narasi dapat diedit pada status raport yang diizinkan (`DRAFT` dan `REVISION_REQUIRED`) dan mengikuti pembatasan workflow raport yang ada.
 
 ## Keamanan dan lifecycle
 
 - Semua metadata dan riwayat generasi membawa `school_id`, dibatasi RLS, dan diperiksa kembali oleh otorisasi server.
-- Hanya admin sekolah atau guru wali kelas yang berwenang dapat menghasilkan atau menyimpan narasi untuk rapor yang dapat mereka akses.
-- Parent viewer hanya menerima narasi dari snapshot versi rapor terbit; ia tidak dapat menghasilkan, mengubah, atau melihat metadata internal.
-- Rapor terbit tidak boleh dimutasi. Koreksi mengikuti versi rapor baru yang berlaku.
+- Hanya admin sekolah atau guru wali kelas yang berwenang dapat menghasilkan atau menyimpan narasi untuk raport yang dapat mereka akses.
+- Parent viewer hanya menerima narasi dari snapshot versi raport terbit; ia tidak dapat menghasilkan, mengubah, atau melihat metadata internal.
+- Raport terbit tidak boleh dimutasi. Koreksi mengikuti versi raport baru yang berlaku.
 
 ## Pengujian wajib
 
 - Unit test untuk semantic grouping, analisis seluruh kombinasi skala, planner, composer, validator, signature, serta fallback metadata.
 - Golden test untuk Nilai Agama dan Moral, Fisik Motorik, Kognitif, Bahasa, Sosial Emosional, dan Seni.
 - Uji indikator tunggal, data kosong, metadata tidak tersedia, pengukuran fisik, nilai campuran, dan perubahan assessment setelah generasi.
-- Uji tenant isolation, batas akses guru wali kelas, status rapor tidak dapat diubah, dan audit event.
+- Uji tenant isolation, batas akses guru wali kelas, status raport tidak dapat diubah, dan audit event.
 - Uji bahwa engine tidak mengubah assessment sumber, tidak menghasilkan klaim tanpa indikator, dan tidak mengandung frasa terlarang.

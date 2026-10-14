@@ -14,9 +14,9 @@ export function ReportProgressPage() {
 	return (
 		<>
 			<PageHeader
-				eyebrow="Rapor"
-				title="Pengisian rapor"
-				description="Buat, lengkapi, dan kirim rapor murid untuk ditinjau Kepala Sekolah."
+				eyebrow="Raport"
+				title="Pengisian raport"
+				description="Buat, lengkapi, dan kirim raport murid untuk ditinjau Kepala Sekolah."
 			/>
 			{progress.error ? (
 				<p
@@ -77,7 +77,7 @@ function SemesterContext({
 					Konteks pengisian
 				</p>
 				<p className="mt-1 text-sm leading-6 text-[#637065]">
-					Pilih semester untuk melihat status rapor murid.
+					Pilih semester untuk melihat status raport murid.
 				</p>
 			</div>
 			<label className="block text-sm font-semibold text-[#35443a]">

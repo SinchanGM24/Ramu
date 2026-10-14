@@ -4,7 +4,7 @@ GitHub Pages hanya menerbitkan tampilan statis RAMU. Ia tidak menjalankan API Ne
 
 Workflow `.github/workflows/deploy-pages.yml` membuat frontend dengan `NEXT_PUBLIC_DEMO_MODE=true`. Dalam mode ini semua respons API berasal dari fixture demo di browser dan aksi formulir hanya mensimulasikan pengalaman penggunaan.
 
-Perubahan demo hanya berlaku selama tab browser terbuka dan akan kembali ke data contoh setelah halaman dimuat ulang. Tidak ada foto yang diunggah, akun, atau data rapor yang disimpan.
+Perubahan demo hanya berlaku selama tab browser terbuka dan akan kembali ke data contoh setelah halaman dimuat ulang. Tidak ada foto yang diunggah, akun, atau data raport yang disimpan.
 
 ## Mengaktifkan
 

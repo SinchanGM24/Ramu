@@ -70,7 +70,7 @@ export function StaffFormDialog({
 					Nomor telepon
 					{creating && (
 						<span className="mt-1 block text-xs font-normal text-slate-500">
-							Dipakai sebagai kontak guru pada rapor.
+							Dipakai sebagai kontak guru pada raport.
 						</span>
 					)}
 					<input

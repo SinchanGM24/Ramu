@@ -12,37 +12,150 @@ const accounts = [
 ] as const;
 
 async function seed() {
-  if (process.env.NODE_ENV === "production") throw new Error("Seed akun demo tidak boleh dijalankan di production");
-  const connectionString = process.env.DATABASE_SEED_URL || process.env.DATABASE_MIGRATION_URL || process.env.DATABASE_URL;
-  if (!connectionString) throw new Error("DATABASE_SEED_URL, DATABASE_MIGRATION_URL, atau DATABASE_URL harus diatur");
+  if (process.env.NODE_ENV === "production")
+    throw new Error("Seed akun demo tidak boleh dijalankan di production");
+  const connectionString =
+    process.env.DATABASE_SEED_URL ||
+    process.env.DATABASE_MIGRATION_URL ||
+    process.env.DATABASE_URL;
+  if (!connectionString)
+    throw new Error(
+      "DATABASE_SEED_URL, DATABASE_MIGRATION_URL, atau DATABASE_URL harus diatur",
+    );
   const pool = new Pool({ connectionString });
   const password = process.env.SEED_DEMO_PASSWORD || "pass1234";
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const first = await client.query<{ school_id: string }>(`SELECT membership.school_id FROM school_memberships membership JOIN users user_account ON user_account.id=membership.user_id WHERE user_account.email=lower($1) AND membership.role='SCHOOL_ADMIN' LIMIT 1`, [accounts[0].email]);
+    const first = await client.query<{ school_id: string }>(
+      `SELECT membership.school_id FROM school_memberships membership JOIN users user_account ON user_account.id=membership.user_id WHERE user_account.email=lower($1) AND membership.role='SCHOOL_ADMIN' LIMIT 1`,
+      [accounts[0].email],
+    );
     const schoolId = first.rows[0]?.school_id || crypto.randomUUID();
-    await client.query("SELECT set_config('app.school_id', $1, true)", [schoolId]);
-    if (!first.rowCount) await client.query("INSERT INTO schools(id,name,slug) VALUES ($1,$2,'tk-contoh-ceria')", [schoolId, process.env.SEED_SCHOOL_NAME || "TK Contoh Ceria"]);
+    await client.query("SELECT set_config('app.school_id', $1, true)", [
+      schoolId,
+    ]);
+    if (!first.rowCount)
+      await client.query(
+        "INSERT INTO schools(id,name,slug) VALUES ($1,$2,'tk-contoh-ceria')",
+        [schoolId, process.env.SEED_SCHOOL_NAME || "TK Contoh Ceria"],
+      );
     const hash = await argon2.hash(password);
     for (const account of accounts) {
-      const user = await client.query<{ id: string }>(`INSERT INTO users(name,email,password_hash) VALUES($1,lower($2),$3) ON CONFLICT(email) DO UPDATE SET name=EXCLUDED.name,password_hash=EXCLUDED.password_hash RETURNING id`, [account.name, account.email, hash]);
-      await client.query(`INSERT INTO school_memberships(user_id,school_id,role) VALUES($1,$2,$3) ON CONFLICT(user_id,school_id) DO UPDATE SET role=EXCLUDED.role`, [user.rows[0].id, schoolId, account.role]);
+      const user = await client.query<{ id: string }>(
+        `INSERT INTO users(name,email,password_hash) VALUES($1,lower($2),$3) ON CONFLICT(email) DO UPDATE SET name=EXCLUDED.name,password_hash=EXCLUDED.password_hash RETURNING id`,
+        [account.name, account.email, hash],
+      );
+      await client.query(
+        `INSERT INTO school_memberships(user_id,school_id,role) VALUES($1,$2,$3) ON CONFLICT(user_id,school_id) DO UPDATE SET role=EXCLUDED.role`,
+        [user.rows[0].id, schoolId, account.role],
+      );
     }
     await ensureDefaultTkFramework(client, schoolId);
-    await client.query("UPDATE academic_years SET is_active=false WHERE school_id=$1", [schoolId]);
-    const previous = await client.query<{ id: string }>("INSERT INTO academic_years(school_id,name,display_year,starts_on,ends_on,is_active) VALUES ($1,'2025',2025,'2025-07-01','2026-06-30',false) ON CONFLICT(school_id,name) DO UPDATE SET is_active=false RETURNING id", [schoolId]);
-    const year = await client.query<{ id: string }>("INSERT INTO academic_years(school_id,name,display_year,starts_on,ends_on,is_active) VALUES ($1,'2026',2026,'2026-07-01','2027-06-30',true) ON CONFLICT(school_id,name) DO UPDATE SET is_active=true RETURNING id", [schoolId]);
-    for (const [yearId, firstStart, firstEnd, secondStart, secondEnd] of [[previous.rows[0].id,'2025-07-01','2025-12-31','2026-01-01','2026-06-30'],[year.rows[0].id,'2026-07-01','2026-12-31','2027-01-01','2027-06-30']] as const) await client.query("INSERT INTO semesters(school_id,academic_year_id,name,starts_on,ends_on) VALUES ($1,$2,'Semester I',$3,$4),($1,$2,'Semester II',$5,$6) ON CONFLICT(school_id,academic_year_id,name) DO UPDATE SET starts_on=EXCLUDED.starts_on,ends_on=EXCLUDED.ends_on", [schoolId,yearId,firstStart,firstEnd,secondStart,secondEnd]);
-    const groups: Record<string,string> = {}; for (const name of ['Kelas Apel','Kelas Melati','Kelas Merpati']) groups[name]=(await client.query<{id:string}>("INSERT INTO class_groups(school_id,name) VALUES($1,$2) ON CONFLICT(school_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id",[schoolId,name])).rows[0].id;
-    const period = async (groupName:string,yearId:string) => (await client.query<{id:string}>("INSERT INTO class_periods(school_id,class_group_id,academic_year_id) VALUES($1,$2,$3) ON CONFLICT(class_group_id,academic_year_id) DO NOTHING RETURNING id",[schoolId,groups[groupName],yearId])).rows[0]?.id ?? (await client.query<{id:string}>("SELECT id FROM class_periods WHERE class_group_id=$1 AND academic_year_id=$2",[groups[groupName],yearId])).rows[0].id;
-    const priorApel=await period('Kelas Apel',previous.rows[0].id), apel=await period('Kelas Apel',year.rows[0].id), melati=await period('Kelas Melati',year.rows[0].id), merpati=await period('Kelas Merpati',year.rows[0].id);
-    const student = async (name:string,number:string,gender:string) => (await client.query<{id:string}>("INSERT INTO students(school_id,name,student_number,gender) VALUES($1,$2,$3,$4::student_gender) ON CONFLICT(school_id,student_number) DO UPDATE SET name=EXCLUDED.name RETURNING id",[schoolId,name,number,gender])).rows[0].id;
-    const alya=await student('Alya Putri','TK-001','FEMALE'), bima=await student('Bima Saputra','TK-002','MALE'), citra=await student('Citra Lestari','TK-003','FEMALE'), dimas=await student('Dimas Pratama','TK-004','MALE');
-    await client.query("INSERT INTO student_enrollments(school_id,student_id,academic_year_id,class_period_id,status,effective_start_on,effective_end_on,ended_at) SELECT $1,$2,$3,$4,'TRANSFERRED','2025-07-01','2026-07-01',now() WHERE NOT EXISTS(SELECT 1 FROM student_enrollments WHERE student_id=$2 AND academic_year_id=$3)",[schoolId,alya,previous.rows[0].id,priorApel]);
-    for (const [studentId,classPeriodId] of [[alya,apel],[bima,apel],[citra,melati],[dimas,merpati]]) await client.query("INSERT INTO student_enrollments(school_id,student_id,academic_year_id,class_period_id,status,effective_start_on) SELECT $1,$2,$3,$4,'ACTIVE','2026-07-01' WHERE NOT EXISTS(SELECT 1 FROM student_enrollments WHERE student_id=$2 AND academic_year_id=$3)",[schoolId,studentId,year.rows[0].id,classPeriodId]);
-    const teachers = await client.query<{id:string,email:string}>("SELECT id,email FROM users WHERE email IN ('guru.aisyah@ramu.test','guru.budi@ramu.test','guru.citra@ramu.test')"); for (const [classPeriodId,email] of [[apel,'guru.aisyah@ramu.test'],[apel,'guru.budi@ramu.test'],[melati,'guru.budi@ramu.test'],[merpati,'guru.citra@ramu.test']]) { const teacher=teachers.rows.find(item=>item.email===email)!; await client.query("INSERT INTO teacher_class_assignments(school_id,class_period_id,teacher_user_id) VALUES($1,$2,$3) ON CONFLICT(class_period_id,teacher_user_id) WHERE ended_at IS NULL DO UPDATE SET ended_at=NULL",[schoolId,classPeriodId,teacher.id]); }
-    await client.query("COMMIT"); console.log(`Seed akun development selesai: ${accounts.map((account) => account.email).join(", ")}`);
-  } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); await pool.end(); }
+    await client.query(
+      "UPDATE academic_years SET is_active=false WHERE school_id=$1",
+      [schoolId],
+    );
+    const previous = await client.query<{ id: string }>(
+      "INSERT INTO academic_years(school_id,name,display_year,starts_on,ends_on,is_active) VALUES ($1,'2025',2025,'2025-07-01','2026-06-30',false) ON CONFLICT(school_id,name) DO UPDATE SET is_active=false RETURNING id",
+      [schoolId],
+    );
+    const year = await client.query<{ id: string }>(
+      "INSERT INTO academic_years(school_id,name,display_year,starts_on,ends_on,is_active) VALUES ($1,'2026',2026,'2026-07-01','2027-06-30',true) ON CONFLICT(school_id,name) DO UPDATE SET is_active=true RETURNING id",
+      [schoolId],
+    );
+    for (const [yearId, firstStart, firstEnd, secondStart, secondEnd] of [
+      [
+        previous.rows[0].id,
+        "2025-07-01",
+        "2025-12-31",
+        "2026-01-01",
+        "2026-06-30",
+      ],
+      [year.rows[0].id, "2026-07-01", "2026-12-31", "2027-01-01", "2027-06-30"],
+    ] as const)
+      await client.query(
+        "INSERT INTO semesters(school_id,academic_year_id,name,starts_on,ends_on) VALUES ($1,$2,'Semester I',$3,$4),($1,$2,'Semester II',$5,$6) ON CONFLICT(school_id,academic_year_id,name) DO UPDATE SET starts_on=EXCLUDED.starts_on,ends_on=EXCLUDED.ends_on",
+        [schoolId, yearId, firstStart, firstEnd, secondStart, secondEnd],
+      );
+    const groups: Record<string, string> = {};
+    for (const name of ["Kelas Apel", "Kelas Melati", "Kelas Merpati"])
+      groups[name] = (
+        await client.query<{ id: string }>(
+          "INSERT INTO class_groups(school_id,name) VALUES($1,$2) ON CONFLICT(school_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id",
+          [schoolId, name],
+        )
+      ).rows[0].id;
+    const period = async (groupName: string, yearId: string) =>
+      (
+        await client.query<{ id: string }>(
+          "INSERT INTO class_periods(school_id,class_group_id,academic_year_id) VALUES($1,$2,$3) ON CONFLICT(class_group_id,academic_year_id) DO NOTHING RETURNING id",
+          [schoolId, groups[groupName], yearId],
+        )
+      ).rows[0]?.id ??
+      (
+        await client.query<{ id: string }>(
+          "SELECT id FROM class_periods WHERE class_group_id=$1 AND academic_year_id=$2",
+          [groups[groupName], yearId],
+        )
+      ).rows[0].id;
+    const priorApel = await period("Kelas Apel", previous.rows[0].id),
+      apel = await period("Kelas Apel", year.rows[0].id),
+      melati = await period("Kelas Melati", year.rows[0].id),
+      merpati = await period("Kelas Merpati", year.rows[0].id);
+    const student = async (name: string, number: string, gender: string) =>
+      (
+        await client.query<{ id: string }>(
+          "INSERT INTO students(school_id,name,student_number,gender) VALUES($1,$2,$3,$4::student_gender) ON CONFLICT(school_id,student_number) DO UPDATE SET name=EXCLUDED.name RETURNING id",
+          [schoolId, name, number, gender],
+        )
+      ).rows[0].id;
+    const alya = await student("Alya Putri", "TK-001", "FEMALE"),
+      bima = await student("Bima Saputra", "TK-002", "MALE"),
+      citra = await student("Citra Lestari", "TK-003", "FEMALE"),
+      dimas = await student("Dimas Pratama", "TK-004", "MALE");
+    await client.query(
+      "INSERT INTO student_enrollments(school_id,student_id,academic_year_id,class_period_id,status,effective_start_on,effective_end_on,ended_at) SELECT $1,$2,$3,$4,'TRANSFERRED','2025-07-01','2026-07-01',now() WHERE NOT EXISTS(SELECT 1 FROM student_enrollments WHERE student_id=$2 AND academic_year_id=$3)",
+      [schoolId, alya, previous.rows[0].id, priorApel],
+    );
+    for (const [studentId, classPeriodId] of [
+      [alya, apel],
+      [bima, apel],
+      [citra, melati],
+      [dimas, merpati],
+    ])
+      await client.query(
+        "INSERT INTO student_enrollments(school_id,student_id,academic_year_id,class_period_id,status,effective_start_on) SELECT $1,$2,$3,$4,'ACTIVE','2026-07-01' WHERE NOT EXISTS(SELECT 1 FROM student_enrollments WHERE student_id=$2 AND academic_year_id=$3)",
+        [schoolId, studentId, year.rows[0].id, classPeriodId],
+      );
+    const teachers = await client.query<{ id: string; email: string }>(
+      "SELECT id,email FROM users WHERE email IN ('guru.aisyah@ramu.test','guru.budi@ramu.test','guru.citra@ramu.test')",
+    );
+    for (const [classPeriodId, email] of [
+      [apel, "guru.aisyah@ramu.test"],
+      [apel, "guru.budi@ramu.test"],
+      [melati, "guru.budi@ramu.test"],
+      [merpati, "guru.citra@ramu.test"],
+    ]) {
+      const teacher = teachers.rows.find((item) => item.email === email)!;
+      await client.query(
+        "INSERT INTO teacher_class_assignments(school_id,class_period_id,teacher_user_id) VALUES($1,$2,$3) ON CONFLICT(class_period_id,teacher_user_id) WHERE ended_at IS NULL DO UPDATE SET ended_at=NULL",
+        [schoolId, classPeriodId, teacher.id],
+      );
+    }
+    await client.query("COMMIT");
+    console.log(
+      `Seed akun development selesai: ${accounts.map((account) => account.email).join(", ")}`,
+    );
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
-seed().catch((error) => { console.error(error); process.exit(1); });
+seed().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

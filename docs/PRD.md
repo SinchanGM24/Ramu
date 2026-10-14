@@ -2,18 +2,18 @@
 
 ## 1. Purpose
 
-RAMU (*Raport Murid*) is a multi-tenant SaaS for TK/PAUD schools. It enables a school to configure academic data, let teachers assess individual students, route reports through review and approval, publish an immutable PDF report, and share it to guardians through a secure WhatsApp link and PIN.
+RAMU (_Raport Murid_) is a multi-tenant SaaS for TK/PAUD schools. It enables a school to configure academic data, let teachers assess individual students, route reports through review and approval, publish an immutable PDF report, and share it to guardians through a secure WhatsApp link and PIN.
 
 **Product outcome:** fewer manual report-production steps while preserving teacher and school control over every academic decision.
 
 ## 2. Users and access
 
-| Role | Main capabilities |
-| --- | --- |
-| `SUPER_ADMIN` | Operates the shared SaaS and tenants. |
-| `SCHOOL_ADMIN` | Configures the school, academic data, users, report publishing, and delivery. |
-| `TEACHER` | Assesses students in assigned classes, writes narratives, and submits reports. |
-| `PRINCIPAL` | Reviews, approves, or requests revisions. |
+| Role            | Main capabilities                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| `SUPER_ADMIN`   | Operates the shared SaaS and tenants.                                                             |
+| `SCHOOL_ADMIN`  | Configures the school, academic data, users, report publishing, and delivery.                     |
+| `TEACHER`       | Assesses students in assigned classes, writes narratives, and submits reports.                    |
+| `PRINCIPAL`     | Reviews, approves, or requests revisions.                                                         |
 | `PARENT_VIEWER` | Not an app account. Uses a secure link plus PIN to view, download, or print one published report. |
 
 Tenant equals `school`. Application users obtain roles through `school_memberships(user_id, school_id, role)`; do not use `users.school_id`.
@@ -50,7 +50,7 @@ LMS, SPP/accounting, payroll, chat, daily attendance, student rankings, parent a
 
 `Academic setup → Teacher individual assessment → Submit → Review → Approve → Publish → Generate PDF + secure token + six-digit PIN → Queue WhatsApp → Parent read-only view`
 
-Antarmuka aplikasi memisahkan tiga ruang kerja rapor: **Pengisian rapor** untuk membuat atau melengkapi draf, **Tinjauan rapor** untuk meminta revisi atau menyetujui, serta **Publikasi & kirim** untuk menerbitkan rapor yang disetujui dan mengirimkannya kepada wali. Jangan mencampur tindakan antar-tahap pada satu daftar kerja.
+Antarmuka aplikasi memisahkan tiga ruang kerja raport: **Pengisian raport** untuk membuat atau melengkapi draf, **Tinjauan raport** untuk meminta revisi atau menyetujui, serta **Publikasi & kirim** untuk menerbitkan raport yang disetujui dan mengirimkannya kepada wali. Jangan mencampur tindakan antar-tahap pada satu daftar kerja.
 
 ### Parent access
 
@@ -114,14 +114,14 @@ Publication creates a PDF, secure access token, six-digit PIN, and delivery reco
 
 ## 10. Core data model
 
-| Domain | Entities |
-| --- | --- |
-| Identity and tenancy | `users`, `schools`, `school_memberships`, `subscriptions` |
-| Academic | `academic_years`, `semesters`, `classes`, `students`, `guardian_contacts` |
-| Assessment configuration | `assessment_frameworks`, `development_areas`, `sub_areas`, `indicators`, `assessment_scales`, `assessment_scale_options` |
-| Assessment evidence | `student_assessments`, `report_narratives`, `growth_records`, `attendance_summaries`, `extracurricular_records`, `portfolio_items` |
-| Reports and access | `reports`, `report_versions`, `report_approvals`, `report_access`, `report_deliveries` |
-| Governance | `audit_logs` |
+| Domain                   | Entities                                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Identity and tenancy     | `users`, `schools`, `school_memberships`, `subscriptions`                                                                          |
+| Academic                 | `academic_years`, `semesters`, `classes`, `students`, `guardian_contacts`                                                          |
+| Assessment configuration | `assessment_frameworks`, `development_areas`, `sub_areas`, `indicators`, `assessment_scales`, `assessment_scale_options`           |
+| Assessment evidence      | `student_assessments`, `report_narratives`, `growth_records`, `attendance_summaries`, `extracurricular_records`, `portfolio_items` |
+| Reports and access       | `reports`, `report_versions`, `report_approvals`, `report_access`, `report_deliveries`                                             |
+| Governance               | `audit_logs`                                                                                                                       |
 
 ## 11. Technical direction
 
@@ -138,11 +138,11 @@ Implementation order: multi-tenant foundation; auth/RBAC; onboarding; master aca
 
 Deterministic report narrative rules are defined in [SmartNarrativeEngine.md](SmartNarrativeEngine.md). This engine is not an AI assessor and remains subject to the human-review requirements below.
 
-| Agent | Permitted output |
-| --- | --- |
-| Narrative | Draft narrative from indicators, teacher notes, and development area; teacher must review/edit. |
-| Completeness | Missing assessments, narratives, or semester data. |
-| Consistency | Potential mismatch between assessments and narrative. |
+| Agent        | Permitted output                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| Narrative    | Draft narrative from indicators, teacher notes, and development area; teacher must review/edit. |
+| Completeness | Missing assessments, narratives, or semester data.                                              |
+| Consistency  | Potential mismatch between assessments and narrative.                                           |
 
 AI cannot assign scores, approve/publish a report, rank students, or diagnose children.
 

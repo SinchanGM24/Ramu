@@ -71,10 +71,10 @@ export class ParentController {
       [rawSession],
     );
     const storageKey = result.rows[0]?.pdf_storage_key;
-    if (!storageKey) throw new Error("File PDF rapor belum tersedia");
+    if (!storageKey) throw new Error("File PDF raport belum tersedia");
     const pdf = await this.pdf.readPublishedReport(storageKey);
     reply.header("Content-Type", "application/pdf");
-    reply.header("Content-Disposition", "attachment; filename=rapor-anak.pdf");
+    reply.header("Content-Disposition", "attachment; filename=raport-anak.pdf");
     return reply.send(pdf);
   }
 }

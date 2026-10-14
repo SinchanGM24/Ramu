@@ -80,7 +80,7 @@ export class ReportDeliveriesController {
           [reportId, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Rapor terbit tidak ditemukan");
+      if (!report) throw new Error("Raport terbit tidak ditemukan");
       return (
         await client.query(
           `SELECT id,name,relationship,phone,is_primary,$3::text AS student_lifecycle_status
@@ -108,7 +108,7 @@ export class ReportDeliveriesController {
           [reportId, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Rapor terbit tidak ditemukan");
+      if (!report) throw new Error("Raport terbit tidak ditemukan");
       return { studentId: report.student_id };
     }, actor.schoolId);
   }
@@ -137,7 +137,7 @@ export class ReportDeliveriesController {
         )
       ).rows[0];
 
-      if (!version) throw new Error("Rapor terbit tidak ditemukan");
+      if (!version) throw new Error("Raport terbit tidak ditemukan");
 
       const guardians = await client.query<{ id: string; phone: string }>(
         `SELECT id, phone
@@ -156,7 +156,7 @@ export class ReportDeliveriesController {
         guardians.rowCount !== input.guardianContactIds.length
       ) {
         throw new Error(
-          "Satu atau lebih kontak wali tidak terkait dengan siswa pada rapor ini",
+          "Satu atau lebih kontak wali tidak terkait dengan siswa pada raport ini",
         );
       }
 
@@ -320,12 +320,12 @@ export class ReportDeliveriesController {
 
       const message = [
         `Assalamu'alaikum Bapak/Ibu ${delivery.guardian_name},`,
-        `Rapor perkembangan ${delivery.student_name} dari ${delivery.school_name} telah tersedia.`,
+        `Raport perkembangan ${delivery.student_name} dari ${delivery.school_name} telah tersedia.`,
         "",
-        `Tautan rapor: ${reportLink}`,
+        `Tautan raport: ${reportLink}`,
         `PIN: ${pin}`,
         "",
-        "Silakan simpan tautan ini untuk membuka rapor kembali kapan saja.",
+        "Silakan simpan tautan ini untuk membuka raport kembali kapan saja.",
       ].join("\n");
 
       return {

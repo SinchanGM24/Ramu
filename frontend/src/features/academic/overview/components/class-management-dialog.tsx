@@ -143,7 +143,7 @@ export function ClassManagementDialog({
 						<div>
 							<h3 className="font-semibold text-slate-900">Guru yang ditugaskan</h3>
 							<p className="mt-1 text-sm text-slate-500">
-								Semua guru aktif dapat mengisi rapor murid pada kelas ini.
+								Semua guru aktif dapat mengisi raport murid pada kelas ini.
 							</p>
 						</div>
 						<span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
@@ -232,7 +232,7 @@ export function ClassManagementDialog({
 			<ConfirmationDialog
 				open={Boolean(assignmentToEnd)}
 				title="Akhiri penugasan guru?"
-				description={`Guru ${assignmentToEnd?.teacher_name ?? "ini"} tidak lagi dapat mengelola rapor kelas ${period.name}.`}
+				description={`Guru ${assignmentToEnd?.teacher_name ?? "ini"} tidak lagi dapat mengelola raport kelas ${period.name}.`}
 				confirmLabel="Akhiri penugasan"
 				confirmVariant="danger"
 				onCancel={() => setAssignmentToEnd(null)}

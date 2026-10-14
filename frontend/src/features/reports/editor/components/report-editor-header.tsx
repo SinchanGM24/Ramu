@@ -8,7 +8,7 @@ type ReportEditorHeaderProps = { reportId: string; report: ReportWorkspace["repo
 export function ReportEditorHeader({ reportId, report }: ReportEditorHeaderProps) {
 	return (
 		<PageHeader
-			eyebrow="Editor rapor"
+			eyebrow="Editor raport"
 			title={report.student_name}
 			description={`${report.class_name || "Kelas belum diatur"} · ${report.semester_name} · ${report.academic_year_name}`}
 			action={

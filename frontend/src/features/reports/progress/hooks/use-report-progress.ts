@@ -49,7 +49,7 @@ export function useReportProgress() {
 			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
 			router.push(`/app/reports/${report.id}`);
 		} catch (reason) {
-			setError(reason instanceof Error ? reason.message : "Draf rapor tidak dapat dibuat.");
+			setError(reason instanceof Error ? reason.message : "Draf raport tidak dapat dibuat.");
 		}
 	}
 	return {

@@ -5,17 +5,28 @@ import { createHash, randomBytes } from "crypto";
 import { DatabaseService } from "../database/database.service";
 
 export type Role = "SUPER_ADMIN" | "SCHOOL_ADMIN" | "TEACHER" | "PRINCIPAL";
-export type AuthContext = { userId: string; schoolId: string; role: Role; email: string; sessionId: string };
+export type AuthContext = {
+  userId: string;
+  schoolId: string;
+  role: Role;
+  email: string;
+  sessionId: string;
+};
 
 const cookieName = () => process.env.SESSION_COOKIE_NAME || "ramu_session";
-const hashToken = (value: string) => createHash("sha256").update(value).digest("hex");
+const hashToken = (value: string) =>
+  createHash("sha256").update(value).digest("hex");
 
 @Injectable()
 export class AuthService {
   constructor(private readonly db: DatabaseService) {}
 
-  async hashPassword(password: string) { return argon2.hash(password); }
-  async verifyPassword(hash: string, password: string) { return argon2.verify(hash, password); }
+  async hashPassword(password: string) {
+    return argon2.hash(password);
+  }
+  async verifyPassword(hash: string, password: string) {
+    return argon2.verify(hash, password);
+  }
 
   async createSession(userId: string, schoolId: string, reply: FastifyReply) {
     const rawToken = randomBytes(32).toString("base64url");
@@ -26,32 +37,58 @@ export class AuthService {
       [userId, schoolId, hashToken(rawToken), expiresAt],
     );
     reply.setCookie(cookieName(), rawToken, {
-      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", expires: expiresAt,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: expiresAt,
     });
   }
 
   async attach(request: FastifyRequest) {
     const rawToken = request.cookies?.[cookieName()];
     if (!rawToken) return;
-    const session = await this.db.query<{ user_id: string; school_id: string; session_id: string; email: string }>(
+    const session = await this.db.query<{
+      user_id: string;
+      school_id: string;
+      session_id: string;
+      email: string;
+    }>(
       `SELECT s.user_id, s.school_id, s.id AS session_id, u.email FROM sessions s JOIN users u ON u.id=s.user_id
-       WHERE s.token_hash=$1 AND s.expires_at > now() AND s.revoked_at IS NULL`, [hashToken(rawToken)]);
+       WHERE s.token_hash=$1 AND s.expires_at > now() AND s.revoked_at IS NULL`,
+      [hashToken(rawToken)],
+    );
     const row = session.rows[0];
     if (!row) return;
     await this.db.transaction(async (client) => {
-      const membership = await client.query<{ role: Role }>("SELECT role FROM school_memberships WHERE user_id=$1 AND school_id=$2 AND is_active", [row.user_id, row.school_id]);
-      if (membership.rows[0]) request.auth = { userId: row.user_id, schoolId: row.school_id, role: membership.rows[0].role, email: row.email, sessionId: row.session_id };
+      const membership = await client.query<{ role: Role }>(
+        "SELECT role FROM school_memberships WHERE user_id=$1 AND school_id=$2 AND is_active",
+        [row.user_id, row.school_id],
+      );
+      if (membership.rows[0])
+        request.auth = {
+          userId: row.user_id,
+          schoolId: row.school_id,
+          role: membership.rows[0].role,
+          email: row.email,
+          sessionId: row.session_id,
+        };
     }, row.school_id);
   }
 
   require(request: FastifyRequest, roles?: Role[]): AuthContext {
-    if (!request.auth || (roles && !roles.includes(request.auth.role))) throw new UnauthorizedException("Sesi atau akses tidak valid");
+    if (!request.auth || (roles && !roles.includes(request.auth.role)))
+      throw new UnauthorizedException("Sesi atau akses tidak valid");
     return request.auth;
   }
 
   async logout(request: FastifyRequest, reply: FastifyReply) {
     const rawToken = request.cookies?.[cookieName()];
-    if (rawToken) await this.db.query("UPDATE sessions SET revoked_at = now() WHERE token_hash = $1", [hashToken(rawToken)]);
+    if (rawToken)
+      await this.db.query(
+        "UPDATE sessions SET revoked_at = now() WHERE token_hash = $1",
+        [hashToken(rawToken)],
+      );
     reply.clearCookie(cookieName(), { path: "/" });
   }
 }

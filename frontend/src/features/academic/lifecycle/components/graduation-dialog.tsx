@@ -51,7 +51,7 @@ export function GraduationDialog({
 	return (
 		<LifecycleActionPanel title="Tinjau kelulusan" onClose={onClose}>
 			<p className="mt-3 text-sm leading-6 text-slate-600">
-				Murid yang dikonfirmasi lulus akan dipindahkan ke Arsip. Riwayat akademik dan rapor mereka
+				Murid yang dikonfirmasi lulus akan dipindahkan ke Arsip. Riwayat akademik dan raport mereka
 				tetap tersimpan.
 			</p>
 			<div className="mt-5 grid gap-3 md:grid-cols-2">

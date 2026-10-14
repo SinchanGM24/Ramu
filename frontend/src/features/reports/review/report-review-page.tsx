@@ -31,10 +31,10 @@ export function ReportReviewPage() {
 		onSuccess: (_, variables) => {
 			setNotice(
 				variables.action === "review"
-					? "Rapor mulai ditinjau."
+					? "Raport mulai ditinjau."
 					: variables.action === "approve"
-						? "Rapor telah disetujui."
-						: "Rapor dikembalikan untuk direvisi.",
+						? "Raport telah disetujui."
+						: "Raport dikembalikan untuk direvisi.",
 			);
 			setOpenRevisionFor(undefined);
 			setRevisionNote("");
@@ -51,9 +51,9 @@ export function ReportReviewPage() {
 	return (
 		<>
 			<PageHeader
-				eyebrow="Rapor"
-				title="Tinjauan rapor"
-				description="Periksa rapor yang dikirim guru, minta revisi bila perlu, lalu setujui rapor yang sudah layak diterbitkan."
+				eyebrow="Raport"
+				title="Tinjauan raport"
+				description="Periksa raport yang dikirim guru, minta revisi bila perlu, lalu setujui raport yang sudah layak diterbitkan."
 			/>
 			{notice ? <ReviewFeedback tone="success">{notice}</ReviewFeedback> : null}
 			{error ? <ReviewFeedback tone="error">{error}</ReviewFeedback> : null}

@@ -70,7 +70,7 @@ export function DesktopSidebar() {
 						href={
 							session.data?.role === "PRINCIPAL" ? "/app/reports/review" : "/app/reports/progress"
 						}
-						label="Rapor"
+						label="Raport"
 						Icon={ClipboardList}
 						active={pathname.startsWith("/app/reports")}
 					/>

@@ -21,7 +21,7 @@ export function BatchPublishAction({
 	const [open, setOpen] = useState(false);
 	const label = progress
 		? `Menerbitkan ${progress.completed}/${progress.total}`
-		: `Terbitkan ${count} rapor`;
+		: `Terbitkan ${count} raport`;
 
 	return (
 		<>
@@ -31,8 +31,8 @@ export function BatchPublishAction({
 			</Button>
 			<ConfirmationDialog
 				open={open}
-				title="Terbitkan rapor siap publikasi?"
-				description={`${count} rapor yang telah disetujui akan diterbitkan satu per satu sebagai versi final. Rapor yang gagal diterbitkan tidak akan mengubah rapor lainnya.`}
+				title="Terbitkan raport siap publikasi?"
+				description={`${count} raport yang telah disetujui akan diterbitkan satu per satu sebagai versi final. Raport yang gagal diterbitkan tidak akan mengubah raport lainnya.`}
 				confirmLabel="Terbitkan semua"
 				onCancel={() => setOpen(false)}
 				onConfirm={() => {

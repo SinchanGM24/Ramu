@@ -26,7 +26,7 @@ export function DashboardHero({
 					Selamat datang{schoolName ? `, ${schoolName}` : " di RAMU"}
 				</h1>
 				<p className="mt-3 max-w-xl text-sm leading-6 text-[#637065] sm:text-base">
-					Kelola data akademik dan pantau kesiapan rapor murid dari satu tempat yang rapi.
+					Kelola data akademik dan pantau kesiapan raport murid dari satu tempat yang rapi.
 				</p>
 			</div>
 		</section>

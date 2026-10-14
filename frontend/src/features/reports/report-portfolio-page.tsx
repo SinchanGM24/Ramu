@@ -71,10 +71,10 @@ export function ReportPortfolioPage({ reportId }: { reportId: string }) {
 			<PageHeader
 				eyebrow="Portfolio murid"
 				title="Dokumentasi perkembangan"
-				description="Simpan foto dan keterangan pendukung secara aman. Hanya item yang dipilih yang akan dimasukkan pada rapor terbit."
+				description="Simpan foto dan keterangan pendukung secara aman. Hanya item yang dipilih yang akan dimasukkan pada raport terbit."
 				action={
 					<Link href={`/app/reports/${reportId}`}>
-						<Button variant="secondary">Kembali ke rapor</Button>
+						<Button variant="secondary">Kembali ke raport</Button>
 					</Link>
 				}
 			/>
@@ -125,15 +125,15 @@ export function ReportPortfolioPage({ reportId }: { reportId: string }) {
 
 						<div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-[#e3e7dc] bg-[#f8faf6] px-4 py-3">
 							<div>
-								<p className="text-sm font-semibold text-[#17251b]">Sertakan pada rapor terbit</p>
+								<p className="text-sm font-semibold text-[#17251b]">Sertakan pada raport terbit</p>
 								<p className="mt-0.5 text-xs leading-5 text-[#637065]">
-									Foto ini akan tampil pada rapor saat diterbitkan.
+									Foto ini akan tampil pada raport saat diterbitkan.
 								</p>
 							</div>
 							<Switch
 								checked={include}
 								onChange={setInclude}
-								aria-label="Sertakan foto pada rapor terbit"
+								aria-label="Sertakan foto pada raport terbit"
 							/>
 						</div>
 
@@ -185,7 +185,7 @@ export function ReportPortfolioPage({ reportId }: { reportId: string }) {
 							<p className="mt-4 text-sm leading-6 text-[#637065]">{item.caption}</p>
 						)}
 						<p className="mt-4 inline-flex rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
-							{item.included_in_report ? "Disertakan pada rapor" : "Tidak disertakan pada rapor"}
+							{item.included_in_report ? "Disertakan pada raport" : "Tidak disertakan pada raport"}
 						</p>
 					</Card>
 				))}

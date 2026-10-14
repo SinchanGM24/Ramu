@@ -26,7 +26,7 @@ export function PublishReportAction({ pending, reportId, onPublish }: PublishRep
 		return <span className="text-sm text-slate-500">Memeriksa kelengkapan…</span>;
 	}
 	if (completeness.isError || !completeness.data) {
-		return <span className="text-sm text-red-700">Kelengkapan rapor belum dapat diperiksa.</span>;
+		return <span className="text-sm text-red-700">Kelengkapan raport belum dapat diperiksa.</span>;
 	}
 
 	const data = completeness.data;
@@ -39,7 +39,7 @@ export function PublishReportAction({ pending, reportId, onPublish }: PublishRep
 	return (
 		<div className="flex flex-col items-end gap-2">
 			<Button disabled={!data.complete || pending} onClick={onPublish}>
-				Terbitkan rapor
+				Terbitkan raport
 			</Button>
 			{!data.complete ? (
 				<p className="flex max-w-sm items-start gap-1.5 text-left text-xs text-amber-800">

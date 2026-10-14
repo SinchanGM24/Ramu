@@ -42,7 +42,7 @@ export class ReportAccessController {
       ).rows[0];
 
       if (!version) {
-        throw new Error("Rapor terbit tidak ditemukan");
+        throw new Error("Raport terbit tidak ditemukan");
       }
 
       const token = randomBytes(32).toString("base64url");

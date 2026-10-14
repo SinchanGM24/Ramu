@@ -1,12 +1,12 @@
-# RAMU — Spesifikasi Modul Rapor TK/PAUD
+# RAMU — Spesifikasi Modul Raport TK/PAUD
 
-Dokumen ini adalah sumber kebenaran untuk semua halaman, API, preview, dan PDF rapor RAMU. Jika bertentangan dengan implementasi sementara, dokumen ini yang diikuti.
+Dokumen ini adalah sumber kebenaran untuk semua halaman, API, preview, dan PDF raport RAMU. Jika bertentangan dengan implementasi sementara, dokumen ini yang diikuti.
 
 ## 1. Representasi dan batas domain
 
 Modul memiliki dua representasi:
 
-1. **Report Editor** untuk guru/admin mengisi satu rapor siswa pada satu waktu.
+1. **Report Editor** untuk guru/admin mengisi satu raport siswa pada satu waktu.
 2. **Report View** untuk preview, PDF, dan parent viewer read-only.
 
 Editor boleh modern; preview/PDF mempertahankan struktur laporan, urutan area/subarea/indikator, skala, narasi, dan data akhir semester. Jangan memodelkan domain berdasarkan nomor halaman fisik (`page_12`, dll.). Nomor halaman hanya hasil layout.
@@ -65,7 +65,7 @@ Guru mengerjakan **satu siswa**. Workspace menampilkan siswa, kelompok, semester
 
 Status internal `NOT_STARTED`, `IN_PROGRESS`, `COMPLETE` dipetakan pada UI menjadi **Belum dimulai**, **Sedang diisi**, **Lengkap**. Progress dihitung dari indikator wajib, narasi wajib, dan data semester wajib. Sebelum submit, tampilkan daftar data kurang per area/data akhir; tombol **Submit untuk Review** disabled sampai lengkap.
 
-Autosave assessment/narasi menampilkan **Tersimpan**. Jika gagal, tampilkan **Perubahan belum tersimpan** dan aksi **Coba Lagi**. Tidak boleh ada satu tombol Save di akhir seluruh rapor.
+Autosave assessment/narasi menampilkan **Tersimpan**. Jika gagal, tampilkan **Perubahan belum tersimpan** dan aksi **Coba Lagi**. Tidak boleh ada satu tombol Save di akhir seluruh raport.
 
 ## 7. Workflow, preview, dan akses parent
 
