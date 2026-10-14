@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Check, CheckCheck, Circle, RotateCcw, Search, Send } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PaginationControls } from "@/components/shared/pagination-controls";
@@ -34,13 +35,33 @@ const statusCopy: Record<PublicationStatus, { label: string; tone: "green" | "am
 
 const deliveryStatusCopy: Record<
 	DeliveryStatus,
-	{ label: string; tone: "green" | "amber" | "slate" }
+	{ Icon: LucideIcon; label: string; className: string }
 > = {
-	QUEUED: { label: "Belum dibuka", tone: "slate" },
-	SENT: { label: "Sudah dibuka di WhatsApp", tone: "green" },
-	DELIVERED: { label: "Diterima di WhatsApp", tone: "green" },
-	READ: { label: "Dibaca di WhatsApp", tone: "green" },
-	FAILED: { label: "Perlu dikirim ulang", tone: "amber" },
+	QUEUED: {
+		Icon: Send,
+		label: "Belum dibuka di WhatsApp",
+		className: "bg-slate-100 text-slate-500",
+	},
+	SENT: {
+		Icon: Check,
+		label: "Sudah dibuka di WhatsApp",
+		className: "bg-emerald-50 text-emerald-700",
+	},
+	DELIVERED: {
+		Icon: CheckCheck,
+		label: "Diterima di WhatsApp",
+		className: "bg-emerald-50 text-emerald-700",
+	},
+	READ: {
+		Icon: CheckCheck,
+		label: "Dibaca di WhatsApp",
+		className: "bg-emerald-50 text-emerald-700",
+	},
+	FAILED: {
+		Icon: RotateCcw,
+		label: "Perlu dikirim ulang",
+		className: "bg-amber-50 text-amber-700",
+	},
 };
 
 export function PublicationReportList({
@@ -204,12 +225,26 @@ export function PublicationReportList({
 }
 
 function DeliveryStatusBadge({ status }: { status?: DeliveryStatus | null }) {
-	if (!status) {
-		return <span className="whitespace-nowrap text-sm text-slate-500">Belum dikirim</span>;
-	}
+	const copy = status
+		? deliveryStatusCopy[status]
+		: {
+				Icon: Circle,
+				label: "Belum dikirim",
+				className: "bg-slate-100 text-slate-400",
+			};
+	const Icon = copy.Icon;
 
-	const copy = deliveryStatusCopy[status];
-	return <StatusBadge tone={copy.tone}>{copy.label}</StatusBadge>;
+	return (
+		<span
+			aria-label={copy.label}
+			className={`grid size-8 place-items-center rounded-full ${copy.className}`}
+			role="img"
+			title={copy.label}
+		>
+			<Icon aria-hidden="true" size={15} strokeWidth={2.25} />
+			<span className="sr-only">{copy.label}</span>
+		</span>
+	);
 }
 
 function PublicationAction({
