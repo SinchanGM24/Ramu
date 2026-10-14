@@ -189,10 +189,9 @@ function MobileNavigationSection({
 			<p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#718072]">
 				{title}
 			</p>
-			<div className="grid grid-cols-2 gap-2">
+			<div className="space-y-2">
 				{items.map(({ href, label, icon: Icon }) => {
 					const active = pathname === href || pathname.startsWith(`${href}/`);
-					const fillsRow = items.length % 2 === 1 && items.at(-1)?.href === href;
 
 					return (
 						<Link
@@ -201,7 +200,6 @@ function MobileNavigationSection({
 							onClick={onNavigate}
 							className={cn(
 								"flex min-h-11 items-center gap-2 rounded-xl border border-brand-950/10 bg-white px-2.5 py-2 text-xs font-semibold leading-4 transition",
-								fillsRow && "col-span-2",
 								active
 									? "border-brand-200 bg-brand-50 text-brand-800"
 									: "text-[#35443a] hover:border-brand-200 hover:bg-[#f4f7f1]",
