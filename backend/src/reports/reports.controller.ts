@@ -32,7 +32,7 @@ const transition = z
     note: z.string().max(1000).optional(),
   })
   .refine((input) => input.action !== "submit", {
-    message: "Gunakan pemeriksaan kelengkapan rapor sebelum mengirim",
+    message: "Gunakan pemeriksaan kelengkapan raport sebelum mengirim",
   });
 const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
 
@@ -82,6 +82,12 @@ export class ReportsController {
               GROUP BY narrative.report_id
             )
             SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status,
+              (SELECT delivery.status
+               FROM report_deliveries delivery
+               JOIN report_versions version ON version.id=delivery.report_version_id AND version.school_id=delivery.school_id
+               WHERE version.report_id=report.id AND delivery.school_id=report.school_id
+               ORDER BY version.version_number DESC, delivery.updated_at DESC
+               LIMIT 1) AS delivery_status,
               (SELECT log.metadata->>'note' FROM audit_logs log WHERE log.school_id=report.school_id AND log.entity_type='report' AND log.entity_id=report.id AND log.action='report.revision' ORDER BY log.created_at DESC LIMIT 1) AS revision_note,
               CASE WHEN report.id IS NULL THEN 0 ELSE COALESCE(ROUND(100.0*(COALESCE(assessment_progress.assessment_count,0)+COALESCE(narrative_progress.narrative_count,0)+CASE WHEN attendance.id IS NULL THEN 0 ELSE 1 END)/NULLIF(framework_totals.indicator_count+framework_totals.narrative_count+1,0)),0)::int END AS completion_percent
             FROM student_enrollments enrollment
@@ -180,10 +186,10 @@ export class ReportsController {
           id,
         ])
       ).rows[0];
-      if (!report) throw new Error("Rapor tidak ditemukan");
+      if (!report) throw new Error("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status))
-        throw new Error("Rapor tidak dapat diubah pada status saat ini");
+        throw new Error("Raport tidak dapat diubah pada status saat ini");
       const valid = await client.query(
         `SELECT 1 FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options o ON o.scale_id=f.scale_id WHERE i.id=$1 AND o.id=$2 AND f.name=$3 AND f.is_active`,
         [indicatorId, input.scaleOptionId, DEFAULT_TK_TEMPLATE_NAME],
@@ -232,7 +238,7 @@ export class ReportsController {
           [id],
         )
       ).rows[0];
-      if (!report) throw new Error("Rapor tidak ditemukan");
+      if (!report) throw new Error("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       const rules: Record<string, [string, string[]]> = {
         submit: ["SUBMITTED", ["DRAFT"]],
@@ -285,9 +291,9 @@ export class ReportsController {
           [id, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Rapor tidak ditemukan");
+      if (!report) throw new Error("Raport tidak ditemukan");
       if (report.status !== "APPROVED")
-        throw new Error("Hanya rapor yang disetujui dapat diterbitkan");
+        throw new Error("Hanya raport yang disetujui dapat diterbitkan");
       const completeness = await getReportCompleteness(client, {
         id: report.id,
         studentId: report.student_id,
@@ -380,11 +386,11 @@ export class ReportsController {
         });
       } catch (error) {
         this.logger.error(
-          `Gagal membuat atau menyimpan PDF untuk rapor ${id}`,
+          `Gagal membuat atau menyimpan PDF untuk raport ${id}`,
           error instanceof Error ? error.stack : undefined,
         );
         throw new InternalServerErrorException(
-          "PDF rapor belum dapat dibuat atau disimpan. Coba terbitkan kembali.",
+          "PDF raport belum dapat dibuat atau disimpan. Coba terbitkan kembali.",
         );
       }
       const version = (
@@ -491,7 +497,7 @@ export class ReportsController {
     }, actor.schoolId);
     const storageKey = version?.snapshot?.school?.logo_storage_key;
     if (!storageKey)
-      throw new NotFoundException("Logo tidak tersedia pada versi rapor ini.");
+      throw new NotFoundException("Logo tidak tersedia pada versi raport ini.");
     const contentType = storageKey.endsWith(".png")
       ? "image/png"
       : "image/jpeg";
@@ -571,10 +577,10 @@ export class ReportsController {
         "SELECT id,status FROM reports WHERE id=$1",
         [id],
       );
-      if (!report.rowCount) throw new Error("Rapor tidak ditemukan");
+      if (!report.rowCount) throw new Error("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (report.rows[0].status === "PUBLISHED")
-        throw new Error("Rapor terbit tidak dapat diubah");
+        throw new Error("Raport terbit tidak dapat diubah");
       const saved = (
         await client.query(
           "INSERT INTO report_narratives(school_id,report_id,development_area_id,content,updated_by) SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM development_areas WHERE id=$3) ON CONFLICT(report_id,development_area_id) DO UPDATE SET content=EXCLUDED.content,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING *",

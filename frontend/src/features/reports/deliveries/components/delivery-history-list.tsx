@@ -47,9 +47,9 @@ export function DeliveryHistoryList({
 		return (
 			<Card className="py-12 text-center">
 				<Clock3 className="mx-auto size-9 text-brand-600" />
-				<h2 className="mt-3 font-bold text-[#17251b]">Belum ada pengiriman dalam antrean</h2>
+				<h2 className="mt-3 font-bold text-[#17251b]">Belum ada riwayat pengiriman</h2>
 				<p className="mt-1 text-sm leading-6 text-[#637065]">
-					Pilih kontak wali di atas, lalu masukkan ke antrean pengiriman.
+					Pilih kontak wali di atas, lalu buka WhatsApp untuk mengirimkan raport.
 				</p>
 			</Card>
 		);
@@ -70,7 +70,7 @@ export function DeliveryHistoryList({
 								<span className="text-sm text-[#637065]">{delivery.relationship}</span>
 							</div>
 							<p className="mt-2 text-sm text-slate-600">
-								{delivery.recipient_phone} · Versi rapor {delivery.version_number}
+								{delivery.recipient_phone} · Versi raport {delivery.version_number}
 							</p>
 							<p className="mt-1 text-xs text-slate-500">
 								Masuk antrean: {formatDate(delivery.queued_at)} · Percobaan kirim:{" "}

@@ -6,7 +6,7 @@ import { PaginationControls } from "@/components/shared/pagination-controls";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { BatchPublishAction } from "./batch-publish-action";
 import { PublishReportAction } from "./publish-report-action";
-import type { PublicationReport, PublicationStatus } from "../types";
+import type { DeliveryStatus, PublicationReport, PublicationStatus } from "../types";
 
 type PublicationReportListProps = {
 	canPublish: boolean;
@@ -32,6 +32,17 @@ const statusCopy: Record<PublicationStatus, { label: string; tone: "green" | "am
 	PUBLISHED: { label: "Sudah diterbitkan", tone: "green" },
 };
 
+const deliveryStatusCopy: Record<
+	DeliveryStatus,
+	{ label: string; tone: "green" | "amber" | "slate" }
+> = {
+	QUEUED: { label: "Belum dibuka", tone: "slate" },
+	SENT: { label: "Sudah dibuka di WhatsApp", tone: "green" },
+	DELIVERED: { label: "Diterima di WhatsApp", tone: "green" },
+	READ: { label: "Dibaca di WhatsApp", tone: "green" },
+	FAILED: { label: "Perlu dikirim ulang", tone: "amber" },
+};
+
 export function PublicationReportList({
 	canPublish,
 	batchPending,
@@ -52,9 +63,9 @@ export function PublicationReportList({
 		<Card className="overflow-hidden p-0">
 			<div className="flex flex-col gap-4 border-b border-[#e7e7dc] px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
 				<div>
-					<h2 className="font-bold text-[#17251b]">Daftar publikasi rapor</h2>
+					<h2 className="font-bold text-[#17251b]">Daftar publikasi raport</h2>
 					<p className="mt-1 text-sm text-[#637065]">
-						Pantau proses tinjauan, penerbitan, dan pengiriman rapor kepada wali.
+						Pantau proses tinjauan, penerbitan, dan pengiriman raport kepada wali.
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-slate-500">
@@ -94,20 +105,21 @@ export function PublicationReportList({
 						<tr>
 							<th className="pb-3 font-semibold">Murid</th>
 							<th className="pb-3 font-semibold">Tahap</th>
+							<th className="pb-3 font-semibold">Pengiriman</th>
 							<th className="pb-3 text-right font-semibold">Tindakan</th>
 						</tr>
 					</thead>
 					<tbody>
 						{loading ? (
 							<tr>
-								<td colSpan={3} className="px-5 py-10 text-[#68746a]">
-									Memuat daftar publikasi rapor…
+								<td colSpan={4} className="px-5 py-10 text-[#68746a]">
+									Memuat daftar publikasi raport…
 								</td>
 							</tr>
 						) : !reports.length ? (
 							<tr>
-								<td colSpan={3} className="px-5 py-12 text-center text-[#68746a]">
-									Tidak ada rapor yang cocok dengan pencarian.
+								<td colSpan={4} className="px-5 py-12 text-center text-[#68746a]">
+									Tidak ada raport yang cocok dengan pencarian.
 								</td>
 							</tr>
 						) : (
@@ -121,6 +133,9 @@ export function PublicationReportList({
 										<StatusBadge tone={statusCopy[report.status].tone}>
 											{statusCopy[report.status].label}
 										</StatusBadge>
+									</td>
+									<td className="px-5 py-4">
+										<DeliveryStatusBadge status={report.delivery_status} />
 									</td>
 									<td className="px-5 py-4 text-right">
 										<PublicationAction
@@ -138,10 +153,10 @@ export function PublicationReportList({
 			</div>
 			<div className="space-y-3 border-t border-[#edf0e8] p-4 md:hidden">
 				{loading ? (
-					<p className="py-6 text-center text-sm text-[#68746a]">Memuat daftar publikasi rapor…</p>
+					<p className="py-6 text-center text-sm text-[#68746a]">Memuat daftar publikasi raport…</p>
 				) : !reports.length ? (
 					<p className="py-8 text-center text-sm text-[#68746a]">
-						Tidak ada rapor yang cocok dengan pencarian.
+						Tidak ada raport yang cocok dengan pencarian.
 					</p>
 				) : (
 					reports.map((report) => (
@@ -156,6 +171,9 @@ export function PublicationReportList({
 								</StatusBadge>
 							</div>
 							<div className="mt-4 border-t border-[#edf0e8] pt-3">
+								<div className="mb-3">
+									<DeliveryStatusBadge status={report.delivery_status} />
+								</div>
 								<PublicationAction
 									canPublish={canPublish}
 									mobile
@@ -173,6 +191,15 @@ export function PublicationReportList({
 			</div>
 		</Card>
 	);
+}
+
+function DeliveryStatusBadge({ status }: { status?: DeliveryStatus | null }) {
+	if (!status) {
+		return <span className="text-sm text-slate-500">Belum dikirim</span>;
+	}
+
+	const copy = deliveryStatusCopy[status];
+	return <StatusBadge tone={copy.tone}>{copy.label}</StatusBadge>;
 }
 
 function PublicationAction({
@@ -199,7 +226,7 @@ function PublicationAction({
 			);
 		}
 		return (
-			<p className="text-sm leading-6 text-slate-500">Menunggu Admin Sekolah menerbitkan rapor.</p>
+			<p className="text-sm leading-6 text-slate-500">Menunggu Admin Sekolah menerbitkan raport.</p>
 		);
 	}
 
@@ -215,7 +242,7 @@ function PublicationAction({
 
 	return (
 		<p className="text-sm leading-6 text-slate-500">
-			Rapor sedang menunggu tinjauan Kepala Sekolah.
+			Raport sedang menunggu tinjauan Kepala Sekolah.
 		</p>
 	);
 }

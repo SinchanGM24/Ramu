@@ -15,12 +15,12 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 	return (
 		<>
 			<PageHeader
-				eyebrow="Distribusi rapor"
-				title="Kirim rapor kepada wali"
-				description="Pilih kontak penerima, masukkan ke antrean, lalu pantau status setiap pengiriman."
+				eyebrow="Distribusi raport"
+				title="Kirim raport kepada wali"
+				description="Pilih kontak penerima, lalu buka WhatsApp untuk mengirimkan tautan raport secara personal."
 				action={
 					<Link href={`/app/reports/${reportId}/preview`}>
-						<Button variant="secondary">Lihat rapor</Button>
+						<Button variant="secondary">Lihat raport</Button>
 					</Link>
 				}
 			/>
@@ -37,8 +37,8 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 				error={delivery.recipients.isError}
 				recipients={delivery.recipients.data ?? []}
 				selectedIds={delivery.selectedIds}
-				pending={delivery.queue.isPending}
-				onQueue={() => delivery.queue.mutate()}
+				pending={delivery.sendToWhatsApp.isPending}
+				onOpenWhatsApp={delivery.sendSelectedToWhatsApp}
 				onReload={() => void delivery.recipients.refetch()}
 				studentId={delivery.context.data?.studentId}
 				onToggleAll={delivery.toggleAllRecipients}
@@ -64,7 +64,7 @@ function RecipientPanel({
 	pending,
 	recipients,
 	selectedIds,
-	onQueue,
+	onOpenWhatsApp,
 	onReload,
 	studentId,
 	onToggleAll,
@@ -75,7 +75,7 @@ function RecipientPanel({
 	pending: boolean;
 	recipients: Recipient[];
 	selectedIds: string[];
-	onQueue: () => void;
+	onOpenWhatsApp: () => void;
 	onReload: () => void;
 	studentId?: string;
 	onToggleAll: () => void;
@@ -97,7 +97,7 @@ function RecipientPanel({
 			recipients={recipients}
 			selectedIds={selectedIds}
 			pending={pending}
-			onQueue={onQueue}
+			onOpenWhatsApp={onOpenWhatsApp}
 			studentId={studentId}
 			onToggleAll={onToggleAll}
 			onToggleRecipient={onToggleRecipient}

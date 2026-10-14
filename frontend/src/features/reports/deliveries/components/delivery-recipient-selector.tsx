@@ -8,7 +8,7 @@ type DeliveryRecipientSelectorProps = {
 	pending: boolean;
 	recipients: Recipient[];
 	selectedIds: string[];
-	onQueue: () => void;
+	onOpenWhatsApp: () => void;
 	studentId?: string;
 	onToggleAll: () => void;
 	onToggleRecipient: (id: string) => void;
@@ -18,7 +18,7 @@ export function DeliveryRecipientSelector({
 	pending,
 	recipients,
 	selectedIds,
-	onQueue,
+	onOpenWhatsApp,
 	studentId,
 	onToggleAll,
 	onToggleRecipient,
@@ -33,7 +33,8 @@ export function DeliveryRecipientSelector({
 				<div>
 					<h2 className="font-bold text-[#17251b]">Pilih penerima</h2>
 					<p className="mt-1 text-sm leading-6 text-[#637065]">
-						Hanya kontak yang ditandai sebagai penerima rapor pada profil murid yang muncul di sini.
+						Hanya kontak yang ditandai sebagai penerima raport pada profil murid yang muncul di
+						sini.
 					</p>
 				</div>
 				{recipients.length ? (
@@ -48,7 +49,8 @@ export function DeliveryRecipientSelector({
 			</div>
 			{isArchived ? (
 				<p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-					Murid ini berada di Arsip. Rapor yang telah diterbitkan tetap dapat dibagikan kepada wali.
+					Murid ini berada di Arsip. Raport yang telah diterbitkan tetap dapat dibagikan kepada
+					wali.
 				</p>
 			) : null}
 			{recipients.length ? (
@@ -90,7 +92,7 @@ export function DeliveryRecipientSelector({
 			) : (
 				<div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
 					<p>
-						Belum ada kontak wali yang ditandai sebagai penerima rapor. Kelola kontak wali pada
+						Belum ada kontak wali yang ditandai sebagai penerima raport. Kelola kontak wali pada
 						profil murid terlebih dahulu.
 					</p>
 					{studentId ? (
@@ -102,9 +104,9 @@ export function DeliveryRecipientSelector({
 			)}
 			<div className="mt-4 flex flex-col gap-2 border-t border-[#e7e9df] pt-4 sm:flex-row sm:items-center sm:justify-between">
 				<p className="text-sm text-[#637065]">{selectedIds.length} kontak dipilih</p>
-				<Button disabled={!selectedIds.length || pending} onClick={onQueue}>
+				<Button disabled={!selectedIds.length || pending} onClick={onOpenWhatsApp}>
 					<Send className="mr-1.5 size-4" />
-					{pending ? "Memasukkan ke antrean…" : "Masukkan ke antrean"}
+					{pending ? "Membuka WhatsApp…" : "Buka WhatsApp"}
 				</Button>
 			</div>
 		</Card>

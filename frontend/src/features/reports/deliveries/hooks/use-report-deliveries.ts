@@ -31,22 +31,18 @@ export function useReportDeliveries(reportId: string) {
 
 	const refresh = () =>
 		queryClient.invalidateQueries({ queryKey: ["reports", reportId, "deliveries"] });
-	const queue = useMutation({
-		mutationFn: () =>
-			api<Delivery[]>(`/reports/${reportId}/deliveries`, {
+	const sendToWhatsApp = useMutation({
+		mutationFn: async () => {
+			const deliveries = await api<Delivery[]>(`/reports/${reportId}/deliveries`, {
 				method: "POST",
 				body: JSON.stringify({ guardianContactIds: selectedIds }),
-			}),
-		onSuccess: (created) => {
-			setNoticeIsError(false);
-			setNotice(`${created.length} kontak masuk ke antrean pengiriman.`);
-			void refresh();
-		},
-		onError: (error) => {
-			setNoticeIsError(true);
-			setNotice(
-				error instanceof Error ? error.message : "Pengiriman belum dapat dimasukkan ke antrean.",
-			);
+			});
+			const delivery = deliveries[0];
+			if (!delivery) throw new Error("Kontak wali penerima tidak ditemukan");
+
+			return api<ManualDispatch>(`/deliveries/${delivery.id}/open-whatsapp`, {
+				method: "POST",
+			});
 		},
 	});
 	const retry = useMutation({
@@ -91,6 +87,31 @@ export function useReportDeliveries(reportId: string) {
 		});
 	}
 
+	function sendSelectedToWhatsApp() {
+		const popup = window.open("", "_blank");
+		if (!popup) {
+			setNoticeIsError(true);
+			setNotice(
+				"Browser memblokir jendela WhatsApp. Izinkan pop-up untuk situs ini, lalu coba lagi.",
+			);
+			return;
+		}
+
+		sendToWhatsApp.mutate(undefined, {
+			onSuccess: ({ whatsAppUrl }) => {
+				popup.location.href = whatsAppUrl;
+				setNoticeIsError(false);
+				setNotice("Chat WhatsApp wali telah dibuka.");
+				void refresh();
+			},
+			onError: (error) => {
+				popup.close();
+				setNoticeIsError(true);
+				setNotice(error instanceof Error ? error.message : "Chat WhatsApp belum dapat dibuka.");
+			},
+		});
+	}
+
 	function toggleRecipient(id: string) {
 		setSelectedIds((current) =>
 			current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
@@ -109,7 +130,8 @@ export function useReportDeliveries(reportId: string) {
 		deliveries,
 		notice,
 		noticeIsError,
-		queue,
+		sendSelectedToWhatsApp,
+		sendToWhatsApp,
 		recipients,
 		manualDispatch,
 		openWhatsApp,
