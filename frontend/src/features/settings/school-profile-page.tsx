@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2 } from "lucide-react";
+import { Building2, Landmark } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -90,42 +90,54 @@ export function SchoolProfilePage() {
 			{school.isLoading ? (
 				<Card>Memuat profil sekolah…</Card>
 			) : (
-				<Card className="max-w-2xl">
-					<div className="flex items-start gap-3 border-b border-slate-100 pb-5">
-						<span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-700">
+				<Card className="max-w-3xl overflow-hidden p-0">
+					<div className="flex flex-col gap-5 border-b border-[#e7e7dc] bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_58%,#edf5ec_100%)] px-5 py-6 sm:flex-row sm:items-start sm:px-6">
+						<span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 shadow-[0_8px_18px_rgba(23,75,49,0.1)]">
 							<Building2 size={21} />
 						</span>
 						<div>
-							<h2 className="font-bold text-slate-900">Identitas sekolah</h2>
-							<p className="mt-1 text-sm text-slate-500">
-								Informasi ini dikelola oleh admin sekolah.
+							<p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-700">
+								Identitas sekolah
+							</p>
+							<h2 className="mt-1 font-bold text-[#17251b]">Informasi yang tampil pada rapor</h2>
+							<p className="mt-1 max-w-xl text-sm leading-6 text-[#637065]">
+								Nama, alamat, nomor telepon, dan logo akan digunakan saat rapor diterbitkan.
 							</p>
 						</div>
+						<Landmark
+							className="hidden size-12 text-brand-100 sm:ml-auto sm:block"
+							aria-hidden="true"
+						/>
 					</div>
-					{error ? (
-						<p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-							{error}
-						</p>
-					) : null}
-					{notice ? (
-						<p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
-							{notice}
-						</p>
-					) : null}
-					<SchoolProfileForm
-						address={address}
-						hasLogo={school.data?.has_logo}
-						logoUrl={logoUrl}
-						name={name}
-						phone={phone}
-						saving={saving}
-						uploadingLogo={uploadingLogo}
-						onAddressChange={setAddress}
-						onLogoUpload={(file) => void uploadLogo(file)}
-						onNameChange={setName}
-						onPhoneChange={setPhone}
-						onSubmit={() => void save()}
-					/>
+					<div className="px-5 pb-6 sm:px-6">
+						{error ? (
+							<p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">
+								{error}
+							</p>
+						) : null}
+						{notice ? (
+							<p
+								role="status"
+								className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700"
+							>
+								{notice}
+							</p>
+						) : null}
+						<SchoolProfileForm
+							address={address}
+							hasLogo={school.data?.has_logo}
+							logoUrl={logoUrl}
+							name={name}
+							phone={phone}
+							saving={saving}
+							uploadingLogo={uploadingLogo}
+							onAddressChange={setAddress}
+							onLogoUpload={(file) => void uploadLogo(file)}
+							onNameChange={setName}
+							onPhoneChange={setPhone}
+							onSubmit={() => void save()}
+						/>
+					</div>
 				</Card>
 			)}
 		</>

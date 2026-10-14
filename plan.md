@@ -40,6 +40,8 @@ Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
 
 ## Rute pengaturan
 
+Progres batch saat ini: halaman Profil Sekolah, Kelola Akun, dan Profil Akun telah memperoleh desain baru; verifikasi visual lintas ukuran layar masih berjalan.
+
 - [ ] Belum dimulai — `/app/settings/school`
 - [ ] Belum dimulai — `/app/settings/staff`
 - [ ] Belum dimulai — `/app/settings/profile`

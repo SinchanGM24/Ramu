@@ -1,4 +1,4 @@
-import { Building2 } from "lucide-react";
+import { Building2, ImageUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type SchoolProfileFormProps = {
@@ -36,9 +36,9 @@ export function SchoolProfileForm({
 				event.preventDefault();
 				onSubmit();
 			}}
-			className="mt-5 space-y-4"
+			className="mt-6 space-y-5"
 		>
-			<label className="block text-sm font-semibold text-slate-700">
+			<label className="block text-sm font-semibold text-[#35443a]">
 				Nama sekolah
 				<input
 					required
@@ -46,41 +46,44 @@ export function SchoolProfileForm({
 					maxLength={160}
 					value={name}
 					onChange={(event) => onNameChange(event.target.value)}
-					className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none focus:border-brand-500"
+					className="mt-1.5 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
 				/>
 			</label>
-			<label className="block text-sm font-semibold text-slate-700">
+			<label className="block text-sm font-semibold text-[#35443a]">
 				Alamat sekolah
 				<textarea
 					value={address}
 					onChange={(event) => onAddressChange(event.target.value)}
 					maxLength={500}
 					rows={3}
-					className="mt-1.5 w-full resize-y rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none focus:border-brand-500"
+					className="mt-1.5 w-full resize-y rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
 					placeholder="Alamat lengkap sekolah"
 				/>
 			</label>
-			<label className="block text-sm font-semibold text-slate-700">
+			<label className="block text-sm font-semibold text-[#35443a]">
 				Nomor telepon
 				<input
 					value={phone}
 					onChange={(event) => onPhoneChange(event.target.value)}
 					maxLength={40}
-					className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none focus:border-brand-500"
+					className="mt-1.5 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-3 font-normal text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
 					placeholder="Contoh: 021-12345678"
 				/>
 			</label>
-			<div className="border-t border-slate-100 pt-5">
-				<p className="text-sm font-semibold text-slate-700">Logo sekolah</p>
-				<div className="mt-2 flex flex-wrap items-center gap-4">
-					<div className="grid size-20 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+			<div className="border-t border-[#e7e9df] pt-5">
+				<p className="text-sm font-semibold text-[#35443a]">Logo sekolah</p>
+				<p className="mt-1 text-sm leading-6 text-[#68746a]">
+					Tampil pada kop rapor yang diterbitkan setelah pembaruan.
+				</p>
+				<div className="mt-3 flex flex-wrap items-center gap-4">
+					<div className="grid size-20 place-items-center overflow-hidden rounded-2xl border border-[#dfe3d9] bg-[#f5f7f1] shadow-inner">
 						{hasLogo ? (
 							<img src={logoUrl} alt="Logo sekolah" className="size-full object-contain p-1" />
 						) : (
-							<Building2 size={26} className="text-slate-300" />
+							<Building2 size={26} className="text-[#9aa39a]" />
 						)}
 					</div>
-					<label className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+					<label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-brand-100 bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:border-brand-200 hover:bg-brand-50">
 						<input
 							type="file"
 							accept="image/png,image/jpeg"
@@ -91,15 +94,15 @@ export function SchoolProfileForm({
 								event.currentTarget.value = "";
 							}}
 						/>
+						<ImageUp size={16} aria-hidden="true" />
 						{uploadingLogo ? "Mengunggah…" : "Unggah logo"}
 					</label>
-					<p className="text-xs leading-5 text-slate-500">
-						JPG atau PNG, maksimal 2 MB. Logo akan digunakan pada kop rapor yang diterbitkan setelah
-						perubahan ini.
+					<p className="max-w-sm text-xs leading-5 text-[#6c776e]">
+						Gunakan JPG atau PNG dengan ukuran maksimal 2 MB.
 					</p>
 				</div>
 			</div>
-			<div className="flex justify-end border-t border-slate-100 pt-5">
+			<div className="flex justify-end border-t border-[#e7e9df] pt-5">
 				<Button disabled={saving || !name.trim()}>
 					{saving ? "Menyimpan…" : "Simpan perubahan"}
 				</Button>
