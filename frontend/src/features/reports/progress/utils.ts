@@ -1,4 +1,4 @@
-import type { ProgressCounts, ProgressFilter, ProgressItem, ReportStatus } from "./types";
+import type { ProgressCounts, ProgressItem, ReportStatus } from "./types";
 
 export const pageSize = 10;
 export const statusCopy: Record<
@@ -12,13 +12,6 @@ export const statusCopy: Record<
 	APPROVED: { label: "Siap diterbitkan", tone: "green" },
 	PUBLISHED: { label: "Sudah diterbitkan", tone: "green" },
 };
-
-export function matchesProgressFilter(item: ProgressItem, filter: ProgressFilter) {
-	if (filter === "ALL") return true;
-	if (filter === "NOT_CREATED") return !item.status;
-	if (filter === "WORKING") return item.status === "DRAFT" || item.status === "REVISION_REQUIRED";
-	return item.status === filter;
-}
 
 export function getReportDestination(item: ProgressItem) {
 	if (!item.report_id) return null;

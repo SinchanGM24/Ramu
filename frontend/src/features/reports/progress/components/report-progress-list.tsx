@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { StatusBadge } from "@/components/shared/status-badge";
-import type { ProgressFilter, ProgressItem } from "../types";
+import type { ProgressItem } from "../types";
 import { getReportDestination, pageSize, statusCopy } from "../utils";
 
 type Props = {
@@ -16,39 +16,27 @@ type Props = {
 		publish: number;
 		published: number;
 	};
-	filter: ProgressFilter;
 	items: ProgressItem[];
 	loading: boolean;
 	page: number;
 	search: string;
 	total: number;
 	onCreateDraft: (studentId: string) => void;
-	onFilterChange: (filter: ProgressFilter) => void;
 	onPageChange: (page: number) => void;
 	onSearchChange: (value: string) => void;
 };
 
 export function ReportProgressList({
 	counts,
-	filter,
 	items,
 	loading,
 	page,
 	search,
 	total,
 	onCreateDraft,
-	onFilterChange,
 	onPageChange,
 	onSearchChange,
 }: Props) {
-	const filters: { id: ProgressFilter; label: string; count: number }[] = [
-		{
-			id: "NOT_CREATED",
-			label: "Belum dibuat",
-			count: counts.notCreated,
-		},
-		{ id: "WORKING", label: "Sedang dikerjakan", count: counts.draft },
-	];
 	return (
 		<Card className="overflow-hidden p-0">
 			<div className="flex flex-col gap-4 border-b border-[#e7e7dc] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
@@ -63,7 +51,7 @@ export function ReportProgressList({
 					{counts.total} murid
 				</div>
 			</div>
-			<div className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
+			<div className="px-5 py-4 sm:px-6">
 				<label className="relative block">
 					<span className="sr-only">Cari nama murid</span>
 					<Search
@@ -77,27 +65,6 @@ export function ReportProgressList({
 						className="w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] py-2.5 pl-10 pr-3 text-sm text-[#17251b] outline-none transition placeholder:text-[#899188] focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
 					/>
 				</label>
-				<div
-					className="flex gap-2 overflow-x-auto pb-1"
-					role="tablist"
-					aria-label="Filter status rapor"
-				>
-					{filters.map((item) => (
-						<button
-							key={item.id}
-							type="button"
-							role="tab"
-							aria-selected={filter === item.id}
-							onClick={() => onFilterChange(item.id)}
-							className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${filter === item.id ? "bg-brand-700 text-white shadow-[0_6px_14px_rgba(23,75,49,0.16)]" : "bg-[#f0f3ed] text-[#5d695f] hover:bg-[#e5eadf]"}`}
-						>
-							{item.label}{" "}
-							<span className={filter === item.id ? "text-brand-100" : "text-slate-400"}>
-								{item.count}
-							</span>
-						</button>
-					))}
-				</div>
 			</div>
 			<div className="hidden border-t border-[#edf0e8] md:block">
 				<table className="w-full text-left text-sm">
@@ -105,20 +72,21 @@ export function ReportProgressList({
 						<tr>
 							<th className="pb-3 font-semibold">Murid</th>
 							<th className="pb-3 font-semibold">Tahap rapor</th>
+							<th className="pb-3 font-semibold">Kelengkapan</th>
 							<th className="pb-3 text-right font-semibold">Tindakan</th>
 						</tr>
 					</thead>
 					<tbody>
 						{loading ? (
 							<tr>
-								<td colSpan={3} className="px-5 py-10 text-[#68746a]">
+								<td colSpan={4} className="px-5 py-10 text-[#68746a]">
 									Memuat rapor murid…
 								</td>
 							</tr>
 						) : !items.length ? (
 							<tr>
-								<td colSpan={3} className="px-5 py-12 text-center text-[#68746a]">
-									Tidak ada murid pada filter ini.
+								<td colSpan={4} className="px-5 py-12 text-center text-[#68746a]">
+									Tidak ada murid yang cocok dengan pencarian.
 								</td>
 							</tr>
 						) : (
@@ -138,6 +106,9 @@ export function ReportProgressList({
 											) : (
 												<span className="text-[#68746a]">Belum dibuat</span>
 											)}
+										</td>
+										<td className="px-5 py-4">
+											<CompletionProgress percent={item.completion_percent} />
 										</td>
 										<td className="px-5 py-4 text-right">
 											{next ? (
@@ -160,7 +131,7 @@ export function ReportProgressList({
 					<p className="py-6 text-center text-sm text-[#68746a]">Memuat rapor murid…</p>
 				) : !items.length ? (
 					<p className="py-8 text-center text-sm text-[#68746a]">
-						Tidak ada murid pada filter ini.
+						Tidak ada murid yang cocok dengan pencarian.
 					</p>
 				) : (
 					items.map((item) => {
@@ -181,17 +152,20 @@ export function ReportProgressList({
 									)}
 								</div>
 								<div className="mt-4 border-t border-[#edf0e8] pt-3">
-									{next ? (
-										<Link href={next.href}>
-											<Button variant="secondary" className="w-full">
-												{next.label}
+									<CompletionProgress percent={item.completion_percent} />
+									<div className="mt-3">
+										{next ? (
+											<Link href={next.href}>
+												<Button variant="secondary" className="w-full">
+													{next.label}
+												</Button>
+											</Link>
+										) : (
+											<Button className="w-full" onClick={() => onCreateDraft(item.id)}>
+												Buat draf
 											</Button>
-										</Link>
-									) : (
-										<Button className="w-full" onClick={() => onCreateDraft(item.id)}>
-											Buat draf
-										</Button>
-									)}
+										)}
+									</div>
 								</div>
 							</article>
 						);
@@ -207,5 +181,21 @@ export function ReportProgressList({
 				/>
 			</div>
 		</Card>
+	);
+}
+
+function CompletionProgress({ percent }: { percent: number }) {
+	const safePercent = Math.min(100, Math.max(0, percent));
+
+	return (
+		<div className="min-w-28">
+			<div className="flex items-center justify-between gap-2 text-xs font-semibold text-[#526156]">
+				<span>{safePercent}%</span>
+				<span className="font-normal text-[#7b867d]">terisi</span>
+			</div>
+			<div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#e4eadf]">
+				<div className="h-full rounded-full bg-brand-600" style={{ width: `${safePercent}%` }} />
+			</div>
+		</div>
 	);
 }

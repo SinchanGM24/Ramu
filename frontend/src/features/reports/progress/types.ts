@@ -6,8 +6,13 @@ export type ReportStatus =
 	| "REVISION_REQUIRED"
 	| "APPROVED"
 	| "PUBLISHED";
-export type ProgressItem = { id: string; name: string; report_id?: string; status?: ReportStatus };
-export type ProgressFilter = "ALL" | "NOT_CREATED" | "WORKING" | ReportStatus;
+export type ProgressItem = {
+	id: string;
+	name: string;
+	report_id?: string;
+	status?: ReportStatus;
+	completion_percent: number;
+};
 export type ProgressCounts = {
 	total: number;
 	notCreated: number;

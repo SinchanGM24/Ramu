@@ -57,8 +57,49 @@ export class ReportsController {
       async (client) =>
         (
           await client.query(
-            `SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status FROM student_enrollments enrollment JOIN students student ON student.id=enrollment.student_id JOIN semesters semester ON semester.id=$1 LEFT JOIN reports report ON report.student_id=student.id AND report.semester_id=$1 LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL WHERE enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on <= CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on > CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($2::uuid IS NULL OR assignment.teacher_user_id=$2) ORDER BY student.name`,
-            [semesterId, actor.role === "TEACHER" ? actor.userId : null],
+            `WITH framework_totals AS (
+              SELECT count(DISTINCT indicator.id)::int AS indicator_count,count(DISTINCT area.id)::int AS narrative_count
+              FROM assessment_frameworks framework
+              JOIN development_areas area ON area.framework_id=framework.id AND area.school_id=framework.school_id
+              JOIN sub_areas sub_area ON sub_area.development_area_id=area.id AND sub_area.school_id=framework.school_id
+              JOIN indicators indicator ON indicator.sub_area_id=sub_area.id AND indicator.school_id=framework.school_id
+              WHERE framework.school_id=$4 AND framework.name=$3 AND framework.is_active
+            ), assessment_progress AS (
+              SELECT assessment.student_id,count(*)::int AS assessment_count
+              FROM student_assessments assessment
+              JOIN indicators indicator ON indicator.id=assessment.indicator_id AND indicator.school_id=assessment.school_id
+              JOIN sub_areas sub_area ON sub_area.id=indicator.sub_area_id AND sub_area.school_id=assessment.school_id
+              JOIN development_areas area ON area.id=sub_area.development_area_id AND area.school_id=assessment.school_id
+              JOIN assessment_frameworks framework ON framework.id=area.framework_id AND framework.school_id=assessment.school_id
+              WHERE assessment.school_id=$4 AND assessment.semester_id=$1 AND framework.name=$3 AND framework.is_active
+              GROUP BY assessment.student_id
+            ), narrative_progress AS (
+              SELECT narrative.report_id,count(*)::int AS narrative_count
+              FROM report_narratives narrative
+              JOIN development_areas area ON area.id=narrative.development_area_id AND area.school_id=narrative.school_id
+              JOIN assessment_frameworks framework ON framework.id=area.framework_id AND framework.school_id=narrative.school_id
+              WHERE narrative.school_id=$4 AND framework.name=$3 AND framework.is_active AND btrim(narrative.content)<>''
+              GROUP BY narrative.report_id
+            )
+            SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status,
+              CASE WHEN report.id IS NULL THEN 0 ELSE COALESCE(ROUND(100.0*(COALESCE(assessment_progress.assessment_count,0)+COALESCE(narrative_progress.narrative_count,0)+CASE WHEN attendance.id IS NULL THEN 0 ELSE 1 END)/NULLIF(framework_totals.indicator_count+framework_totals.narrative_count+1,0)),0)::int END AS completion_percent
+            FROM student_enrollments enrollment
+            JOIN students student ON student.id=enrollment.student_id AND student.school_id=enrollment.school_id
+            JOIN semesters semester ON semester.id=$1 AND semester.school_id=enrollment.school_id
+            LEFT JOIN reports report ON report.student_id=student.id AND report.semester_id=$1 AND report.school_id=enrollment.school_id
+            LEFT JOIN assessment_progress ON assessment_progress.student_id=student.id
+            LEFT JOIN narrative_progress ON narrative_progress.report_id=report.id
+            LEFT JOIN attendance_summaries attendance ON attendance.student_id=student.id AND attendance.semester_id=$1 AND attendance.school_id=enrollment.school_id
+            LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.school_id=enrollment.school_id AND assignment.ended_at IS NULL
+            CROSS JOIN framework_totals
+            WHERE enrollment.school_id=$4 AND enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($2::uuid IS NULL OR assignment.teacher_user_id=$2)
+            ORDER BY student.name`,
+            [
+              semesterId,
+              actor.role === "TEACHER" ? actor.userId : null,
+              DEFAULT_TK_TEMPLATE_NAME,
+              actor.schoolId,
+            ],
           )
         ).rows,
       actor.schoolId,
