@@ -1,5 +1,18 @@
-import { Body, Controller, Get, InternalServerErrorException, Logger, Param, Post, Put, Query, Req } from "@nestjs/common";
-import type { FastifyRequest } from "fastify";
+import {
+  Body,
+  Controller,
+  Get,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  Res,
+} from "@nestjs/common";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { createHash, randomBytes, randomInt } from "crypto";
 import { z } from "zod";
 import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
@@ -8,80 +21,534 @@ import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 import { assertReportAccess } from "./report-authorization";
-import { completenessError, getReportCompleteness } from "./report-completeness";
+import {
+  completenessError,
+  getReportCompleteness,
+} from "./report-completeness";
 
-const transition = z.object({ action: z.enum(["submit", "review", "revision", "approve"]), note: z.string().max(1000).optional() }).refine((input) => input.action !== "submit", { message: "Gunakan pemeriksaan kelengkapan rapor sebelum mengirim" });
+const transition = z
+  .object({
+    action: z.enum(["submit", "review", "revision", "approve"]),
+    note: z.string().max(1000).optional(),
+  })
+  .refine((input) => input.action !== "submit", {
+    message: "Gunakan pemeriksaan kelengkapan rapor sebelum mengirim",
+  });
 const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
 
 @Controller("reports")
 export class ReportsController {
   private readonly logger = new Logger(ReportsController.name);
 
-  constructor(private readonly auth: AuthService, private readonly db: DatabaseService, private readonly audit: AuditService, private readonly pdf: ReportPdfService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly db: DatabaseService,
+    private readonly audit: AuditService,
+    private readonly pdf: ReportPdfService,
+  ) {}
 
   @Get("progress")
-  async progress(@Req() request: FastifyRequest, @Query("semesterId") semesterId: string) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]); return this.db.transaction(async (client) => (await client.query(`SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status FROM student_enrollments enrollment JOIN students student ON student.id=enrollment.student_id JOIN semesters semester ON semester.id=$1 LEFT JOIN reports report ON report.student_id=student.id AND report.semester_id=$1 LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL WHERE enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on <= CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on > CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($2::uuid IS NULL OR assignment.teacher_user_id=$2) ORDER BY student.name`, [semesterId,actor.role === "TEACHER" ? actor.userId : null])).rows, actor.schoolId); }
+  async progress(
+    @Req() request: FastifyRequest,
+    @Query("semesterId") semesterId: string,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    return this.db.transaction(
+      async (client) =>
+        (
+          await client.query(
+            `SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status FROM student_enrollments enrollment JOIN students student ON student.id=enrollment.student_id JOIN semesters semester ON semester.id=$1 LEFT JOIN reports report ON report.student_id=student.id AND report.semester_id=$1 LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL WHERE enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on <= CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on > CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($2::uuid IS NULL OR assignment.teacher_user_id=$2) ORDER BY student.name`,
+            [semesterId, actor.role === "TEACHER" ? actor.userId : null],
+          )
+        ).rows,
+      actor.schoolId,
+    );
+  }
 
   @Get("review-queue")
-  async reviewQueue(@Req() request: FastifyRequest) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL"]); return this.db.transaction(async (client) => (await client.query("SELECT r.id,r.status,r.submitted_at,s.name AS student_name,sem.name AS semester_name FROM reports r JOIN students s ON s.id=r.student_id AND s.school_id=r.school_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.school_id=$1 AND r.status IN ('SUBMITTED','IN_REVIEW') ORDER BY r.submitted_at NULLS LAST,r.updated_at DESC", [actor.schoolId])).rows, actor.schoolId); }
+  async reviewQueue(@Req() request: FastifyRequest) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL"]);
+    return this.db.transaction(
+      async (client) =>
+        (
+          await client.query(
+            "SELECT r.id,r.status,r.submitted_at,s.name AS student_name,sem.name AS semester_name FROM reports r JOIN students s ON s.id=r.student_id AND s.school_id=r.school_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.school_id=$1 AND r.status IN ('SUBMITTED','IN_REVIEW') ORDER BY r.submitted_at NULLS LAST,r.updated_at DESC",
+            [actor.schoolId],
+          )
+        ).rows,
+      actor.schoolId,
+    );
+  }
 
   @Post("students/:studentId/draft")
-  async draft(@Req() request: FastifyRequest, @Param("studentId") studentId: string, @Body() body: unknown) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]); const input = z.object({ semesterId: z.string().uuid() }).parse(body); return this.db.transaction(async (client) => { const enrollment=(await client.query(`SELECT enrollment.id FROM student_enrollments enrollment JOIN students student ON student.id=enrollment.student_id JOIN semesters semester ON semester.id=$2 LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL WHERE enrollment.student_id=$1 AND enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on <= CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on > CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($3::uuid IS NULL OR assignment.teacher_user_id=$3)`,[studentId,input.semesterId,actor.role === "TEACHER" ? actor.userId : null])).rows[0];if(!enrollment) throw new Error("Murid tidak berada pada kelas yang dapat dikelola."); const result = await client.query("INSERT INTO reports(school_id,student_id,semester_id,student_enrollment_id) VALUES($1,$2,$3,$4) ON CONFLICT(student_id,semester_id) DO UPDATE SET student_enrollment_id=CASE WHEN reports.status IN ('DRAFT','REVISION_REQUIRED') THEN EXCLUDED.student_enrollment_id ELSE reports.student_enrollment_id END,updated_at=now() RETURNING *", [actor.schoolId, studentId, input.semesterId,enrollment.id]); await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report.draft_created", entityType: "report", entityId: result.rows[0].id }, client); return result.rows[0]; }, actor.schoolId); }
+  async draft(
+    @Req() request: FastifyRequest,
+    @Param("studentId") studentId: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    const input = z.object({ semesterId: z.string().uuid() }).parse(body);
+    return this.db.transaction(async (client) => {
+      const enrollment = (
+        await client.query(
+          `SELECT enrollment.id FROM student_enrollments enrollment JOIN students student ON student.id=enrollment.student_id JOIN semesters semester ON semester.id=$2 LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL WHERE enrollment.student_id=$1 AND enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on <= CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on > CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($3::uuid IS NULL OR assignment.teacher_user_id=$3)`,
+          [
+            studentId,
+            input.semesterId,
+            actor.role === "TEACHER" ? actor.userId : null,
+          ],
+        )
+      ).rows[0];
+      if (!enrollment)
+        throw new Error("Murid tidak berada pada kelas yang dapat dikelola.");
+      const result = await client.query(
+        "INSERT INTO reports(school_id,student_id,semester_id,student_enrollment_id) VALUES($1,$2,$3,$4) ON CONFLICT(student_id,semester_id) DO UPDATE SET student_enrollment_id=CASE WHEN reports.status IN ('DRAFT','REVISION_REQUIRED') THEN EXCLUDED.student_enrollment_id ELSE reports.student_enrollment_id END,updated_at=now() RETURNING *",
+        [actor.schoolId, studentId, input.semesterId, enrollment.id],
+      );
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "report.draft_created",
+          entityType: "report",
+          entityId: result.rows[0].id,
+        },
+        client,
+      );
+      return result.rows[0];
+    }, actor.schoolId);
+  }
 
   @Put(":id/assessments/:indicatorId")
-  async saveAssessment(@Req() request: FastifyRequest, @Param("id") id: string, @Param("indicatorId") indicatorId: string, @Body() body: unknown) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]); const input = reportAssessment.parse(body); return this.db.transaction(async (client) => { const report = (await client.query<{ student_id: string; semester_id: string; status: string }>("SELECT student_id,semester_id,status FROM reports WHERE id=$1", [id])).rows[0]; if (!report) throw new Error("Rapor tidak ditemukan"); await assertReportAccess(client,actor,id); if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status)) throw new Error("Rapor tidak dapat diubah pada status saat ini"); const valid = await client.query(`SELECT 1 FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options o ON o.scale_id=f.scale_id WHERE i.id=$1 AND o.id=$2 AND f.name=$3 AND f.is_active`, [indicatorId, input.scaleOptionId, DEFAULT_TK_TEMPLATE_NAME]); if (!valid.rowCount) throw new Error("Indikator atau skala tidak valid"); const saved = (await client.query(`INSERT INTO student_assessments(school_id,student_id,semester_id,indicator_id,scale_option_id,assessed_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(student_id,semester_id,indicator_id) DO UPDATE SET scale_option_id=EXCLUDED.scale_option_id,assessed_by=EXCLUDED.assessed_by,assessed_at=now() RETURNING *`, [actor.schoolId, report.student_id, report.semester_id, indicatorId, input.scaleOptionId, actor.userId])).rows[0]; await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report_assessment.saved", entityType: "student_assessment", entityId: saved.id, metadata: { reportId: id } }, client); return saved; }, actor.schoolId); }
+  async saveAssessment(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+    @Param("indicatorId") indicatorId: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    const input = reportAssessment.parse(body);
+    return this.db.transaction(async (client) => {
+      const report = (
+        await client.query<{
+          student_id: string;
+          semester_id: string;
+          status: string;
+        }>("SELECT student_id,semester_id,status FROM reports WHERE id=$1", [
+          id,
+        ])
+      ).rows[0];
+      if (!report) throw new Error("Rapor tidak ditemukan");
+      await assertReportAccess(client, actor, id);
+      if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status))
+        throw new Error("Rapor tidak dapat diubah pada status saat ini");
+      const valid = await client.query(
+        `SELECT 1 FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options o ON o.scale_id=f.scale_id WHERE i.id=$1 AND o.id=$2 AND f.name=$3 AND f.is_active`,
+        [indicatorId, input.scaleOptionId, DEFAULT_TK_TEMPLATE_NAME],
+      );
+      if (!valid.rowCount) throw new Error("Indikator atau skala tidak valid");
+      const saved = (
+        await client.query(
+          `INSERT INTO student_assessments(school_id,student_id,semester_id,indicator_id,scale_option_id,assessed_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(student_id,semester_id,indicator_id) DO UPDATE SET scale_option_id=EXCLUDED.scale_option_id,assessed_by=EXCLUDED.assessed_by,assessed_at=now() RETURNING *`,
+          [
+            actor.schoolId,
+            report.student_id,
+            report.semester_id,
+            indicatorId,
+            input.scaleOptionId,
+            actor.userId,
+          ],
+        )
+      ).rows[0];
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "report_assessment.saved",
+          entityType: "student_assessment",
+          entityId: saved.id,
+          metadata: { reportId: id },
+        },
+        client,
+      );
+      return saved;
+    }, actor.schoolId);
+  }
 
   @Post(":id/transition")
-  async move(@Req() request: FastifyRequest, @Param("id") id: string, @Body() body: unknown) { const actor = this.auth.require(request); const input = transition.parse(body); return this.db.transaction(async (client) => { const report = (await client.query<{ status: string }>("SELECT status FROM reports WHERE id=$1", [id])).rows[0]; if (!report) throw new Error("Rapor tidak ditemukan"); await assertReportAccess(client, actor, id); const rules: Record<string, [string, string[]]> = { submit: ["SUBMITTED", ["DRAFT"]], review: ["IN_REVIEW", ["SUBMITTED"]], revision: ["REVISION_REQUIRED", ["IN_REVIEW"]], approve: ["APPROVED", ["IN_REVIEW"]] }; const [to, from] = rules[input.action]; if (!from.includes(report.status)) throw new Error("Perubahan status tidak valid"); if (input.action === "submit" && !( ["SCHOOL_ADMIN", "TEACHER"] as string[]).includes(actor.role)) throw new Error("Akses ditolak"); if (["review", "revision", "approve"].includes(input.action) && !( ["SCHOOL_ADMIN", "PRINCIPAL"] as string[]).includes(actor.role)) throw new Error("Akses ditolak"); const updated = (await client.query("UPDATE reports SET status=$1::report_status,submitted_at=CASE WHEN $3 THEN now() ELSE submitted_at END,approved_at=CASE WHEN $4 THEN now() ELSE approved_at END,updated_at=now() WHERE id=$2 RETURNING *", [to, id, to === "SUBMITTED", to === "APPROVED"])).rows[0]; await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: `report.${input.action}`, entityType: "report", entityId: id }, client); return updated; }, actor.schoolId); }
+  async move(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request);
+    const input = transition.parse(body);
+    return this.db.transaction(async (client) => {
+      const report = (
+        await client.query<{ status: string }>(
+          "SELECT status FROM reports WHERE id=$1",
+          [id],
+        )
+      ).rows[0];
+      if (!report) throw new Error("Rapor tidak ditemukan");
+      await assertReportAccess(client, actor, id);
+      const rules: Record<string, [string, string[]]> = {
+        submit: ["SUBMITTED", ["DRAFT"]],
+        review: ["IN_REVIEW", ["SUBMITTED"]],
+        revision: ["REVISION_REQUIRED", ["IN_REVIEW"]],
+        approve: ["APPROVED", ["IN_REVIEW"]],
+      };
+      const [to, from] = rules[input.action];
+      if (!from.includes(report.status))
+        throw new Error("Perubahan status tidak valid");
+      if (
+        input.action === "submit" &&
+        !(["SCHOOL_ADMIN", "TEACHER"] as string[]).includes(actor.role)
+      )
+        throw new Error("Akses ditolak");
+      if (
+        ["review", "revision", "approve"].includes(input.action) &&
+        !(["SCHOOL_ADMIN", "PRINCIPAL"] as string[]).includes(actor.role)
+      )
+        throw new Error("Akses ditolak");
+      const updated = (
+        await client.query(
+          "UPDATE reports SET status=$1::report_status,submitted_at=CASE WHEN $3 THEN now() ELSE submitted_at END,approved_at=CASE WHEN $4 THEN now() ELSE approved_at END,updated_at=now() WHERE id=$2 RETURNING *",
+          [to, id, to === "SUBMITTED", to === "APPROVED"],
+        )
+      ).rows[0];
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: `report.${input.action}`,
+          entityType: "report",
+          entityId: id,
+        },
+        client,
+      );
+      return updated;
+    }, actor.schoolId);
+  }
 
   @Post(":id/publish")
   async publish(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
     return this.db.transaction(async (client) => {
-      const report = (await client.query<any>(`SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key AS school_logo_storage_key,s.name AS student_name,s.nickname,s.student_number,s.birth_date,s.birth_place,s.gender,s.religion,s.child_order,s.address,grouping.name AS class_name,sem.name AS semester_name,ay.name AS academic_year_name FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id JOIN academic_years ay ON ay.id=sem.academic_year_id WHERE r.id=$1 AND r.school_id=$2 FOR UPDATE OF r`, [id, actor.schoolId])).rows[0];
-      if (!report) throw new Error("Rapor tidak ditemukan"); if (report.status !== "APPROVED") throw new Error("Hanya rapor yang disetujui dapat diterbitkan");
-      const completeness = await getReportCompleteness(client, { id: report.id, studentId: report.student_id, semesterId: report.semester_id, schoolId: actor.schoolId });
-      if (!completeness.complete) throw new Error(completenessError(completeness));
-      const assessmentRows = (await client.query<any>(`SELECT da.name AS area_name,da.position AS area_position,sa.name AS sub_area_name,sa.position AS sub_area_position,i.description,i.position,opt.code FROM student_assessments assessment JOIN indicators i ON i.id=assessment.indicator_id JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options opt ON opt.id=assessment.scale_option_id WHERE assessment.student_id=$1 AND assessment.semester_id=$2 AND f.name=$3 AND f.is_active ORDER BY da.position,sa.position,i.position`, [report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME])).rows;
-      const narratives = (await client.query<any>(`SELECT da.name,rn.content FROM report_narratives rn JOIN development_areas da ON da.id=rn.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id WHERE rn.report_id=$1 AND f.name=$2 AND f.is_active ORDER BY da.position`, [id, DEFAULT_TK_TEMPLATE_NAME])).rows;
-      const growth = (await client.query("SELECT weight_kg,height_cm,head_circumference_cm FROM growth_records WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null;
-      const attendance = (await client.query("SELECT sick_days,permission_days,unexcused_days FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null;
-      const guardians = (await client.query("SELECT name,relationship,phone,occupation,is_primary FROM guardian_contacts WHERE student_id=$1 ORDER BY is_primary DESC,name", [report.student_id])).rows;
-      const teachers = (await client.query("SELECT teacher.id,teacher.name,teacher.phone FROM teacher_class_assignments assignment JOIN users teacher ON teacher.id=assignment.teacher_user_id WHERE assignment.class_period_id=(SELECT class_period_id FROM student_enrollments WHERE id=$1) AND assignment.ended_at IS NULL ORDER BY teacher.name", [report.student_enrollment_id])).rows;
-      const snapshot = { report: { id: report.id, status: report.status }, school: { name: report.school_name, address: report.school_address, logo_storage_key: report.school_logo_storage_key }, student: { name: report.student_name, nickname: report.nickname, student_number: report.student_number, birth_date: report.birth_date, birth_place: report.birth_place, gender: report.gender, religion: report.religion, child_order: report.child_order, address: report.address, class_name: report.class_name }, semester: { name: report.semester_name, academic_year_name: report.academic_year_name }, teachers, assessments: assessmentRows, narratives, growth, attendance, guardians };
-      const versionNumber = (await client.query<{ next: number }>("SELECT COALESCE(max(version_number),0)+1 AS next FROM report_versions WHERE report_id=$1", [id])).rows[0].next;
+      const report = (
+        await client.query<any>(
+          `SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key AS school_logo_storage_key,s.name AS student_name,s.nickname,s.student_number,s.birth_date,s.birth_place,s.gender,s.religion,s.child_order,s.address,grouping.name AS class_name,sem.name AS semester_name,ay.name AS academic_year_name FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id JOIN academic_years ay ON ay.id=sem.academic_year_id WHERE r.id=$1 AND r.school_id=$2 FOR UPDATE OF r`,
+          [id, actor.schoolId],
+        )
+      ).rows[0];
+      if (!report) throw new Error("Rapor tidak ditemukan");
+      if (report.status !== "APPROVED")
+        throw new Error("Hanya rapor yang disetujui dapat diterbitkan");
+      const completeness = await getReportCompleteness(client, {
+        id: report.id,
+        studentId: report.student_id,
+        semesterId: report.semester_id,
+        schoolId: actor.schoolId,
+      });
+      if (!completeness.complete)
+        throw new Error(completenessError(completeness));
+      const assessmentRows = (
+        await client.query<any>(
+          `SELECT da.name AS area_name,da.position AS area_position,sa.name AS sub_area_name,sa.position AS sub_area_position,i.description,i.position,opt.code FROM student_assessments assessment JOIN indicators i ON i.id=assessment.indicator_id JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options opt ON opt.id=assessment.scale_option_id WHERE assessment.student_id=$1 AND assessment.semester_id=$2 AND f.name=$3 AND f.is_active ORDER BY da.position,sa.position,i.position`,
+          [report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME],
+        )
+      ).rows;
+      const narratives = (
+        await client.query<any>(
+          `SELECT da.name,rn.content FROM report_narratives rn JOIN development_areas da ON da.id=rn.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id WHERE rn.report_id=$1 AND f.name=$2 AND f.is_active ORDER BY da.position`,
+          [id, DEFAULT_TK_TEMPLATE_NAME],
+        )
+      ).rows;
+      const growth =
+        (
+          await client.query(
+            "SELECT weight_kg,height_cm,head_circumference_cm FROM growth_records WHERE student_id=$1 AND semester_id=$2",
+            [report.student_id, report.semester_id],
+          )
+        ).rows[0] ?? null;
+      const attendance =
+        (
+          await client.query(
+            "SELECT sick_days,permission_days,unexcused_days FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2",
+            [report.student_id, report.semester_id],
+          )
+        ).rows[0] ?? null;
+      const guardians = (
+        await client.query(
+          "SELECT name,relationship,phone,occupation,is_primary FROM guardian_contacts WHERE student_id=$1 ORDER BY is_primary DESC,name",
+          [report.student_id],
+        )
+      ).rows;
+      const teachers = (
+        await client.query(
+          "SELECT teacher.id,teacher.name,teacher.phone FROM teacher_class_assignments assignment JOIN users teacher ON teacher.id=assignment.teacher_user_id WHERE assignment.class_period_id=(SELECT class_period_id FROM student_enrollments WHERE id=$1) AND assignment.ended_at IS NULL ORDER BY teacher.name",
+          [report.student_enrollment_id],
+        )
+      ).rows;
+      const snapshot = {
+        report: { id: report.id, status: report.status },
+        school: {
+          name: report.school_name,
+          address: report.school_address,
+          logo_storage_key: report.school_logo_storage_key,
+        },
+        student: {
+          name: report.student_name,
+          nickname: report.nickname,
+          student_number: report.student_number,
+          birth_date: report.birth_date,
+          birth_place: report.birth_place,
+          gender: report.gender,
+          religion: report.religion,
+          child_order: report.child_order,
+          address: report.address,
+          class_name: report.class_name,
+        },
+        semester: {
+          name: report.semester_name,
+          academic_year_name: report.academic_year_name,
+        },
+        teachers,
+        assessments: assessmentRows,
+        narratives,
+        growth,
+        attendance,
+        guardians,
+      };
+      const versionNumber = (
+        await client.query<{ next: number }>(
+          "SELECT COALESCE(max(version_number),0)+1 AS next FROM report_versions WHERE report_id=$1",
+          [id],
+        )
+      ).rows[0].next;
       let pdfStorageKey: string;
       try {
-        pdfStorageKey = await this.pdf.storePublishedReport({ schoolId: actor.schoolId, reportId: id, versionNumber, snapshot });
+        pdfStorageKey = await this.pdf.storePublishedReport({
+          schoolId: actor.schoolId,
+          reportId: id,
+          versionNumber,
+          snapshot,
+        });
       } catch (error) {
-        this.logger.error(`Gagal membuat atau menyimpan PDF untuk rapor ${id}`, error instanceof Error ? error.stack : undefined);
-        throw new InternalServerErrorException("PDF rapor belum dapat dibuat atau disimpan. Coba terbitkan kembali.");
+        this.logger.error(
+          `Gagal membuat atau menyimpan PDF untuk rapor ${id}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+        throw new InternalServerErrorException(
+          "PDF rapor belum dapat dibuat atau disimpan. Coba terbitkan kembali.",
+        );
       }
-      const version = (await client.query("INSERT INTO report_versions(school_id,report_id,version_number,snapshot,pdf_storage_key,published_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *", [actor.schoolId, id, versionNumber, snapshot, pdfStorageKey, actor.userId])).rows[0];
-      const token = randomBytes(32).toString("base64url"), pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
-      await client.query("INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash) VALUES($1,$2,$3,$4)", [actor.schoolId, version.id, createHash("sha256").update(token).digest("hex"), createHash("sha256").update(pin).digest("hex")]);
-      const deliveries = await client.query("INSERT INTO report_deliveries(school_id,report_version_id,guardian_contact_id,recipient_phone) SELECT $1,$2,g.id,g.phone FROM guardian_contacts g WHERE g.school_id=$1 AND g.student_id=$3 AND g.is_active AND g.is_delivery_recipient RETURNING id", [actor.schoolId, version.id, report.student_id]);
-      await client.query("UPDATE reports SET status='PUBLISHED',updated_at=now() WHERE id=$1", [id]);
-      await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report.published", entityType: "report_version", entityId: version.id, metadata: { pdfStorageKey } }, client);
-      return { ...version, parentAccess: { link: `/r/${token}`, pin }, deliveryCount: deliveries.rowCount };
+      const version = (
+        await client.query(
+          "INSERT INTO report_versions(school_id,report_id,version_number,snapshot,pdf_storage_key,published_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
+          [
+            actor.schoolId,
+            id,
+            versionNumber,
+            snapshot,
+            pdfStorageKey,
+            actor.userId,
+          ],
+        )
+      ).rows[0];
+      const token = randomBytes(32).toString("base64url"),
+        pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      await client.query(
+        "INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash) VALUES($1,$2,$3,$4)",
+        [
+          actor.schoolId,
+          version.id,
+          createHash("sha256").update(token).digest("hex"),
+          createHash("sha256").update(pin).digest("hex"),
+        ],
+      );
+      const deliveries = await client.query(
+        "INSERT INTO report_deliveries(school_id,report_version_id,guardian_contact_id,recipient_phone) SELECT $1,$2,g.id,g.phone FROM guardian_contacts g WHERE g.school_id=$1 AND g.student_id=$3 AND g.is_active AND g.is_delivery_recipient RETURNING id",
+        [actor.schoolId, version.id, report.student_id],
+      );
+      await client.query(
+        "UPDATE reports SET status='PUBLISHED',updated_at=now() WHERE id=$1",
+        [id],
+      );
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "report.published",
+          entityType: "report_version",
+          entityId: version.id,
+          metadata: { pdfStorageKey },
+        },
+        client,
+      );
+      return {
+        ...version,
+        parentAccess: { link: `/r/${token}`, pin },
+        deliveryCount: deliveries.rowCount,
+      };
     }, actor.schoolId);
   }
 
   @Get(":id/published-version")
-  async publishedVersion(@Req() request: FastifyRequest, @Param("id") id: string) {
-    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "PRINCIPAL", "TEACHER"]);
+  async publishedVersion(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+  ) {
+    const actor = this.auth.require(request, [
+      "SCHOOL_ADMIN",
+      "PRINCIPAL",
+      "TEACHER",
+    ]);
     return this.db.transaction(async (client) => {
       if (actor.role === "TEACHER") await assertReportAccess(client, actor, id);
-      return (await client.query(`SELECT version.id,version.version_number,version.published_at,version.snapshot,version.pdf_storage_key
+      return (
+        (
+          await client.query(
+            `SELECT version.id,version.version_number,version.published_at,version.snapshot,version.pdf_storage_key
         FROM report_versions version JOIN reports report ON report.id=version.report_id
         WHERE report.id=$1 AND report.school_id=$2 AND version.school_id=$2
-        ORDER BY version.version_number DESC LIMIT 1`, [id, actor.schoolId])).rows[0] ?? null;
+        ORDER BY version.version_number DESC LIMIT 1`,
+            [id, actor.schoolId],
+          )
+        ).rows[0] ?? null
+      );
     }, actor.schoolId);
   }
 
+  @Get(":id/published-logo")
+  async publishedLogo(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+    @Res() reply: FastifyReply,
+  ) {
+    const actor = this.auth.require(request, [
+      "SCHOOL_ADMIN",
+      "PRINCIPAL",
+      "TEACHER",
+    ]);
+    const version = await this.db.transaction(async (client) => {
+      if (actor.role === "TEACHER") await assertReportAccess(client, actor, id);
+      return (
+        (
+          await client.query<any>(
+            `SELECT version.snapshot
+        FROM report_versions version JOIN reports report ON report.id=version.report_id
+        WHERE report.id=$1 AND report.school_id=$2 AND version.school_id=$2
+        ORDER BY version.version_number DESC LIMIT 1`,
+            [id, actor.schoolId],
+          )
+        ).rows[0] ?? null
+      );
+    }, actor.schoolId);
+    const storageKey = version?.snapshot?.school?.logo_storage_key;
+    if (!storageKey)
+      throw new NotFoundException("Logo tidak tersedia pada versi rapor ini.");
+    const contentType = storageKey.endsWith(".png")
+      ? "image/png"
+      : "image/jpeg";
+    const body = await this.pdf.readStoredImage(storageKey);
+    reply
+      .header("Content-Type", contentType)
+      .header("Cache-Control", "private, max-age=300")
+      .send(body);
+  }
+
   @Get(":id/editor")
-  async editor(@Req() request: FastifyRequest, @Param("id") id: string) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]); return this.db.transaction(async (client) => { const report = (await client.query("SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key IS NOT NULL AS school_has_logo,s.name AS student_name,s.student_number,grouping.name AS class_name,sem.name AS semester_name FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.id=$1", [id])).rows[0]; if (!report) return null; await assertReportAccess(client,actor,id); const areas = (await client.query(`SELECT da.id,da.name,count(i.id)::int AS indicator_count,count(assessment.id)::int AS assessed_count,n.content AS narrative FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sub ON sub.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sub.id LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2 LEFT JOIN report_narratives n ON n.report_id=$3 AND n.development_area_id=da.id WHERE f.name=$4 AND f.is_active GROUP BY da.id,da.name,n.content,da.position ORDER BY da.position`, [report.student_id, report.semester_id, id, DEFAULT_TK_TEMPLATE_NAME])).rows; const assessments = (await client.query(`SELECT da.id AS area_id,sub.name AS sub_area_name,i.description,opt.code AS scale_code FROM indicators i JOIN sub_areas sub ON sub.id=i.sub_area_id JOIN development_areas da ON da.id=sub.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id LEFT JOIN student_assessments sa ON sa.indicator_id=i.id AND sa.student_id=$1 AND sa.semester_id=$2 LEFT JOIN assessment_scale_options opt ON opt.id=sa.scale_option_id WHERE f.name=$3 AND f.is_active ORDER BY da.position,sub.position,i.position`, [report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME])).rows; const growth = (await client.query("SELECT weight_kg,height_cm,head_circumference_cm FROM growth_records WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null; const attendance = (await client.query("SELECT sick_days,permission_days,unexcused_days FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2", [report.student_id, report.semester_id])).rows[0] ?? null; return { report, school: { name: report.school_name, address: report.school_address, has_logo: report.school_has_logo }, areas, assessments, growth, attendance }; }, actor.schoolId); }
+  async editor(@Req() request: FastifyRequest, @Param("id") id: string) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    return this.db.transaction(async (client) => {
+      const report = (
+        await client.query(
+          "SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key IS NOT NULL AS school_has_logo,s.name AS student_name,s.student_number,grouping.name AS class_name,sem.name AS semester_name FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.id=$1",
+          [id],
+        )
+      ).rows[0];
+      if (!report) return null;
+      await assertReportAccess(client, actor, id);
+      const areas = (
+        await client.query(
+          `SELECT da.id,da.name,count(i.id)::int AS indicator_count,count(assessment.id)::int AS assessed_count,n.content AS narrative FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id JOIN sub_areas sub ON sub.development_area_id=da.id JOIN indicators i ON i.sub_area_id=sub.id LEFT JOIN student_assessments assessment ON assessment.indicator_id=i.id AND assessment.student_id=$1 AND assessment.semester_id=$2 LEFT JOIN report_narratives n ON n.report_id=$3 AND n.development_area_id=da.id WHERE f.name=$4 AND f.is_active GROUP BY da.id,da.name,n.content,da.position ORDER BY da.position`,
+          [report.student_id, report.semester_id, id, DEFAULT_TK_TEMPLATE_NAME],
+        )
+      ).rows;
+      const assessments = (
+        await client.query(
+          `SELECT da.id AS area_id,sub.name AS sub_area_name,i.description,opt.code AS scale_code FROM indicators i JOIN sub_areas sub ON sub.id=i.sub_area_id JOIN development_areas da ON da.id=sub.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id LEFT JOIN student_assessments sa ON sa.indicator_id=i.id AND sa.student_id=$1 AND sa.semester_id=$2 LEFT JOIN assessment_scale_options opt ON opt.id=sa.scale_option_id WHERE f.name=$3 AND f.is_active ORDER BY da.position,sub.position,i.position`,
+          [report.student_id, report.semester_id, DEFAULT_TK_TEMPLATE_NAME],
+        )
+      ).rows;
+      const growth =
+        (
+          await client.query(
+            "SELECT weight_kg,height_cm,head_circumference_cm FROM growth_records WHERE student_id=$1 AND semester_id=$2",
+            [report.student_id, report.semester_id],
+          )
+        ).rows[0] ?? null;
+      const attendance =
+        (
+          await client.query(
+            "SELECT sick_days,permission_days,unexcused_days FROM attendance_summaries WHERE student_id=$1 AND semester_id=$2",
+            [report.student_id, report.semester_id],
+          )
+        ).rows[0] ?? null;
+      return {
+        report,
+        school: {
+          name: report.school_name,
+          address: report.school_address,
+          has_logo: report.school_has_logo,
+        },
+        areas,
+        assessments,
+        growth,
+        attendance,
+      };
+    }, actor.schoolId);
+  }
 
   @Put(":id/narratives/:areaId")
-  async narrative(@Req() request: FastifyRequest, @Param("id") id: string, @Param("areaId") areaId: string, @Body() body: unknown) { const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]); const input = z.object({ content: z.string().min(1).max(5000) }).parse(body); return this.db.transaction(async (client) => { const report = await client.query("SELECT id,status FROM reports WHERE id=$1", [id]); if (!report.rowCount) throw new Error("Rapor tidak ditemukan"); await assertReportAccess(client, actor, id); if (report.rows[0].status === "PUBLISHED") throw new Error("Rapor terbit tidak dapat diubah"); const saved = (await client.query("INSERT INTO report_narratives(school_id,report_id,development_area_id,content,updated_by) SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM development_areas WHERE id=$3) ON CONFLICT(report_id,development_area_id) DO UPDATE SET content=EXCLUDED.content,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING *", [actor.schoolId, id, areaId, input.content, actor.userId])).rows[0]; if (!saved) throw new Error("Area perkembangan tidak ditemukan"); await this.audit.record({ schoolId: actor.schoolId, actorUserId: actor.userId, action: "report_narrative.saved", entityType: "report_narrative", entityId: saved.id }, client); return saved; }, actor.schoolId); }
+  async narrative(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+    @Param("areaId") areaId: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    const input = z
+      .object({ content: z.string().min(1).max(5000) })
+      .parse(body);
+    return this.db.transaction(async (client) => {
+      const report = await client.query(
+        "SELECT id,status FROM reports WHERE id=$1",
+        [id],
+      );
+      if (!report.rowCount) throw new Error("Rapor tidak ditemukan");
+      await assertReportAccess(client, actor, id);
+      if (report.rows[0].status === "PUBLISHED")
+        throw new Error("Rapor terbit tidak dapat diubah");
+      const saved = (
+        await client.query(
+          "INSERT INTO report_narratives(school_id,report_id,development_area_id,content,updated_by) SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM development_areas WHERE id=$3) ON CONFLICT(report_id,development_area_id) DO UPDATE SET content=EXCLUDED.content,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING *",
+          [actor.schoolId, id, areaId, input.content, actor.userId],
+        )
+      ).rows[0];
+      if (!saved) throw new Error("Area perkembangan tidak ditemukan");
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "report_narrative.saved",
+          entityType: "report_narrative",
+          entityId: saved.id,
+        },
+        client,
+      );
+      return saved;
+    }, actor.schoolId);
+  }
 }

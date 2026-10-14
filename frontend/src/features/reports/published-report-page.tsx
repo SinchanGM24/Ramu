@@ -18,7 +18,7 @@ type SnapshotAssessment = {
 };
 type SnapshotNarrative = { name: string; content: string };
 type Snapshot = {
-	school?: { name?: string; address?: string | null };
+	school?: { name?: string; address?: string | null; logo_storage_key?: string | null };
 	student?: { name?: string; student_number?: string | null; class_name?: string | null };
 	semester?: { name?: string; academic_year_name?: string };
 	assessments?: SnapshotAssessment[];
@@ -61,6 +61,9 @@ export function PublishedReportPage({ id }: { id: string }) {
 	const publishedDate = new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(
 		new Date(publishedAt),
 	);
+	const logoUrl = snapshot.school?.logo_storage_key
+		? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001"}/api/reports/${id}/published-logo`
+		: null;
 	return (
 		<>
 			<div className="print:hidden">
@@ -93,11 +96,27 @@ export function PublishedReportPage({ id }: { id: string }) {
 				/>
 			</div>
 			<article className="mx-auto max-w-5xl bg-white p-5 shadow-soft print:max-w-none print:p-0 print:shadow-none sm:p-8">
-				<header className="border-b-2 border-slate-700 pb-4 text-center">
-					<p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-						{snapshot.school?.name ?? "Sekolah"}
-					</p>
-					<h1 className="mt-1 text-xl font-bold uppercase">Laporan Perkembangan Anak Didik</h1>
+				<header className="border-b-2 border-slate-700 pb-4">
+					<div className="grid grid-cols-[4rem_minmax(0,1fr)_4rem] items-center gap-3 text-center">
+						{logoUrl ? (
+							// Endpoint logo memakai sesi browser untuk menjaga akses snapshot tetap privat.
+							// eslint-disable-next-line @next/next/no-img-element
+							<img
+								src={logoUrl}
+								alt={`Logo ${snapshot.school?.name ?? "sekolah"}`}
+								className="size-14 object-contain"
+							/>
+						) : (
+							<span aria-hidden="true" />
+						)}
+						<div>
+							<p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+								{snapshot.school?.name ?? "Sekolah"}
+							</p>
+							<h1 className="mt-1 text-xl font-bold uppercase">Laporan Perkembangan Anak Didik</h1>
+						</div>
+						<span aria-hidden="true" />
+					</div>
 					<p className="mt-2 text-sm">
 						Nama: <b>{snapshot.student?.name ?? "-"}</b> · Nomor induk:{" "}
 						{snapshot.student?.student_number || "-"} · {snapshot.semester?.name ?? "-"}
