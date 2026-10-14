@@ -160,6 +160,13 @@ export function LandingPage() {
 							Setiap langkah memiliki pemilik yang jelas, agar guru dapat fokus pada anak dan
 							sekolah tetap memegang kendali.
 						</p>
+						<Image
+							src="/brand/ramu-report-journey.png"
+							alt="Ilustrasi catatan guru, rapor yang ditinjau, dan rapor dibuka melalui telepon"
+							width={2048}
+							height={768}
+							className="relative mt-8 h-auto w-full max-w-md"
+						/>
 					</div>
 					<div className="bg-[#f6f3e9] px-7 py-4 sm:px-10 sm:py-7">
 						<div className="relative">
