@@ -54,28 +54,30 @@ export function DesktopSidebar() {
 				</span>
 			</Link>
 			<nav
-				className="relative min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain pr-1"
+				className="relative flex min-h-0 flex-1 flex-col justify-between overflow-hidden pr-1"
 				aria-label="Navigasi aplikasi"
 			>
-				{navigation
-					.filter((item) => item.roles.includes(session.data?.role as AppRole))
-					.map(({ href, label, icon: Icon }) => (
-						<NavigationLink
-							key={href}
-							href={href}
-							label={label}
-							Icon={Icon}
-							active={isPrimaryNavigationActive(pathname, href)}
-						/>
-					))}
-				<NavigationLink
-					href={
-						session.data?.role === "PRINCIPAL" ? "/app/reports/review" : "/app/reports/progress"
-					}
-					label="Rapor"
-					Icon={ClipboardList}
-					active={pathname.startsWith("/app/reports")}
-				/>
+				<div className="space-y-0.5">
+					{navigation
+						.filter((item) => item.roles.includes(session.data?.role as AppRole))
+						.map(({ href, label, icon: Icon }) => (
+							<NavigationLink
+								key={href}
+								href={href}
+								label={label}
+								Icon={Icon}
+								active={isPrimaryNavigationActive(pathname, href)}
+							/>
+						))}
+					<NavigationLink
+						href={
+							session.data?.role === "PRINCIPAL" ? "/app/reports/review" : "/app/reports/progress"
+						}
+						label="Rapor"
+						Icon={ClipboardList}
+						active={pathname.startsWith("/app/reports")}
+					/>
+				</div>
 				<NavigationSection label="Akademik">
 					{academicNavigation
 						.filter((item) => item.roles.includes(session.data?.role as AppRole))
