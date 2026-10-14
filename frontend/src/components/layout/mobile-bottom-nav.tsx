@@ -14,7 +14,10 @@ export function MobileBottomNav() {
 	return (
 		<nav
 			aria-label="Navigasi utama"
-			className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-brand-950/10 bg-[#fffdf8]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(23,75,49,0.06)] backdrop-blur lg:hidden"
+			className={cn(
+				"fixed inset-x-0 bottom-0 z-30 grid border-t border-brand-950/10 bg-[#fffdf8]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(23,75,49,0.06)] backdrop-blur lg:hidden",
+				items.length === 2 ? "grid-cols-2" : "grid-cols-3",
+			)}
 		>
 			{items.map(({ href, label, icon: Icon }) => {
 				const active = pathname.startsWith(href);
