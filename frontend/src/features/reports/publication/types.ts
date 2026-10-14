@@ -1,4 +1,4 @@
-export type PublicationStatus = "APPROVED" | "PUBLISHED";
+export type PublicationStatus = "SUBMITTED" | "IN_REVIEW" | "APPROVED" | "PUBLISHED";
 
 export type PublicationReport = {
 	id: string;

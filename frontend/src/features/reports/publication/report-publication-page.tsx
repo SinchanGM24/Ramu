@@ -63,15 +63,24 @@ export function ReportPublicationPage() {
 			</div>
 			<PublicationReportList
 				canPublish={publication.canPublish}
+				batchPending={publication.publish.isPending || publication.publishBatch.isPending}
+				batchProgress={publication.batchProgress}
 				counts={publication.counts}
 				loading={publication.progress.isLoading}
 				page={publication.page}
-				pending={publication.publish.isPending}
+				pending={publication.publish.isPending || publication.publishBatch.isPending}
 				reports={publication.pagedReports}
 				search={publication.search}
 				total={publication.filteredReports.length}
 				onPageChange={publication.setPage}
 				onPublish={(reportId) => publication.publish.mutate(reportId)}
+				onPublishBatch={() =>
+					publication.publishBatch.mutate(
+						publication.reports
+							.filter((report) => report.status === "APPROVED")
+							.map((report) => report.report_id),
+					)
+				}
 				onSearchChange={publication.setSearch}
 			/>
 		</>

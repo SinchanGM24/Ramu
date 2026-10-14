@@ -13,6 +13,9 @@ export function useReportPublication() {
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [notice, setNotice] = useState("");
+	const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number } | null>(
+		null,
+	);
 	const debouncedSearch = useDebouncedValue(search);
 	const session = useQuery(authSessionQueryOptions);
 	const semesters = useQuery({
@@ -40,17 +43,45 @@ export function useReportPublication() {
 			await queryClient.invalidateQueries({ queryKey: ["reports"] });
 		},
 	});
+	const publishBatch = useMutation({
+		mutationFn: async (reportIds: string[]) => {
+			const failures: string[] = [];
+			setBatchProgress({ completed: 0, total: reportIds.length });
+			for (const [index, reportId] of reportIds.entries()) {
+				try {
+					await api(`/reports/${reportId}/publish`, { method: "POST" });
+				} catch {
+					failures.push(reportId);
+				}
+				setBatchProgress({ completed: index + 1, total: reportIds.length });
+			}
+			return { failures, published: reportIds.length - failures.length };
+		},
+		onSuccess: async ({ failures, published }) => {
+			setNotice(
+				failures.length
+					? `${published} rapor berhasil diterbitkan. ${failures.length} rapor belum dapat diterbitkan.`
+					: `${published} rapor berhasil diterbitkan dan siap dikirim kepada wali.`,
+			);
+			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
+			await queryClient.invalidateQueries({ queryKey: ["reports"] });
+		},
+		onSettled: () => setBatchProgress(null),
+	});
 
 	const reports = useMemo<PublicationReport[]>(
 		() =>
 			(progress.data ?? []).filter(
 				(item): item is PublicationReport =>
-					Boolean(item.report_id) && (item.status === "APPROVED" || item.status === "PUBLISHED"),
+					Boolean(item.report_id) &&
+					["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(item.status ?? ""),
 			),
 		[progress.data],
 	);
 	const counts = useMemo(
 		() => ({
+			waitingReview: reports.filter((item) => ["SUBMITTED", "IN_REVIEW"].includes(item.status))
+				.length,
 			approved: reports.filter((item) => item.status === "APPROVED").length,
 			published: reports.filter((item) => item.status === "PUBLISHED").length,
 		}),
@@ -70,6 +101,7 @@ export function useReportPublication() {
 
 	return {
 		canPublish: session.data?.role === "SCHOOL_ADMIN",
+		batchProgress,
 		counts,
 		error:
 			publish.error instanceof Error
@@ -83,6 +115,8 @@ export function useReportPublication() {
 		pagedReports: filteredReports.slice((page - 1) * pageSize, page * pageSize),
 		progress,
 		publish,
+		publishBatch,
+		reports,
 		search,
 		semesterId,
 		semesters,
