@@ -99,7 +99,7 @@ export function ReportProgressList({
 					))}
 				</div>
 			</div>
-			<div className="overflow-x-auto border-t border-[#edf0e8]">
+			<div className="hidden border-t border-[#edf0e8] md:block">
 				<table className="w-full text-left text-sm">
 					<thead className="border-b border-[#e7e9df] bg-[#f5f7f1] text-xs text-[#667168]">
 						<tr>
@@ -154,6 +154,49 @@ export function ReportProgressList({
 						)}
 					</tbody>
 				</table>
+			</div>
+			<div className="space-y-3 border-t border-[#edf0e8] p-4 md:hidden">
+				{loading ? (
+					<p className="py-6 text-center text-sm text-[#68746a]">Memuat rapor murid…</p>
+				) : !items.length ? (
+					<p className="py-8 text-center text-sm text-[#68746a]">
+						Tidak ada murid pada filter ini.
+					</p>
+				) : (
+					items.map((item) => {
+						const next = getReportDestination(item);
+						return (
+							<article
+								key={item.id}
+								className="rounded-2xl border border-[#e7e9df] bg-[#fffefa] p-4"
+							>
+								<div className="flex items-start justify-between gap-3">
+									<h3 className="font-semibold text-[#17251b]">{item.name}</h3>
+									{item.status ? (
+										<StatusBadge tone={statusCopy[item.status].tone}>
+											{statusCopy[item.status].label}
+										</StatusBadge>
+									) : (
+										<span className="text-xs text-[#68746a]">Belum dibuat</span>
+									)}
+								</div>
+								<div className="mt-4 border-t border-[#edf0e8] pt-3">
+									{next ? (
+										<Link href={next.href}>
+											<Button variant="secondary" className="w-full">
+												{next.label}
+											</Button>
+										</Link>
+									) : (
+										<Button className="w-full" onClick={() => onCreateDraft(item.id)}>
+											Buat draf
+										</Button>
+									)}
+								</div>
+							</article>
+						);
+					})
+				)}
 			</div>
 			<div className="px-5 py-4 sm:px-6">
 				<PaginationControls

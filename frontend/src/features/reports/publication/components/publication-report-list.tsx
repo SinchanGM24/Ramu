@@ -95,7 +95,7 @@ export function PublicationReportList({
 					))}
 				</div>
 			</div>
-			<div className="overflow-x-auto border-t border-[#edf0e8]">
+			<div className="hidden border-t border-[#edf0e8] md:block">
 				<table className="w-full text-left text-sm">
 					<thead className="border-b border-[#e7e9df] bg-[#f5f7f1] text-xs text-[#667168]">
 						<tr>
@@ -153,6 +153,48 @@ export function PublicationReportList({
 						)}
 					</tbody>
 				</table>
+			</div>
+			<div className="space-y-3 border-t border-[#edf0e8] p-4 md:hidden">
+				{loading ? (
+					<p className="py-6 text-center text-sm text-[#68746a]">Memuat daftar publikasi rapor…</p>
+				) : !reports.length ? (
+					<p className="py-8 text-center text-sm text-[#68746a]">Tidak ada rapor pada tahap ini.</p>
+				) : (
+					reports.map((report) => (
+						<article
+							key={report.report_id}
+							className="rounded-2xl border border-[#e7e9df] bg-[#fffefa] p-4"
+						>
+							<div className="flex items-start justify-between gap-3">
+								<h3 className="font-semibold text-[#17251b]">{report.name}</h3>
+								<StatusBadge tone={statusCopy[report.status].tone}>
+									{statusCopy[report.status].label}
+								</StatusBadge>
+							</div>
+							<div className="mt-4 border-t border-[#edf0e8] pt-3">
+								{report.status === "APPROVED" ? (
+									canPublish ? (
+										<PublishReportAction
+											reportId={report.report_id}
+											pending={pending}
+											onPublish={() => onPublish(report.report_id)}
+										/>
+									) : (
+										<p className="text-sm leading-6 text-slate-500">
+											Menunggu Admin Sekolah menerbitkan rapor.
+										</p>
+									)
+								) : (
+									<Link href={`/app/reports/${report.report_id}/deliveries`}>
+										<Button variant="secondary" className="w-full">
+											Kirim ke wali
+										</Button>
+									</Link>
+								)}
+							</div>
+						</article>
+					))
+				)}
 			</div>
 			<div className="px-5 py-4 sm:px-6">
 				<PaginationControls page={page} pageSize={10} total={total} onPageChange={onPageChange} />

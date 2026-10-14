@@ -76,8 +76,8 @@ export function StudentDirectoryTable({
 					</select>
 				</label>
 			</div>
-			<div className="mt-4 overflow-x-auto">
-				<table className="w-full min-w-[580px] text-left text-sm">
+			<div className="mt-4 hidden md:block">
+				<table className="w-full text-left text-sm">
 					<thead className="border-b border-[#e7e7dc] text-xs font-semibold uppercase tracking-[0.12em] text-[#637065]">
 						<tr>
 							<th className="pb-3">Murid</th>
@@ -139,6 +139,49 @@ export function StudentDirectoryTable({
 					</tbody>
 				</table>
 			</div>
+			<div className="mt-4 space-y-3 md:hidden">
+				{loading ? (
+					<MobileLoadingCards />
+				) : error ? (
+					<div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+						Daftar murid tidak dapat dimuat.{" "}
+						<button type="button" className="font-semibold underline" onClick={onRetry}>
+							Coba lagi
+						</button>
+					</div>
+				) : students?.items.length ? (
+					students.items.map((student) => (
+						<article key={student.id} className="rounded-2xl border border-[#e7e7dc] bg-white p-4">
+							<div className="flex items-start justify-between gap-3">
+								<div className="min-w-0">
+									<h3 className="font-semibold text-brand-950">{student.name}</h3>
+									<p className="mt-1 text-xs text-[#637065]">
+										{student.student_number
+											? `Nomor induk: ${student.student_number}`
+											: "Nomor induk belum diisi"}
+									</p>
+								</div>
+								<Link
+									href={`/app/academic/students/${student.id}`}
+									className="text-sm font-semibold text-brand-700"
+								>
+									Kelola
+								</Link>
+							</div>
+							<span className="mt-3 inline-flex rounded-full bg-[#f1f3ec] px-2.5 py-1 text-xs font-medium text-[#4e5c50]">
+								{student.class_name || "Belum ditempatkan"}
+							</span>
+						</article>
+					))
+				) : (
+					<div className="rounded-2xl border border-dashed border-[#dfe3d8] px-4 py-10 text-center">
+						<p className="font-semibold text-slate-700">Tidak ada murid yang ditemukan</p>
+						<p className="mt-1 text-sm text-slate-500">
+							Ubah pencarian atau filter kelas, atau tambahkan murid baru.
+						</p>
+					</div>
+				)}
+			</div>
 			<PaginationControls
 				page={page}
 				pageSize={pageSize}
@@ -146,6 +189,20 @@ export function StudentDirectoryTable({
 				onPageChange={onPageChange}
 			/>
 		</Card>
+	);
+}
+
+function MobileLoadingCards() {
+	return (
+		<>
+			{Array.from({ length: 3 }, (_, index) => (
+				<div key={index} className="rounded-2xl border border-[#e7e7dc] bg-white p-4">
+					<div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
+					<div className="mt-2 h-3 w-28 animate-pulse rounded bg-slate-100" />
+					<div className="mt-3 h-6 w-24 animate-pulse rounded-full bg-slate-100" />
+				</div>
+			))}
+		</>
 	);
 }
 
