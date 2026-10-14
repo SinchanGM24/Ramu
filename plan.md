@@ -4,6 +4,8 @@ Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
 
 ## Fondasi bersama
 
+Progres aset: ilustrasi orisinal untuk landing dan autentikasi telah ditambahkan di `frontend/public/brand/`; area kerja data dan dokumen formal sengaja tetap tanpa ilustrasi.
+
 - [x] Dalam pengerjaan — Token warna, permukaan, shadow, spacing, dan global CSS
 - [x] Dalam pengerjaan — Button, Card, Page Header, dan navigasi mobile
 - [ ] Belum dimulai — Form control, dialog, dropdown, tooltip, alert, empty state, skeleton, dan tabel bersama

@@ -45,11 +45,11 @@ Gunakan `brand-*` untuk tombol, hover, link, focus ring, dan aksen. Untuk permuk
 
 ## Aset
 
-Aset dekoratif orisinal disimpan di `frontend/public/brand/`. Jangan menggunakan screenshot referensi sebagai aset aplikasi, jangan memakai data murid/sekolah nyata, dan selalu beri `alt` untuk gambar bermakna.
+Gunakan ilustrasi orisinal yang dibuat khusus untuk RAMU dan simpan di `frontend/public/brand/`. Jangan menggunakan screenshot referensi sebagai aset aplikasi, jangan memakai data murid/sekolah nyata, dan selalu beri `alt` untuk gambar bermakna.
 
-Jika sebuah ilustrasi benar-benar membantu orientasi, empty state, landing, autentikasi, atau identitas sekolah, aset boleh memakai sumber gratis dan berlisensi terbuka. Pilih hanya tema sekolah, belajar, buku, kelas, alat tulis, atau botani pendukung.
+Ilustrasi hanya dipakai jika membantu orientasi, empty state, landing, autentikasi, atau identitas sekolah. Pilih tema sekolah, belajar, buku, kelas, alat tulis, atau botani pendukung. Hindari ilustrasi pada tabel padat, form kerja, editor rapor, preview formal, dan PDF.
 
-- Utamakan SVG dan lisensi CC0/public domain; contoh kandidat sekolah adalah [School-15 / Openclipart](https://openclipart.org/detail/260819/school15), yang dicantumkan sebagai CC0.
-- Simpan aset yang dipakai secara lokal di `frontend/public/brand/`, gunakan nama deskriptif, dan catat sumber, lisensi, URL, serta perubahan warna di `frontend/public/brand/ATTRIBUTION.md`.
-- Jangan mengambil gambar tanpa lisensi jelas, foto stok generik, wajah anak nyata, atau aset yang tidak dapat dipakai secara komersial.
+- Setiap aset diberi nama deskriptif dan dicatat di `frontend/public/brand/README.md`, termasuk lokasi pemakaian dan prompt ringkas pembuatannya.
+- Jika suatu saat aset orisinal tidak memadai, sumber eksternal hanya boleh digunakan setelah lisensi komersialnya jelas dan dicatat di `ATTRIBUTION.md`.
+- Jangan menggunakan foto stok generik, wajah anak nyata, gambar tanpa lisensi jelas, atau aset yang tidak dapat dipakai secara komersial.
 - Jangan menaruh ilustrasi pada tabel padat, editor rapor, preview formal, PDF, maupun area tindakan yang berisiko mengganggu fokus pengguna.

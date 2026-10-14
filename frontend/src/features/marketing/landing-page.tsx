@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, CheckCircle2, Leaf, ShieldCheck, Sparkles } from "lucide-react";
 import { BrandMark } from "@/components/shared/brand-mark";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,15 @@ export function LandingPage() {
 						aria-hidden="true"
 						className="absolute right-0 top-0 size-36 rounded-full border-[14px] border-brand-300/35"
 					/>
-					<div className="absolute bottom-0 left-0 right-8 rounded-[2.25rem] border border-white/80 bg-[#fffdf8] p-5 shadow-panel sm:p-7">
+					<Image
+						src="/brand/ramu-school-hero.png"
+						alt="Ilustrasi sekolah dengan buku dan alat tulis"
+						width={1792}
+						height={1024}
+						priority
+						className="absolute right-[-7%] top-[1%] z-10 h-auto w-[108%] max-w-none object-contain sm:right-[-2%] sm:w-[104%]"
+					/>
+					<div className="absolute bottom-0 left-0 right-8 z-20 rounded-[2.25rem] border border-white/80 bg-[#fffdf8]/95 p-5 shadow-panel backdrop-blur-sm sm:p-7">
 						<div className="flex items-start justify-between gap-5">
 							<div>
 								<p className="text-sm font-semibold text-brand-700">Ruang kerja sekolah</p>

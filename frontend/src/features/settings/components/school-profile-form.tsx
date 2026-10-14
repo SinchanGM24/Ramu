@@ -1,4 +1,5 @@
 import { Building2, ImageUp } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 type SchoolProfileFormProps = {
@@ -78,7 +79,14 @@ export function SchoolProfileForm({
 				<div className="mt-3 flex flex-wrap items-center gap-4">
 					<div className="grid size-20 place-items-center overflow-hidden rounded-2xl border border-[#dfe3d9] bg-[#f5f7f1] shadow-inner">
 						{hasLogo ? (
-							<img src={logoUrl} alt="Logo sekolah" className="size-full object-contain p-1" />
+							<Image
+								src={logoUrl}
+								alt="Logo sekolah"
+								width={80}
+								height={80}
+								unoptimized
+								className="size-full object-contain p-1"
+							/>
 						) : (
 							<Building2 size={26} className="text-[#9aa39a]" />
 						)}

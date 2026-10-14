@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CheckCircle2, Leaf, ShieldCheck } from "lucide-react";
 import { ReactNode } from "react";
 import { BrandMark } from "@/components/shared/brand-mark";
@@ -47,6 +48,14 @@ export function AuthShell({
 						))}
 					</ul>
 				</div>
+				<Image
+					src="/brand/ramu-learning-auth.png"
+					alt="Ilustrasi buku, pensil, dan sekolah"
+					width={1024}
+					height={1536}
+					priority
+					className="pointer-events-none absolute bottom-[-21%] right-[-11%] z-0 h-auto w-[62%] opacity-90"
+				/>
 				<p className="relative flex items-center gap-2 text-xs text-brand-100/65">
 					<ShieldCheck size={15} /> Data sekolah terisolasi dengan aman.
 				</p>
