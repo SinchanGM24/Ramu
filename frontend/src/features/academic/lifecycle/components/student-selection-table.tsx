@@ -31,7 +31,13 @@ export function StudentSelectionTable({
 			{students.length ? (
 				<>
 					<div className="mt-5 hidden overflow-hidden rounded-2xl border border-[#e2e4da] md:block">
-						<table className="w-full text-left text-sm">
+						<table className="w-full table-fixed text-left text-sm">
+							<colgroup>
+								<col className="w-14" />
+								<col className="w-[44%]" />
+								<col className="w-[32%]" />
+								<col className="w-[9rem]" />
+							</colgroup>
 							<thead className="bg-[#f4f4ed] text-xs font-semibold uppercase tracking-[0.12em] text-[#637065]">
 								<tr>
 									<th className="w-14 px-4 py-3">
@@ -75,7 +81,9 @@ export function StudentSelectionTable({
 												/>
 											</td>
 											<td className="px-4 py-4">
-												<p className="font-semibold text-brand-950">{student.name}</p>
+												<p className="truncate font-semibold text-brand-950" title={student.name}>
+													{student.name}
+												</p>
 												<p className="mt-1 text-xs text-[#637065]">
 													{student.student_number
 														? `Nomor induk: ${student.student_number}`

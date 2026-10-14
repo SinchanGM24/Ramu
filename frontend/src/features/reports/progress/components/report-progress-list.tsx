@@ -68,13 +68,19 @@ export function ReportProgressList({
 				</label>
 			</div>
 			<div className="hidden border-t border-[#edf0e8] md:block">
-				<table className="w-full text-left text-sm">
+				<table className="w-full table-fixed text-left text-sm">
+					<colgroup>
+						<col className="w-[30%]" />
+						<col className="w-[22%]" />
+						<col className="w-[28%]" />
+						<col className="w-[10.5rem]" />
+					</colgroup>
 					<thead className="border-b border-[#e7e9df] bg-[#f5f7f1] text-xs text-[#667168]">
 						<tr>
-							<th className="pb-3 font-semibold">Murid</th>
-							<th className="pb-3 font-semibold">Tahap raport</th>
-							<th className="pb-3 font-semibold">Kelengkapan</th>
-							<th className="pb-3 text-right font-semibold">Tindakan</th>
+							<th className="px-5 py-3 font-semibold sm:px-6">Murid</th>
+							<th className="px-4 py-3 font-semibold">Tahap raport</th>
+							<th className="px-4 py-3 font-semibold">Kelengkapan</th>
+							<th className="px-5 py-3 text-right font-semibold sm:px-6">Tindakan</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -98,13 +104,15 @@ export function ReportProgressList({
 										key={item.id}
 										className="border-b border-[#edf0e8] transition-colors hover:bg-[#f8faf5] last:border-0"
 									>
-										<td className="px-5 py-4 font-semibold text-[#17251b]">
-											{item.name}
+										<td className="px-5 py-4 font-semibold text-[#17251b] sm:px-6">
+											<p className="truncate" title={item.name}>
+												{item.name}
+											</p>
 											{item.status === "REVISION_REQUIRED" ? (
 												<ReportRevisionNote compact note={item.revision_note} />
 											) : null}
 										</td>
-										<td className="px-5 py-4">
+										<td className="px-4 py-4">
 											{item.status ? (
 												<StatusBadge tone={statusCopy[item.status].tone}>
 													{statusCopy[item.status].label}
@@ -113,10 +121,10 @@ export function ReportProgressList({
 												<span className="text-[#68746a]">Belum dibuat</span>
 											)}
 										</td>
-										<td className="px-5 py-4">
+										<td className="px-4 py-4">
 											<CompletionProgress percent={item.completion_percent} />
 										</td>
-										<td className="px-5 py-4 text-right">
+										<td className="px-5 py-4 text-right sm:px-6">
 											{next ? (
 												<Link href={next.href}>
 													<Button variant="secondary">{next.label}</Button>

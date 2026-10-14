@@ -14,7 +14,14 @@ export function StaffDirectoryTable({
 	return (
 		<>
 			<div className="mt-5 hidden overflow-hidden rounded-xl border border-[#e5e7dc] bg-[#fffefa] md:block">
-				<table className="w-full text-left text-sm">
+				<table className="w-full table-fixed text-left text-sm">
+					<colgroup>
+						<col className="w-[30%]" />
+						<col className="w-[23%]" />
+						<col className="w-[16%]" />
+						<col className="w-[15%]" />
+						<col className="w-[9rem]" />
+					</colgroup>
 					<thead className="bg-[#f3f5ef] text-xs font-bold uppercase tracking-[0.08em] text-[#667168]">
 						<tr>
 							<th className="px-4 py-3">Nama</th>
@@ -31,10 +38,22 @@ export function StaffDirectoryTable({
 								className="border-t border-[#edf0e8] transition-colors hover:bg-[#f8faf5]"
 							>
 								<td className="px-4 py-3.5 font-semibold text-[#17251b]">
-									<span className="block">{account.name}</span>
-									<span className="mt-0.5 block font-normal text-[#6c776e]">{account.email}</span>
+									<span className="block truncate" title={account.name}>
+										{account.name}
+									</span>
+									<span
+										className="mt-0.5 block truncate font-normal text-[#6c776e]"
+										title={account.email}
+									>
+										{account.email}
+									</span>
 								</td>
-								<td className="px-4 py-3.5 text-[#566258]">{account.phone || "Belum diisi"}</td>
+								<td
+									className="truncate px-4 py-3.5 text-[#566258]"
+									title={account.phone || undefined}
+								>
+									{account.phone || "Belum diisi"}
+								</td>
 								<td className="px-4 py-3.5 text-[#35443a]">{roleName(account.role)}</td>
 								<td className="px-4 py-3.5">
 									<span

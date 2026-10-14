@@ -77,12 +77,17 @@ export function StudentDirectoryTable({
 				</label>
 			</div>
 			<div className="mt-4 hidden md:block">
-				<table className="w-full text-left text-sm">
+				<table className="w-full table-fixed text-left text-sm">
+					<colgroup>
+						<col className="w-[48%]" />
+						<col className="w-[32%]" />
+						<col className="w-[8rem]" />
+					</colgroup>
 					<thead className="border-b border-[#e7e7dc] text-xs font-semibold uppercase tracking-[0.12em] text-[#637065]">
 						<tr>
-							<th className="pb-3">Murid</th>
-							<th className="pb-3">Kelas saat ini</th>
-							<th className="pb-3 text-right">Aksi</th>
+							<th className="px-5 py-3 sm:px-6">Murid</th>
+							<th className="px-4 py-3">Kelas saat ini</th>
+							<th className="px-5 py-3 text-right sm:px-6">Aksi</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -90,7 +95,7 @@ export function StudentDirectoryTable({
 							<LoadingRows />
 						) : error ? (
 							<tr>
-								<td colSpan={3} className="py-10 text-center text-red-700">
+								<td colSpan={3} className="px-5 py-10 text-center text-red-700 sm:px-6">
 									Daftar murid tidak dapat dimuat.{" "}
 									<button type="button" className="font-semibold underline" onClick={onRetry}>
 										Coba lagi
@@ -103,20 +108,22 @@ export function StudentDirectoryTable({
 									key={student.id}
 									className="border-b border-[#e7e7dc] transition-colors hover:bg-brand-50/35 last:border-0"
 								>
-									<td className="py-4">
-										<p className="font-semibold text-brand-950">{student.name}</p>
+									<td className="px-5 py-4 sm:px-6">
+										<p className="truncate font-semibold text-brand-950" title={student.name}>
+											{student.name}
+										</p>
 										<p className="mt-1 text-xs text-[#637065]">
 											{student.student_number
 												? `Nomor induk: ${student.student_number}`
 												: "Nomor induk belum diisi"}
 										</p>
 									</td>
-									<td className="py-4">
+									<td className="px-4 py-4">
 										<span className="inline-flex rounded-full bg-[#f1f3ec] px-2.5 py-1 text-xs font-medium text-[#4e5c50]">
 											{student.class_name || "Belum ditempatkan"}
 										</span>
 									</td>
-									<td className="py-4 text-right">
+									<td className="px-5 py-4 text-right sm:px-6">
 										<Link
 											href={`/app/academic/students/${student.id}`}
 											className="font-semibold text-brand-700 hover:text-brand-800"
@@ -128,7 +135,7 @@ export function StudentDirectoryTable({
 							))
 						) : (
 							<tr>
-								<td colSpan={3} className="py-12 text-center">
+								<td colSpan={3} className="px-5 py-12 text-center sm:px-6">
 									<p className="font-semibold text-slate-700">Tidak ada murid yang ditemukan</p>
 									<p className="mt-1 text-sm text-slate-500">
 										Ubah pencarian atau filter kelas, atau tambahkan murid baru.
@@ -211,14 +218,14 @@ function LoadingRows() {
 		<>
 			{Array.from({ length: 4 }, (_, index) => (
 				<tr key={index} className="border-b border-slate-100">
-					<td className="py-4">
+					<td className="px-5 py-4 sm:px-6">
 						<div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
 						<div className="mt-2 h-3 w-28 animate-pulse rounded bg-slate-100" />
 					</td>
-					<td>
+					<td className="px-4">
 						<div className="h-6 w-20 animate-pulse rounded-full bg-slate-100" />
 					</td>
-					<td />
+					<td className="px-5 sm:px-6" />
 				</tr>
 			))}
 		</>
