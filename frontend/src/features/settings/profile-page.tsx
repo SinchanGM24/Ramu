@@ -16,13 +16,14 @@ export function ProfilePage() {
 	const profile = useQuery({ queryKey: ["profile"], queryFn: () => api<Profile>("/auth/profile") });
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState("");
+	const [sensitiveFieldsUnlocked, setSensitiveFieldsUnlocked] = useState(false);
 
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		const data = new FormData(event.currentTarget);
-		const password = String(data.get("password") || "");
-		const passwordConfirmation = String(data.get("passwordConfirmation") || "");
-		const currentPassword = String(data.get("currentPassword") || "");
+		const password = String(data.get("newAccountPassword") || "");
+		const passwordConfirmation = String(data.get("newAccountPasswordConfirmation") || "");
+		const currentPassword = String(data.get("currentAccountPassword") || "");
 		setMessage("");
 		setError("");
 		if (password && !currentPassword) {
@@ -38,7 +39,7 @@ export function ProfilePage() {
 				method: "PATCH",
 				body: JSON.stringify({
 					name: data.get("name"),
-					phone: data.get("phone") || undefined,
+					phone: data.get("accountPhone") || undefined,
 					currentPassword: currentPassword || undefined,
 					password: password || undefined,
 					passwordConfirmation: passwordConfirmation || undefined,
@@ -113,11 +114,17 @@ export function ProfilePage() {
 						<label className="block text-sm font-semibold text-[#35443a]">
 							Nomor telepon
 							<input
-								name="phone"
-								type="tel"
+								name="accountPhone"
+								type="text"
+								inputMode="tel"
 								autoComplete="off"
 								defaultValue={profile.data?.phone || ""}
 								placeholder="08xxxxxxxxxx"
+								readOnly={!sensitiveFieldsUnlocked}
+								onFocus={() => setSensitiveFieldsUnlocked(true)}
+								onPointerDown={() => setSensitiveFieldsUnlocked(true)}
+								data-1p-ignore="true"
+								data-lpignore="true"
 								className={`${inputClass} mt-1`}
 							/>
 						</label>
@@ -136,29 +143,44 @@ export function ProfilePage() {
 							<label className="mt-4 block text-sm font-semibold text-[#35443a]">
 								Kata sandi saat ini
 								<input
-									name="currentPassword"
+									name="currentAccountPassword"
 									type="password"
-									autoComplete="current-password"
+									autoComplete="off"
+									readOnly={!sensitiveFieldsUnlocked}
+									onFocus={() => setSensitiveFieldsUnlocked(true)}
+									onPointerDown={() => setSensitiveFieldsUnlocked(true)}
+									data-1p-ignore="true"
+									data-lpignore="true"
 									className={`${inputClass} mt-1`}
 								/>
 							</label>
 							<label className="mt-4 block text-sm font-semibold text-[#35443a]">
 								Kata sandi baru
 								<input
-									name="password"
+									name="newAccountPassword"
 									minLength={8}
 									type="password"
-									autoComplete="new-password"
+									autoComplete="off"
+									readOnly={!sensitiveFieldsUnlocked}
+									onFocus={() => setSensitiveFieldsUnlocked(true)}
+									onPointerDown={() => setSensitiveFieldsUnlocked(true)}
+									data-1p-ignore="true"
+									data-lpignore="true"
 									className={`${inputClass} mt-1`}
 								/>
 							</label>
 							<label className="mt-4 block text-sm font-semibold text-[#35443a]">
 								Ulangi kata sandi baru
 								<input
-									name="passwordConfirmation"
+									name="newAccountPasswordConfirmation"
 									minLength={8}
 									type="password"
-									autoComplete="new-password"
+									autoComplete="off"
+									readOnly={!sensitiveFieldsUnlocked}
+									onFocus={() => setSensitiveFieldsUnlocked(true)}
+									onPointerDown={() => setSensitiveFieldsUnlocked(true)}
+									data-1p-ignore="true"
+									data-lpignore="true"
 									className={`${inputClass} mt-1`}
 								/>
 							</label>
