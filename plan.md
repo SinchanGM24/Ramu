@@ -1,58 +1,69 @@
 # Checklist redesign UI/UX RAMU
 
-Status: `Belum dimulai` · `Dalam pengerjaan` · `Selesai` · `Terverifikasi`
+Dokumen ini mencatat pekerjaan frontend-only. Redesign tidak mengubah API, database, RBAC, alur akademik, maupun workflow rapor.
+
+Status:
+
+- `Selesai`: implementasi visual dan komposisi halaman sudah diperbarui.
+- `Perlu verifikasi`: implementasi selesai, tetapi masih menunggu pengecekan visual lintas ukuran layar dan alur per peran.
+- `Belum dimulai`: belum ada pekerjaan khusus pada area tersebut.
 
 ## Fondasi bersama
 
-Progres aset: ilustrasi orisinal untuk landing dan autentikasi telah ditambahkan di `frontend/public/brand/`; area kerja data dan dokumen formal sengaja tetap tanpa ilustrasi.
+- [x] Selesai — Token warna, permukaan ivory, aksen forest, shadow, radius, dan spacing global.
+- [x] Selesai — Button, Card, Page Header, status, pagination, dialog, dan switch yang dipakai ulang.
+- [x] Selesai — Shell aplikasi: sidebar, topbar, navigasi seluler, state aktif, dan navigasi berbasis peran.
+- [x] Selesai — Aset ilustrasi orisinal RAMU untuk landing dan autentikasi.
+- [ ] Perlu verifikasi — Konsistensi state loading, kosong, error, sukses, tooltip, dan dialog pada seluruh rute.
 
-- [x] Dalam pengerjaan — Token warna, permukaan, shadow, spacing, dan global CSS
-- [x] Dalam pengerjaan — Button, Card, Page Header, dan navigasi mobile
-- [ ] Belum dimulai — Form control, dialog, dropdown, tooltip, alert, empty state, skeleton, dan tabel bersama
-- [x] Dalam pengerjaan — Sidebar desktop dan shell aplikasi
-- [ ] Belum dimulai — Aset SVG/CSS botani dan ilustrasi orisinal
+## Rute publik dan autentikasi
 
-## Rute publik
+- [x] Selesai — `/`
+- [x] Selesai — `/login`
+- [x] Selesai — `/register`
+- [x] Selesai — `/r/[token]`
 
-- [x] Dalam pengerjaan — `/`
-- [x] Dalam pengerjaan — `/login`
-- [x] Dalam pengerjaan — `/register`
-- [ ] Belum dimulai — `/r/[token]`
+## Rute aplikasi dan administrasi akademik
 
-## Rute aplikasi
-
-- [x] Dalam pengerjaan — `/app/dashboard`
-- [x] Dalam pengerjaan — `/app/academic`
-- [x] Dalam pengerjaan — `/app/academic/students`
-- [x] Dalam pengerjaan — `/app/academic/students/[id]`
-- [x] Dalam pengerjaan — `/app/academic/lifecycle`
-- [x] Dalam pengerjaan — `/app/academic/archive`
-- [ ] Belum dimulai — `/app/students/[id]/assessment`
+- [x] Selesai — `/app/dashboard`
+- [x] Selesai — `/app/academic`
+- [x] Selesai — `/app/academic/students`
+- [x] Selesai — `/app/academic/students/[id]`
+- [x] Selesai — `/app/academic/lifecycle`
+- [x] Selesai — `/app/academic/archive`
+- [x] Selesai — `/app/students/[id]/assessment`
 
 ## Rute rapor
 
-Progres batch saat ini: halaman Pengisian Rapor sedang memperoleh desain baru; tampilan formal, editor, data penilaian, dan workflow tidak diubah.
+- [x] Selesai — `/app/reports/progress`
+- [x] Selesai — `/app/reports/review`
+- [x] Selesai — `/app/reports/publication`
+- [x] Selesai — `/app/reports/[id]`
+- [x] Selesai — `/app/reports/[id]/portfolio`
+- [x] Selesai — `/app/reports/[id]/preview`
+- [x] Selesai — `/app/reports/[id]/published`
+- [x] Selesai — `/app/reports/[id]/deliveries`
 
-- [ ] Belum dimulai — `/app/reports/progress`
-- [ ] Belum dimulai — `/app/reports/review`
-- [ ] Belum dimulai — `/app/reports/publication`
-- [ ] Belum dimulai — `/app/reports/[id]`
-- [ ] Belum dimulai — `/app/reports/[id]/portfolio`
-- [ ] Belum dimulai — `/app/reports/[id]/preview`
-- [ ] Belum dimulai — `/app/reports/[id]/published`
-- [ ] Belum dimulai — `/app/reports/[id]/deliveries`
+Catatan: preview, rapor terbit, PDF, dan viewer wali mempertahankan struktur formal serta aturan rapor terbit yang tidak dapat diubah.
 
-## Rute pengaturan
+## Rute pengaturan dan akun
 
-Progres batch saat ini: halaman Profil Sekolah, Kelola Akun, dan Profil Akun telah memperoleh desain baru; verifikasi visual lintas ukuran layar masih berjalan.
+- [x] Selesai — `/app/settings/school`
+- [x] Selesai — `/app/settings/staff`
+- [x] Selesai — `/app/settings/profile`
 
-- [ ] Belum dimulai — `/app/settings/school`
-- [ ] Belum dimulai — `/app/settings/staff`
-- [ ] Belum dimulai — `/app/settings/profile`
+## Verifikasi akhir yang tersisa
 
-## Verifikasi akhir
+- [ ] Belum dimulai — Audit visual desktop, tablet, dan ponsel pada seluruh rute.
+- [ ] Belum dimulai — Uji alur Admin Sekolah: akademik, murid, lifecycle, publikasi, dan pengiriman.
+- [ ] Belum dimulai — Uji alur Guru: kelas penugasan, pengisian individu, narasi, dan pengajuan.
+- [ ] Belum dimulai — Uji alur Kepala Sekolah: tinjauan dan persetujuan rapor serta pengajuan lifecycle.
+- [ ] Belum dimulai — Uji akses wali melalui token dan PIN pada ponsel.
+- [ ] Perlu verifikasi — Build, pemeriksaan tipe, lint, format, dan tes tersedia.
+- [ ] Belum dimulai — Laporan redesign akhir, hasil pemeriksaan, serta keterbatasan yang tersisa.
 
-- [ ] Belum dimulai — Desktop, tablet, dan mobile untuk setiap rute
-- [ ] Belum dimulai — Alur Admin Sekolah, Guru, Kepala Sekolah, dan wali
-- [ ] Belum dimulai — Build, lint, format check, TypeScript, dan tes tersedia
-- [ ] Belum dimulai — Laporan hasil dan keterbatasan tersisa
+## Catatan pemeriksaan terakhir
+
+- `npm run format:check -w frontend` lulus pada batch Portfolio Rapor.
+- `npm run build -w frontend` telah melewati kompilasi dan pemeriksaan tipe pada batch Portfolio Rapor; masih ada satu peringatan lama pada `narrative-editor.tsx` mengenai dependency `useEffect`.
+- Folder lokal `design/` berisi referensi desain pengguna dan sengaja tidak termasuk commit aplikasi.
