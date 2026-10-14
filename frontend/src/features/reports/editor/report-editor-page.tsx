@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FileWarning } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingState } from "@/components/shared/loading-state";
-import { Card } from "@/components/ui/card";
 import { DevelopmentAreaCard } from "./components/development-area-card";
 import { ReportEditorHeader } from "./components/report-editor-header";
 import { ReportEditorProgressCard } from "./components/report-editor-progress-card";
@@ -28,7 +29,15 @@ export function ReportEditorPage({ id }: { id: string }) {
 	}, [submissionFeedback]);
 
 	if (workspace.isLoading) return <LoadingState label="Memuat ruang kerja rapor..." />;
-	if (!workspace.data) return <Card>Rapor tidak dapat dimuat.</Card>;
+	if (!workspace.data) {
+		return (
+			<EmptyState
+				icon={FileWarning}
+				title="Rapor tidak dapat dimuat"
+				description="Coba muat ulang halaman. Jika masalah berlanjut, pastikan Anda memiliki akses ke rapor ini."
+			/>
+		);
+	}
 
 	const { areas, report, scales } = workspace.data;
 	const editable = ["DRAFT", "REVISION_REQUIRED"].includes(report.status);

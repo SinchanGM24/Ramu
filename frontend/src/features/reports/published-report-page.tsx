@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { FileWarning } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { LoadingState } from "@/components/shared/loading-state";
-import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { FormalAssessmentTable } from "./presentation/formal-assessment-table";
 import { ReportScaleLegend } from "./presentation/report-scale-legend";
@@ -44,12 +45,12 @@ export function PublishedReportPage({ id }: { id: string }) {
 	if (query.isLoading) return <LoadingState label="Memuat rapor terbit..." />;
 	if (!query.data)
 		return (
-			<Card className="max-w-xl border-dashed">
-				<h1 className="font-bold text-[#17251b]">Rapor terbit tidak ditemukan</h1>
-				<p className="mt-2 text-sm leading-6 text-[#637065]">
-					Rapor ini belum pernah diterbitkan atau Anda tidak memiliki akses.
-				</p>
-			</Card>
+			<EmptyState
+				className="max-w-xl"
+				icon={FileWarning}
+				title="Rapor terbit tidak ditemukan"
+				description="Rapor ini belum pernah diterbitkan atau Anda tidak memiliki akses."
+			/>
 		);
 	const { snapshot, version_number: versionNumber, published_at: publishedAt } = query.data;
 	const assessments = snapshot.assessments ?? [];

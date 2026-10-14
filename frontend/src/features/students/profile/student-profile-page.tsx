@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, UserRoundX } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingState } from "@/components/shared/loading-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { EnrollmentHistory } from "./components/enrollment-history";
 import { GuardiansSection } from "./components/guardians-section";
@@ -74,15 +74,16 @@ export function StudentProfilePage({ id }: { id: string }) {
 
 function StudentNotFound() {
 	return (
-		<Card>
-			<h1 className="font-bold">Murid tidak ditemukan</h1>
-			<Link
-				href="/app/academic/students"
-				className="mt-3 inline-block text-sm font-semibold text-brand-700"
-			>
-				Kembali ke data murid
-			</Link>
-		</Card>
+		<EmptyState
+			icon={UserRoundX}
+			title="Murid tidak ditemukan"
+			description="Data murid mungkin sudah tidak tersedia atau Anda tidak memiliki akses ke halaman ini."
+			action={
+				<Link href="/app/academic/students">
+					<Button variant="secondary">Kembali ke data murid</Button>
+				</Link>
+			}
+		/>
 	);
 }
 
