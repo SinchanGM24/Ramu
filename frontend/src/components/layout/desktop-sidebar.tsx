@@ -53,7 +53,7 @@ export function DesktopSidebar() {
 					<small className="text-xs text-brand-100/75">Raport Murid</small>
 				</span>
 			</Link>
-			<nav className="relative shrink-0 pr-1" aria-label="Navigasi aplikasi">
+			<nav className="relative min-h-0 flex-1 overflow-hidden pr-1" aria-label="Navigasi aplikasi">
 				<div className="space-y-0.5">
 					{navigation
 						.filter((item) => item.roles.includes(session.data?.role as AppRole))
