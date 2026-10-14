@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
 import { Button } from "@/components/ui/button";
@@ -48,33 +48,36 @@ export function NarrativeEditor({
 		}
 	}
 
-	async function generate(replaceExisting = false) {
-		if (!editable || !complete) return;
-		if (value.trim() && !replaceExisting) {
-			setConfirmReplacement(true);
-			return;
-		}
-		setConfirmReplacement(false);
-		setState("saving");
-		try {
-			const result = await api<{ content: string; generation: { warnings: string[] } }>(
-				`/reports/${reportId}/workspace/narratives/${area.id}/generate`,
-				{ method: "POST" },
-			);
-			generated.current = true;
-			saved.current = result.content;
-			setValue(result.content);
-			setWarnings(result.generation.warnings);
-			setState("saved");
-			refresh();
-		} catch {
-			setState("error");
-		}
-	}
+	const generate = useCallback(
+		async (replaceExisting = false) => {
+			if (!editable || !complete) return;
+			if (value.trim() && !replaceExisting) {
+				setConfirmReplacement(true);
+				return;
+			}
+			setConfirmReplacement(false);
+			setState("saving");
+			try {
+				const result = await api<{ content: string; generation: { warnings: string[] } }>(
+					`/reports/${reportId}/workspace/narratives/${area.id}/generate`,
+					{ method: "POST" },
+				);
+				generated.current = true;
+				saved.current = result.content;
+				setValue(result.content);
+				setWarnings(result.generation.warnings);
+				setState("saved");
+				refresh();
+			} catch {
+				setState("error");
+			}
+		},
+		[area.id, complete, editable, refresh, reportId, value],
+	);
 
 	useEffect(() => {
 		if (complete && !area.narrative && !generated.current) void generate();
-	}, [complete, area.narrative]);
+	}, [area.narrative, complete, generate]);
 
 	return (
 		<div className="mt-6 border-t border-[#e7e9df] pt-5">

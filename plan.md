@@ -65,5 +65,5 @@ Catatan: preview, rapor terbit, PDF, dan viewer wali mempertahankan struktur for
 ## Catatan pemeriksaan terakhir
 
 - `npm run format:check -w frontend` lulus pada batch Portfolio Rapor.
-- `npm run build -w frontend` telah melewati kompilasi dan pemeriksaan tipe pada batch Portfolio Rapor; masih ada satu peringatan lama pada `narrative-editor.tsx` mengenai dependency `useEffect`.
+- `npm run build -w frontend` telah melewati kompilasi serta pemeriksaan tipe pada batch Portfolio Rapor; peringatan dependency `useEffect` pada editor narasi telah dibersihkan.
 - Folder lokal `design/` berisi referensi desain pengguna dan sengaja tidak termasuk commit aplikasi.
