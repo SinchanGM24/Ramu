@@ -33,7 +33,6 @@ const guardianSchema = z.object({
   relationship: z.string().trim().min(2).max(50),
   phone: z.string().trim().min(8).max(30),
   occupation: z.string().trim().max(120).nullable().optional(),
-  isPrimary: z.boolean().default(false),
   isDeliveryRecipient: z.boolean().default(true),
 });
 const admissionDecisionSchema = z
@@ -340,9 +339,10 @@ export class StudentsController {
           actor.schoolId,
           id,
         );
-      if (input.isPrimary)
+      const isDeliveryRecipient = input.isDeliveryRecipient;
+      if (isDeliveryRecipient)
         await client.query(
-          "UPDATE guardian_contacts SET is_primary=false WHERE student_id=$1 AND school_id=$2",
+          "UPDATE guardian_contacts SET is_primary=false,is_delivery_recipient=false WHERE student_id=$1 AND school_id=$2",
           [id, actor.schoolId],
         );
       const result = await client.query(
@@ -355,8 +355,8 @@ export class StudentsController {
           input.relationship,
           input.phone,
           input.occupation ?? null,
-          input.isPrimary,
-          input.isDeliveryRecipient,
+          isDeliveryRecipient,
+          isDeliveryRecipient,
         ],
       );
       if (!result.rowCount) throw new Error("Data wali tidak ditemukan");
@@ -446,9 +446,10 @@ export class StudentsController {
           actor.schoolId,
           studentId,
         );
-      if (input.isPrimary)
+      const isDeliveryRecipient = input.isDeliveryRecipient;
+      if (isDeliveryRecipient)
         await client.query(
-          "UPDATE guardian_contacts SET is_primary=false WHERE student_id=$1 AND school_id=$2",
+          "UPDATE guardian_contacts SET is_primary=false,is_delivery_recipient=false WHERE student_id=$1 AND school_id=$2",
           [studentId, actor.schoolId],
         );
       const result = await client.query(
@@ -460,8 +461,8 @@ export class StudentsController {
           input.relationship,
           input.phone,
           input.occupation ?? null,
-          input.isPrimary,
-          input.isDeliveryRecipient,
+          isDeliveryRecipient,
+          isDeliveryRecipient,
         ],
       );
       await this.audit.record(

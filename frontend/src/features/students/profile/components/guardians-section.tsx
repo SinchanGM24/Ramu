@@ -41,7 +41,7 @@ export function GuardiansSection({ guardians, studentId }: GuardiansSectionProps
 				<div>
 					<h2 className="text-lg font-bold tracking-[-0.02em] text-brand-950">Orang tua/wali</h2>
 					<p className="mt-1 text-sm leading-6 text-[#637065]">
-						Tandai kontak yang menerima rapor saat diterbitkan.
+						Pilih satu kontak utama yang menerima raport saat diterbitkan.
 					</p>
 				</div>
 				<Button
@@ -73,14 +73,9 @@ export function GuardiansSection({ guardians, studentId }: GuardiansSectionProps
 							<span>
 								<span className="block font-semibold text-brand-950">
 									{guardian.name}
-									{guardian.is_primary ? (
-										<span className="ml-2 rounded-full bg-brand-50 px-2 py-1 text-xs text-brand-700">
-											Kontak utama
-										</span>
-									) : null}
-									{guardian.is_delivery_recipient !== false ? (
+									{guardian.is_primary || guardian.is_delivery_recipient !== false ? (
 										<span className="ml-2 rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-700">
-											Penerima rapor
+											Kontak utama · Penerima raport
 										</span>
 									) : null}
 								</span>

@@ -18,13 +18,13 @@ export function GuardianDialog({ guardian, pending, onClose, onSubmit }: Guardia
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		const form = new FormData(event.currentTarget);
+		const isDeliveryRecipient = form.get("isDeliveryRecipient") === "on";
 		onSubmit({
 			name: form.get("name"),
 			relationship: form.get("relationship"),
 			phone: form.get("phone"),
 			occupation: form.get("occupation") || null,
-			isPrimary: form.get("isPrimary") === "on",
-			isDeliveryRecipient: form.get("isDeliveryRecipient") === "on",
+			isDeliveryRecipient,
 		});
 	}
 
@@ -78,13 +78,15 @@ export function GuardianDialog({ guardian, pending, onClose, onSubmit }: Guardia
 						className={inputClass}
 					/>
 				</Field>
-				<SwitchField name="isPrimary" checked={guardian?.is_primary ?? guardian === null}>
-					Jadikan kontak utama
-				</SwitchField>
-				<SwitchField name="isDeliveryRecipient" checked={guardian?.is_delivery_recipient ?? true}>
-					<span className="block">Kirim rapor ke kontak ini</span>
+				<SwitchField
+					name="isDeliveryRecipient"
+					checked={
+						guardian ? guardian.is_primary || guardian.is_delivery_recipient !== false : true
+					}
+				>
+					<span className="block">Kirim raport ke kontak ini</span>
 					<span className="mt-1 block text-xs font-normal text-slate-500">
-						Kontak ini akan menerima tautan rapor setelah rapor diterbitkan.
+						Kontak ini menjadi kontak utama dan menerima tautan raport setelah diterbitkan.
 					</span>
 				</SwitchField>
 				<div className="flex gap-2 md:col-span-2">
