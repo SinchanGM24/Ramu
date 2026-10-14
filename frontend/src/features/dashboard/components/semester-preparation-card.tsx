@@ -1,23 +1,55 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { StatusBadge } from "@/components/shared/status-badge";
+import type { DashboardRole } from "../types";
 
-const actions = [
+const adminActions = [
 	["1", "Buat tahun ajaran dan semester", "/app/academic"],
 	["2", "Tambahkan kelas dan murid", "/app/academic/students"],
-];
+] as const;
 
-export function SemesterPreparationCard() {
+const roleActions: Record<DashboardRole, readonly (readonly [string, string, string])[]> = {
+	SCHOOL_ADMIN: adminActions,
+	TEACHER: [
+		["1", "Lanjutkan pengisian rapor", "/app/reports/progress"],
+		["2", "Lihat murid kelas Anda", "/app/academic/students"],
+	],
+	PRINCIPAL: [
+		["1", "Tinjau rapor yang masuk", "/app/reports/review"],
+		["2", "Tinjau pengajuan perpindahan", "/app/academic/lifecycle"],
+	],
+};
+
+export function SemesterPreparationCard({ role }: { role?: DashboardRole }) {
+	const currentRole = role ?? "SCHOOL_ADMIN";
+	const actions = roleActions[currentRole];
+	const title =
+		currentRole === "TEACHER"
+			? "Pekerjaan Anda"
+			: currentRole === "PRINCIPAL"
+				? "Tindakan prioritas"
+				: "Mulai persiapan semester";
+	const description =
+		currentRole === "TEACHER"
+			? "Selesaikan rapor dan data murid pada kelas penugasan Anda."
+			: currentRole === "PRINCIPAL"
+				? "Selesaikan antrean tinjauan agar proses akademik tetap berjalan."
+				: "Lengkapi data dasar sebelum mengisi penilaian.";
+	const badge =
+		currentRole === "TEACHER"
+			? "Perlu ditindaklanjuti"
+			: currentRole === "PRINCIPAL"
+				? "Menunggu tinjauan"
+				: "Perlu dilengkapi";
+
 	return (
 		<section className="rounded-2xl border border-[#e7e7dc] bg-[#fffdf8] p-5 shadow-soft sm:p-6">
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<h2 className="font-bold tracking-[-0.02em] text-brand-950">Mulai persiapan semester</h2>
-					<p className="mt-1 text-sm leading-6 text-[#637065]">
-						Lengkapi data dasar sebelum mengisi penilaian.
-					</p>
+					<h2 className="font-bold tracking-[-0.02em] text-brand-950">{title}</h2>
+					<p className="mt-1 text-sm leading-6 text-[#637065]">{description}</p>
 				</div>
-				<StatusBadge tone="amber">Perlu dilengkapi</StatusBadge>
+				<StatusBadge tone="amber">{badge}</StatusBadge>
 			</div>
 			<div className="mt-5 divide-y divide-[#e7e7dc]">
 				{actions.map(([number, label, href]) => (
