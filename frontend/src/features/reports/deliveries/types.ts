@@ -22,3 +22,7 @@ export type Recipient = {
 export type ManualDispatch = {
 	whatsAppUrl: string;
 };
+
+export type DeliveryContext = {
+	studentId: string;
+};

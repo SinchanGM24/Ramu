@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,7 @@ type DeliveryRecipientSelectorProps = {
 	recipients: Recipient[];
 	selectedIds: string[];
 	onQueue: () => void;
+	studentId?: string;
 	onToggleAll: () => void;
 	onToggleRecipient: (id: string) => void;
 };
@@ -17,6 +19,7 @@ export function DeliveryRecipientSelector({
 	recipients,
 	selectedIds,
 	onQueue,
+	studentId,
 	onToggleAll,
 	onToggleRecipient,
 }: DeliveryRecipientSelectorProps) {
@@ -86,8 +89,15 @@ export function DeliveryRecipientSelector({
 				</div>
 			) : (
 				<div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-					Belum ada kontak wali yang ditandai sebagai penerima rapor. Kelola kontak wali pada profil
-					murid terlebih dahulu.
+					<p>
+						Belum ada kontak wali yang ditandai sebagai penerima rapor. Kelola kontak wali pada
+						profil murid terlebih dahulu.
+					</p>
+					{studentId ? (
+						<Link href={`/app/academic/students/${studentId}`} className="mt-3 inline-flex">
+							<Button variant="secondary">Kelola profil murid</Button>
+						</Link>
+					) : null}
 				</div>
 			)}
 			<div className="mt-4 flex flex-col gap-2 border-t border-[#e7e9df] pt-4 sm:flex-row sm:items-center sm:justify-between">

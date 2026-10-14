@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Delivery, ManualDispatch, Recipient } from "../types";
+import type { Delivery, DeliveryContext, ManualDispatch, Recipient } from "../types";
 
 export function useReportDeliveries(reportId: string) {
 	const queryClient = useQueryClient();
@@ -15,6 +15,10 @@ export function useReportDeliveries(reportId: string) {
 	const recipients = useQuery({
 		queryKey: ["reports", reportId, "delivery-recipients"],
 		queryFn: () => api<Recipient[]>(`/reports/${reportId}/delivery-recipients`),
+	});
+	const context = useQuery({
+		queryKey: ["reports", reportId, "delivery-context"],
+		queryFn: () => api<DeliveryContext>(`/reports/${reportId}/delivery-context`),
 	});
 	useEffect(() => {
 		if (!recipients.data) return;
@@ -101,6 +105,7 @@ export function useReportDeliveries(reportId: string) {
 	}
 
 	return {
+		context,
 		deliveries,
 		notice,
 		noticeIsError,

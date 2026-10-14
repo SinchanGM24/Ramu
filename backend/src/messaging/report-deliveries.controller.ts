@@ -70,7 +70,7 @@ export class ReportDeliveriesController {
       const report = (
         await client.query<{
           student_id: string;
-        lifecycle_status: "ACTIVE" | "GRADUATED";
+          lifecycle_status: "ACTIVE" | "GRADUATED";
         }>(
           `SELECT r.student_id, student.lifecycle_status
         FROM reports r JOIN report_versions version ON version.report_id=r.id AND version.school_id=$2
@@ -90,6 +90,26 @@ export class ReportDeliveriesController {
           [report.student_id, actor.schoolId, report.lifecycle_status],
         )
       ).rows;
+    }, actor.schoolId);
+  }
+
+  @Get("reports/:reportId/delivery-context")
+  async deliveryContext(
+    @Req() request: FastifyRequest,
+    @Param("reportId") reportId: string,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    return this.db.transaction(async (client) => {
+      if (actor.role === "TEACHER")
+        await assertReportAccess(client, actor, reportId);
+      const report = (
+        await client.query<{ student_id: string }>(
+          "SELECT student_id FROM reports WHERE id=$1 AND school_id=$2 AND status='PUBLISHED'",
+          [reportId, actor.schoolId],
+        )
+      ).rows[0];
+      if (!report) throw new Error("Rapor terbit tidak ditemukan");
+      return { studentId: report.student_id };
     }, actor.schoolId);
   }
 

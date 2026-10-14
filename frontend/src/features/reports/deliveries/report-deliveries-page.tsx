@@ -40,6 +40,7 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 				pending={delivery.queue.isPending}
 				onQueue={() => delivery.queue.mutate()}
 				onReload={() => void delivery.recipients.refetch()}
+				studentId={delivery.context.data?.studentId}
 				onToggleAll={delivery.toggleAllRecipients}
 				onToggleRecipient={delivery.toggleRecipient}
 			/>
@@ -65,6 +66,7 @@ function RecipientPanel({
 	selectedIds,
 	onQueue,
 	onReload,
+	studentId,
 	onToggleAll,
 	onToggleRecipient,
 }: {
@@ -75,6 +77,7 @@ function RecipientPanel({
 	selectedIds: string[];
 	onQueue: () => void;
 	onReload: () => void;
+	studentId?: string;
 	onToggleAll: () => void;
 	onToggleRecipient: (id: string) => void;
 }) {
@@ -95,6 +98,7 @@ function RecipientPanel({
 			selectedIds={selectedIds}
 			pending={pending}
 			onQueue={onQueue}
+			studentId={studentId}
 			onToggleAll={onToggleAll}
 			onToggleRecipient={onToggleRecipient}
 		/>
