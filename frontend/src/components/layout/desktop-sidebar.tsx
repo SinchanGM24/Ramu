@@ -121,8 +121,8 @@ function isPrimaryNavigationActive(pathname: string, href: string) {
 
 function NavigationSection({ label, children }: { label: string; children: ReactNode }) {
 	return (
-		<div className="mt-4">
-			<p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/65">
+		<div className="mt-[clamp(0.75rem,2vh,1.15rem)]">
+			<p className="px-3 pb-1 text-[clamp(0.625rem,1.35vh,0.7rem)] font-bold uppercase tracking-[0.14em] text-white/65">
 				{label}
 			</p>
 			<div className="space-y-0.5">{children}</div>
@@ -145,7 +145,7 @@ function NavigationLink({
 		<Link
 			href={href}
 			className={cn(
-				"flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+				"flex min-h-[clamp(2.25rem,5.2vh,2.7rem)] items-center gap-3 rounded-xl px-3 text-[clamp(0.875rem,1.6vh,0.9375rem)] font-medium leading-5 transition",
 				active
 					? "bg-[#fffdf8] text-brand-900 shadow-[0_8px_20px_rgba(0,0,0,0.13)]"
 					: "text-white/85 hover:bg-white/10 hover:text-white",
