@@ -31,7 +31,7 @@ export function ReportPreviewPage({ id }: { id: string }) {
 		enabled: !published.data,
 	});
 	if (published.data) return <PublishedReportPage id={id} />;
-	if (!query.data) return <Card>Memuat pratinjau rapor…</Card>;
+	if (!query.data) return <Card className="text-sm text-[#68746a]">Memuat pratinjau rapor…</Card>;
 	const data = query.data;
 	return (
 		<>

@@ -40,12 +40,12 @@ export function PublishedReportPage({ id }: { id: string }) {
 		queryKey: ["published-report", id],
 		queryFn: () => api<PublishedVersion | null>(`/reports/${id}/published-version`),
 	});
-	if (query.isLoading) return <Card>Memuat rapor terbit…</Card>;
+	if (query.isLoading) return <Card className="text-sm text-[#68746a]">Memuat rapor terbit…</Card>;
 	if (!query.data)
 		return (
-			<Card>
-				<h1 className="font-bold">Rapor terbit tidak ditemukan</h1>
-				<p className="mt-2 text-sm text-slate-500">
+			<Card className="max-w-xl border-dashed">
+				<h1 className="font-bold text-[#17251b]">Rapor terbit tidak ditemukan</h1>
+				<p className="mt-2 text-sm leading-6 text-[#637065]">
 					Rapor ini belum pernah diterbitkan atau Anda tidak memiliki akses.
 				</p>
 			</Card>
