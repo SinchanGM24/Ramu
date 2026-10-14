@@ -100,13 +100,19 @@ export function PublicationReportList({
 				</label>
 			</div>
 			<div className="hidden border-t border-[#edf0e8] md:block">
-				<table className="w-full text-left text-sm">
+				<table className="w-full table-fixed text-left text-sm">
+					<colgroup>
+						<col className="w-[30%]" />
+						<col className="w-[22%]" />
+						<col className="w-[28%]" />
+						<col className="w-[10.5rem]" />
+					</colgroup>
 					<thead className="border-b border-[#e7e9df] bg-[#f5f7f1] text-xs text-[#667168]">
 						<tr>
-							<th className="pb-3 font-semibold">Murid</th>
-							<th className="pb-3 font-semibold">Tahap</th>
-							<th className="pb-3 font-semibold">Pengiriman</th>
-							<th className="pb-3 text-right font-semibold">Tindakan</th>
+							<th className="px-5 py-3 font-semibold sm:px-6">Murid</th>
+							<th className="px-4 py-3 font-semibold">Tahap</th>
+							<th className="px-4 py-3 font-semibold">Pengiriman</th>
+							<th className="px-5 py-3 text-right font-semibold sm:px-6">Tindakan</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -128,16 +134,20 @@ export function PublicationReportList({
 									key={report.report_id}
 									className="border-b border-[#edf0e8] transition-colors hover:bg-[#f8faf5] last:border-0"
 								>
-									<td className="px-5 py-4 font-semibold text-[#17251b]">{report.name}</td>
-									<td className="px-5 py-4">
+									<td className="px-5 py-4 font-semibold text-[#17251b] sm:px-6">
+										<p className="truncate" title={report.name}>
+											{report.name}
+										</p>
+									</td>
+									<td className="px-4 py-4">
 										<StatusBadge tone={statusCopy[report.status].tone}>
 											{statusCopy[report.status].label}
 										</StatusBadge>
 									</td>
-									<td className="px-5 py-4">
+									<td className="px-4 py-4">
 										<DeliveryStatusBadge status={report.delivery_status} />
 									</td>
-									<td className="px-5 py-4 text-right">
+									<td className="px-5 py-4 text-right sm:px-6">
 										<PublicationAction
 											canPublish={canPublish}
 											pending={pending}
@@ -195,7 +205,7 @@ export function PublicationReportList({
 
 function DeliveryStatusBadge({ status }: { status?: DeliveryStatus | null }) {
 	if (!status) {
-		return <span className="text-sm text-slate-500">Belum dikirim</span>;
+		return <span className="whitespace-nowrap text-sm text-slate-500">Belum dikirim</span>;
 	}
 
 	const copy = deliveryStatusCopy[status];
