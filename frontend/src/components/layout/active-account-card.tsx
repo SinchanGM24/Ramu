@@ -8,6 +8,10 @@ const roleLabels: Record<AppRole, string> = {
 	PRINCIPAL: "Kepala Sekolah",
 };
 
+export function getRoleLabel(role?: AppRole) {
+	return role ? roleLabels[role] : "Memuat akun";
+}
+
 type ActiveAccountCardProps = {
 	email?: string;
 	role?: AppRole;
@@ -23,7 +27,7 @@ export function ActiveAccountCard({
 	logoutError,
 	onLogout,
 }: ActiveAccountCardProps) {
-	const label = role ? roleLabels[role] : "Memuat akun";
+	const label = getRoleLabel(role);
 	const initial = email?.trim().charAt(0).toUpperCase() || "R";
 
 	return (
