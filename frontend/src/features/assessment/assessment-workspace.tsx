@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ClipboardCheck } from "lucide-react";
 import { api } from "@/lib/api";
+import { LoadingState } from "@/components/shared/loading-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -59,6 +60,19 @@ export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 				</Card>
 			</>
 		);
+
+	if (semesters.isLoading || (Boolean(semesterId) && work.isLoading)) {
+		return (
+			<>
+				<PageHeader
+					eyebrow="Penilaian individual"
+					title="Memuat penilaian"
+					description="Menyiapkan semester dan indikator penilaian murid."
+				/>
+				<LoadingState label="Memuat indikator penilaian..." />
+			</>
+		);
+	}
 
 	return (
 		<>

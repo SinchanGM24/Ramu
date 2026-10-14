@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingState } from "@/components/shared/loading-state";
 import { Card } from "@/components/ui/card";
 import { DevelopmentAreaCard } from "./components/development-area-card";
 import { ReportEditorHeader } from "./components/report-editor-header";
@@ -26,7 +27,7 @@ export function ReportEditorPage({ id }: { id: string }) {
 		});
 	}, [submissionFeedback]);
 
-	if (workspace.isLoading) return <Card>Memuat ruang kerja rapor…</Card>;
+	if (workspace.isLoading) return <LoadingState label="Memuat ruang kerja rapor..." />;
 	if (!workspace.data) return <Card>Rapor tidak dapat dimuat.</Card>;
 
 	const { areas, report, scales } = workspace.data;

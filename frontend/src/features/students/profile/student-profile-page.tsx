@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
+import { LoadingState } from "@/components/shared/loading-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,7 +34,7 @@ export function StudentProfilePage({ id }: { id: string }) {
 			setNotice(error instanceof Error ? error.message : "Profil murid belum tersimpan."),
 	});
 
-	if (student.isLoading) return <Card>Memuat profil murid…</Card>;
+	if (student.isLoading) return <LoadingState label="Memuat profil murid..." />;
 	if (!student.data) return <StudentNotFound />;
 
 	const value = student.data;

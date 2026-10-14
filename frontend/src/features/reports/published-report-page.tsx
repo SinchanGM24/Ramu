@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
+import { LoadingState } from "@/components/shared/loading-state";
+import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { FormalAssessmentTable } from "./presentation/formal-assessment-table";
 import { ReportScaleLegend } from "./presentation/report-scale-legend";
@@ -40,7 +41,7 @@ export function PublishedReportPage({ id }: { id: string }) {
 		queryKey: ["published-report", id],
 		queryFn: () => api<PublishedVersion | null>(`/reports/${id}/published-version`),
 	});
-	if (query.isLoading) return <Card className="text-sm text-[#68746a]">Memuat rapor terbit…</Card>;
+	if (query.isLoading) return <LoadingState label="Memuat rapor terbit..." />;
 	if (!query.data)
 		return (
 			<Card className="max-w-xl border-dashed">
