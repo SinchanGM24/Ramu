@@ -1,138 +1,221 @@
-import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2, Leaf, ShieldCheck, Sparkles } from "lucide-react";
+import Link from "next/link";
+import {
+	ArrowRight,
+	BookOpenCheck,
+	CheckCircle2,
+	ClipboardCheck,
+	Leaf,
+	Send,
+	ShieldCheck,
+} from "lucide-react";
 import { BrandMark } from "@/components/shared/brand-mark";
 import { Button } from "@/components/ui/button";
 
+const assurances = [
+	"Penilaian individual untuk setiap murid",
+	"Tinjauan rapor yang terarah",
+	"Akses aman untuk setiap wali",
+];
+
 const steps = [
-	["01", "Isi secara individual", "Guru mencatat perkembangan setiap murid."],
-	["02", "Tinjau dengan tenang", "Kepala Sekolah meninjau sebelum terbit."],
-	["03", "Bagikan dengan aman", "Wali membuka rapor melalui tautan dan PIN."],
+	{
+		number: "01",
+		title: "Catat perkembangan",
+		description: "Guru mengisi indikator dan narasi satu murid pada satu waktu.",
+		icon: BookOpenCheck,
+	},
+	{
+		number: "02",
+		title: "Tinjau bersama",
+		description: "Sekolah memastikan setiap rapor siap sebelum diterbitkan.",
+		icon: ClipboardCheck,
+	},
+	{
+		number: "03",
+		title: "Bagikan dengan tenang",
+		description: "Wali menerima tautan privat untuk melihat rapor anaknya.",
+		icon: Send,
+	},
 ];
 
 export function LandingPage() {
 	return (
 		<main className="min-h-screen overflow-hidden bg-[#f8f5ed] text-[#17251b]">
-			<header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+			<header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:py-7">
 				<BrandMark />
-				<div className="flex gap-3">
+				<nav aria-label="Navigasi utama" className="flex items-center gap-1 sm:gap-3">
 					<Link
-						className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-brand-800"
+						className="rounded-xl px-3 py-2 text-sm font-semibold text-[#4d5d50] transition hover:bg-white/70 hover:text-brand-800 sm:px-4"
 						href="/login"
 					>
 						Masuk
 					</Link>
 					<Link href="/register">
-						<Button>Daftarkan sekolah</Button>
+						<Button className="hidden sm:inline-flex">Daftarkan sekolah</Button>
+						<Button className="sm:hidden">Daftar</Button>
 					</Link>
-				</div>
+				</nav>
 			</header>
-			<section className="relative mx-auto grid max-w-7xl gap-12 px-5 pb-20 pt-12 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:pb-28 lg:pt-20">
+
+			<section className="relative mx-auto grid max-w-7xl gap-10 px-5 pb-20 pt-8 sm:px-8 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:items-center lg:gap-6 lg:pb-28 lg:pt-14">
 				<div
 					aria-hidden="true"
-					className="pointer-events-none absolute -left-12 top-4 size-56 rounded-full border border-brand-300/30"
+					className="pointer-events-none absolute -left-44 top-0 size-[32rem] rounded-full border border-brand-300/30"
 				/>
-				<div className="relative z-10">
-					<span className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-white/70 px-3 py-1.5 text-xs font-bold text-brand-700 shadow-sm">
-						<Sparkles size={14} /> Untuk sekolah PAUD yang bertumbuh bersama
-					</span>
-					<h1 className="mt-5 max-w-xl text-4xl font-bold leading-[1.04] tracking-[-0.055em] text-brand-950 sm:text-5xl lg:text-6xl">
-						Rapor yang menemani tumbuh kembang.
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute left-16 top-6 text-brand-400/60"
+				>
+					<Leaf className="size-10 -rotate-45" strokeWidth={1.2} />
+				</div>
+				<div className="relative z-10 pt-4 lg:pt-0">
+					<p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-700">
+						<span className="h-px w-8 bg-brand-500" />
+						Untuk sekolah PAUD
+					</p>
+					<h1 className="mt-5 max-w-2xl font-serif text-5xl font-bold leading-[0.94] tracking-[-0.065em] text-brand-950 sm:text-6xl lg:text-7xl">
+						Rapor yang tumbuh bersama anak.
 					</h1>
-					<p className="mt-6 max-w-lg text-base leading-8 text-[#566359] sm:text-lg">
-						RAMU membantu guru menyusun penilaian tiap murid, sekolah meninjau rapor, dan wali
-						menerima hasilnya dengan aman dalam satu alur yang jelas.
+					<p className="mt-7 max-w-lg text-base leading-8 text-[#566359] sm:text-lg">
+						RAMU membantu guru mencatat perkembangan setiap murid, sekolah meninjau dengan tenang,
+						dan wali menerima hasilnya melalui satu alur yang jelas.
 					</p>
 					<div className="mt-8 flex flex-wrap gap-3">
 						<Link href="/register">
-							<Button className="gap-2">
-								Mulai untuk sekolah <ArrowRight size={17} />
+							<Button className="gap-2 px-5">
+								Mulai untuk sekolah
+								<ArrowRight size={17} />
 							</Button>
 						</Link>
 						<Link href="#cara-kerja">
-							<Button variant="secondary">Pelajari fitur</Button>
+							<Button variant="secondary" className="bg-[#fffdf8]/80">
+								Lihat cara kerja RAMU
+							</Button>
 						</Link>
 					</div>
-					<div className="mt-10 flex flex-wrap gap-x-5 gap-y-3 text-sm text-[#4d5d50]">
-						{["Penilaian per murid", "Tinjauan berjenjang", "Akses aman untuk wali"].map((item) => (
-							<span key={item} className="flex items-center gap-2">
-								<CheckCircle2 className="size-4 text-brand-700" />
-								{item}
-							</span>
+					<ul className="mt-10 grid gap-3 text-sm text-[#4d5d50] sm:grid-cols-3 sm:gap-4">
+						{assurances.map((assurance) => (
+							<li key={assurance} className="flex items-start gap-2 leading-5">
+								<CheckCircle2 className="mt-0.5 size-4 shrink-0 text-brand-700" />
+								{assurance}
+							</li>
 						))}
-					</div>
+					</ul>
 				</div>
-				<div className="relative min-h-[21rem] lg:min-h-[31rem]">
+
+				<div className="relative min-h-[24rem] sm:min-h-[31rem] lg:min-h-[38rem]">
 					<div
 						aria-hidden="true"
-						className="absolute inset-x-5 bottom-0 top-5 rounded-[2.5rem] bg-brand-100/80"
+						className="absolute inset-x-3 bottom-6 top-9 rounded-[3rem] bg-[#e2ead9]"
 					/>
 					<div
 						aria-hidden="true"
-						className="absolute right-0 top-0 size-36 rounded-full border-[14px] border-brand-300/35"
+						className="absolute right-2 top-0 size-32 rounded-full border-[15px] border-[#d2dfc7] sm:size-44"
+					/>
+					<div
+						aria-hidden="true"
+						className="absolute bottom-2 left-0 size-16 rounded-full bg-[#d8a44a]/25 blur-sm"
 					/>
 					<Image
-						src="/brand/ramu-school-hero.png"
-						alt="Ilustrasi sekolah dengan buku dan alat tulis"
-						width={1792}
+						src="/brand/ramu-landing-campus.png"
+						alt="Ilustrasi sekolah PAUD, buku, dan lembar perkembangan murid"
+						width={1536}
 						height={1024}
 						priority
-						className="absolute right-[-7%] top-[1%] z-10 h-auto w-[108%] max-w-none object-contain sm:right-[-2%] sm:w-[104%]"
+						className="absolute -right-[8%] -top-[2%] z-10 h-auto w-[116%] max-w-none object-contain sm:-right-[4%] sm:w-[110%] lg:-right-[9%] lg:w-[119%]"
 					/>
-					<div className="absolute bottom-0 left-0 right-8 z-20 rounded-[2.25rem] border border-white/80 bg-[#fffdf8]/95 p-5 shadow-panel backdrop-blur-sm sm:p-7">
-						<div className="flex items-start justify-between gap-5">
-							<div>
-								<p className="text-sm font-semibold text-brand-700">Ruang kerja sekolah</p>
-								<h2 className="mt-1 text-2xl font-bold tracking-[-0.04em] text-brand-950">
-									Satu alur yang tenang
-								</h2>
-							</div>
-							<span className="grid size-11 place-items-center rounded-2xl bg-brand-50 text-brand-700">
-								<Leaf size={21} />
-							</span>
+					<aside className="absolute bottom-0 left-0 z-20 max-w-[16rem] rounded-tr-[1.8rem] border border-white/80 bg-[#fffdf8]/95 px-4 py-4 shadow-[0_16px_36px_rgba(31,58,35,0.14)] backdrop-blur-sm sm:max-w-[18rem] sm:px-5">
+						<p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-700">
+							Satu ruang kerja
+						</p>
+						<p className="mt-1.5 text-sm font-semibold leading-5 text-brand-950">
+							Dari catatan harian hingga rapor yang siap dibagikan.
+						</p>
+					</aside>
+				</div>
+			</section>
+
+			<section
+				id="cara-kerja"
+				className="border-y border-brand-950/10 bg-[#fffdf8] px-5 py-6 sm:px-8 lg:py-10"
+			>
+				<div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#2c704d] lg:grid-cols-[0.82fr_1.18fr]">
+					<div className="relative overflow-hidden px-7 py-11 text-[#fffdf8] sm:px-10 sm:py-14">
+						<div
+							aria-hidden="true"
+							className="absolute -bottom-16 -left-12 size-52 rounded-full border-[24px] border-white/10"
+						/>
+						<div
+							aria-hidden="true"
+							className="absolute right-5 top-7 rotate-[28deg] text-[#d7e5cd]/50"
+						>
+							<Leaf className="size-16" strokeWidth={1.15} />
 						</div>
-						<div className="mt-7 grid grid-cols-3 gap-3">
-							{[
-								["Isi", "Penilaian individual"],
-								["Tinjau", "Persetujuan sekolah"],
-								["Bagikan", "Tautan aman wali"],
-							].map(([number, label]) => (
-								<div key={number} className="rounded-2xl bg-[#f5f3ea] p-3 sm:p-4">
-									<p className="text-sm font-bold text-brand-700">{number}</p>
-									<p className="mt-2 text-xs leading-5 text-[#647066]">{label}</p>
-								</div>
+						<p className="relative text-xs font-bold uppercase tracking-[0.16em] text-[#d7e5cd]">
+							Alur rapor RAMU
+						</p>
+						<h2 className="relative mt-5 max-w-md font-serif text-4xl font-bold leading-[1] tracking-[-0.055em] sm:text-5xl">
+							Dari catatan kelas menjadi rapor yang bermakna.
+						</h2>
+						<p className="relative mt-6 max-w-sm text-sm leading-7 text-[#e4ecdd] sm:text-base">
+							Setiap langkah memiliki pemilik yang jelas, agar guru dapat fokus pada anak dan
+							sekolah tetap memegang kendali.
+						</p>
+					</div>
+					<div className="bg-[#f6f3e9] px-7 py-4 sm:px-10 sm:py-7">
+						<div className="relative">
+							<div
+								aria-hidden="true"
+								className="absolute bottom-11 left-5 top-11 w-px bg-brand-200 sm:left-6"
+							/>
+							{steps.map(({ number, title, description, icon: Icon }) => (
+								<article
+									key={number}
+									className="relative grid grid-cols-[2.75rem_minmax(0,1fr)] gap-4 border-b border-brand-950/10 py-6 last:border-b-0 sm:grid-cols-[3.25rem_minmax(0,1fr)] sm:gap-5"
+								>
+									<span className="relative z-10 grid size-10 place-items-center rounded-full border border-brand-200 bg-[#fffdf8] text-brand-700 shadow-sm sm:size-12">
+										<Icon size={19} strokeWidth={1.8} />
+									</span>
+									<div className="grid gap-1.5 sm:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] sm:items-baseline sm:gap-6">
+										<div>
+											<p className="text-xs font-bold tracking-[0.13em] text-brand-600">{number}</p>
+											<h3 className="mt-1 text-lg font-bold tracking-[-0.025em] text-brand-950">
+												{title}
+											</h3>
+										</div>
+										<p className="text-sm leading-6 text-[#637065]">{description}</p>
+									</div>
+								</article>
 							))}
 						</div>
 					</div>
 				</div>
 			</section>
-			<section
-				id="cara-kerja"
-				className="border-y border-brand-950/10 bg-[#fffdf8] px-5 py-16 sm:px-8 lg:py-20"
-			>
-				<div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
+
+			<section className="px-5 py-16 sm:px-8 lg:py-20">
+				<div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 border-y border-brand-950/10 py-10 sm:py-12 lg:flex-row lg:items-end">
 					<div>
-						<p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">
-							Alur rapor
+						<p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-700">
+							Mulai dengan rapi
 						</p>
-						<h2 className="mt-3 max-w-md text-3xl font-bold tracking-[-0.045em] text-brand-950">
-							Jelas bagi guru, sekolah, dan wali.
+						<h2 className="mt-3 max-w-2xl font-serif text-4xl font-bold leading-[1] tracking-[-0.055em] text-brand-950 sm:text-5xl">
+							Satu rapor yang disusun dengan baik dapat menjaga cerita tumbuh kembang anak.
 						</h2>
 					</div>
-					<div className="grid gap-5 sm:grid-cols-3">
-						{steps.map(([number, title, description]) => (
-							<article key={number} className="border-l border-brand-200 pl-4">
-								<p className="text-sm font-bold text-brand-600">{number}</p>
-								<h3 className="mt-3 font-bold text-brand-950">{title}</h3>
-								<p className="mt-2 text-sm leading-6 text-[#637065]">{description}</p>
-							</article>
-						))}
-					</div>
+					<Link href="/register">
+						<Button className="gap-2 px-5">
+							Daftarkan sekolah
+							<ArrowRight size={17} />
+						</Button>
+					</Link>
 				</div>
 			</section>
-			<footer className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-7 text-sm text-[#637065] sm:flex-row sm:items-center sm:justify-between sm:px-8">
+
+			<footer className="mx-auto flex max-w-7xl flex-col gap-4 px-5 pb-8 text-sm text-[#637065] sm:flex-row sm:items-center sm:justify-between sm:px-8">
 				<p className="flex items-center gap-2">
-					<ShieldCheck size={16} className="text-brand-700" /> Data sekolah terlindungi per tenant.
+					<ShieldCheck size={16} className="text-brand-700" />
+					Data sekolah terlindungi per tenant.
 				</p>
 				<p>RAMU · Raport Murid</p>
 			</footer>
