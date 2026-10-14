@@ -55,6 +55,7 @@ Catatan: preview, rapor terbit, PDF, dan viewer wali mempertahankan struktur for
 ## Verifikasi akhir
 
 - [x] Selesai — Audit statis rute, responsivitas kelas Tailwind, dan navigasi berbasis peran.
+- [x] Selesai — Smoke test runtime untuk 22 entry route frontend melalui server lokal; seluruhnya HTTP 200.
 - [x] Selesai — Format, lint, type-check frontend, build backend, dan 41 test backend.
 - [x] Selesai — Laporan hasil serta keterbatasan pada `docs/REDESIGN_VERIFICATION.md`.
 - [ ] Perlu uji browser lokal — Audit visual nyata desktop, tablet, dan ponsel untuk setiap rute.

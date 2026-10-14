@@ -46,6 +46,17 @@ Hak akses dan endpoint tidak diubah. Filter navigasi hanya menggunakan role yang
 
 Backend test yang lulus mencakup autentikasi, otorisasi lifecycle, student controller, workflow/otorisasi rapor, akses wali, pengiriman rapor, template PAUD, dan generator narasi.
 
+## Smoke test runtime
+
+Server frontend lokal pada port 3001 diuji tanpa mengubah data:
+
+- Empat rute publik dan parent route merespons HTTP 200.
+- Sembilan rute utama aplikasi merespons HTTP 200.
+- Delapan rute dinamis dengan ID contoh merespons HTTP 200.
+- Total 22 entry route yang tersedia diuji; tidak ada respons 5xx.
+
+Smoke test hanya mengonfirmasi bahwa entry route dapat dirender oleh Next.js. Karena permintaan tidak memakai sesi dan data uji nyata, ia tidak menggantikan pengujian tindakan terautentikasi.
+
 ## Keterbatasan verifikasi
 
 - Tidak ada Playwright, Cypress, atau browser automation pada repository. Karena itu tidak ada klaim screenshot atau klik browser nyata untuk setiap breakpoint.
