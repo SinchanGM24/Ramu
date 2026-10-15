@@ -73,7 +73,6 @@ export function PaginationControls({
 				className="inline-flex min-h-9 items-center rounded-xl bg-brand-700 px-3 text-sm font-semibold text-white"
 				aria-current="page"
 			>
-				<span className="hidden sm:inline">Halaman&nbsp;</span>
 				{page}
 			</span>
 			{followingPages.map((pageNumber) => (
