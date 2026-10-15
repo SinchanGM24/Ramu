@@ -11,6 +11,16 @@ const teacherRequest = {
   },
 } as never;
 
+const adminRequest = {
+  auth: {
+    email: "admin@example.test",
+    role: "SCHOOL_ADMIN",
+    schoolId: "school-a",
+    sessionId: "session-1",
+    userId: "admin-a",
+  },
+} as never;
+
 describe("ReportDeliveriesController", () => {
   it("scopes a teacher manual WhatsApp handoff to the authenticated school and report assignment", async () => {
     const queries: Array<{ sql: string; values: unknown[] }> = [];
@@ -123,5 +133,72 @@ describe("ReportDeliveriesController", () => {
     expect(
       queries.some((query) => query.sql.includes("UPDATE report_deliveries")),
     ).toBe(false);
+  });
+
+  it("revokes prior parent access and creates a new credential without changing the published report version", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const auditEntries: unknown[] = [];
+    const auth = { require: (request: { auth: unknown }) => request.auth };
+    const db = {
+      transaction: async (
+        callback: (client: {
+          query: (
+            sql: string,
+            values: unknown[],
+          ) => Promise<{ rowCount: number; rows: unknown[] }>;
+        }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async (sql, values) => {
+            queries.push({ sql, values });
+            if (sql.includes("FROM report_deliveries delivery")) {
+              return {
+                rowCount: 1,
+                rows: [
+                  {
+                    guardian_name: "Ibu Alya",
+                    id: "delivery-a",
+                    recipient_phone: "081234567890",
+                    report_version_id: "version-a",
+                    school_name: "TK Ceria",
+                    student_name: "Alya",
+                  },
+                ],
+              };
+            }
+            return { rowCount: 1, rows: [] };
+          },
+        }),
+    };
+    const audit = {
+      record: async (entry: unknown) => {
+        auditEntries.push(entry);
+      },
+    };
+    const controller = new ReportDeliveriesController(
+      auth as never,
+      db as never,
+      audit as never,
+    );
+
+    const result = await controller.regenerateAccess(adminRequest, "delivery-a");
+
+    expect(queries[0].values).toEqual(["delivery-a", "school-a"]);
+    expect(
+      queries.some((query) => query.sql.includes("SET status='REVOKED'")),
+    ).toBe(true);
+    expect(
+      queries.some((query) => query.sql.includes("DELETE FROM parent_report_sessions")),
+    ).toBe(true);
+    expect(
+      queries.some((query) => query.sql.includes("INSERT INTO report_access")),
+    ).toBe(true);
+    expect(
+      queries.some((query) => query.sql.includes("INSERT INTO report_versions")),
+    ).toBe(false);
+    expect(auditEntries).toContainEqual(
+      expect.objectContaining({ action: "report_access.regenerated" }),
+    );
+    expect(result.whatsAppUrl).toContain("https://wa.me/6281234567890?");
   });
 });

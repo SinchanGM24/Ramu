@@ -242,6 +242,98 @@ export class ReportDeliveriesController {
     }, actor.schoolId);
   }
 
+  @Post("deliveries/:deliveryId/regenerate-access")
+  async regenerateAccess(
+    @Req() request: FastifyRequest,
+    @Param("deliveryId") deliveryId: string,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+
+    return this.db.transaction(async (client) => {
+      const delivery = (
+        await client.query<{
+          id: string;
+          report_version_id: string;
+          student_name: string;
+          guardian_name: string;
+          recipient_phone: string;
+          school_name: string;
+        }>(
+          `SELECT delivery.id, delivery.report_version_id,
+            student.name AS student_name, guardian.name AS guardian_name,
+            delivery.recipient_phone, school.name AS school_name
+          FROM report_deliveries delivery
+          JOIN report_versions version ON version.id=delivery.report_version_id AND version.school_id=delivery.school_id
+          JOIN reports report ON report.id=version.report_id AND report.school_id=delivery.school_id
+          JOIN students student ON student.id=report.student_id AND student.school_id=delivery.school_id
+          JOIN guardian_contacts guardian ON guardian.id=delivery.guardian_contact_id AND guardian.school_id=delivery.school_id
+          JOIN schools school ON school.id=delivery.school_id
+          WHERE delivery.id=$1 AND delivery.school_id=$2
+          FOR UPDATE`,
+          [deliveryId, actor.schoolId],
+        )
+      ).rows[0];
+
+      if (!delivery) throw new Error("Pengiriman tidak ditemukan");
+
+      const phone = whatsappPhone(delivery.recipient_phone);
+      const token = randomBytes(32).toString("base64url");
+      const pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      const origin = (
+        process.env.FRONTEND_ORIGIN || "http://localhost:3001"
+      ).replace(/\/$/, "");
+      const reportLink = `${origin}/r/${token}`;
+
+      await client.query(
+        `UPDATE report_access
+         SET status='REVOKED', revoked_at=now(), revoked_by=$3
+         WHERE school_id=$1 AND report_version_id=$2 AND status IN ('ACTIVE','LOCKED')`,
+        [actor.schoolId, delivery.report_version_id, actor.userId],
+      );
+      await client.query(
+        `DELETE FROM parent_report_sessions
+         WHERE report_version_id=$1`,
+        [delivery.report_version_id],
+      );
+      await client.query(
+        `INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash,status)
+         VALUES($1,$2,$3,$4,'ACTIVE')`,
+        [actor.schoolId, delivery.report_version_id, hash(token), hash(pin)],
+      );
+      await client.query(
+        `UPDATE report_deliveries
+         SET status='SENT', sent_at=now(), attempt_count=attempt_count+1, updated_at=now()
+         WHERE id=$1 AND school_id=$2`,
+        [delivery.id, actor.schoolId],
+      );
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "report_access.regenerated",
+          entityType: "report_version",
+          entityId: delivery.report_version_id,
+          metadata: { deliveryId: delivery.id },
+        },
+        client,
+      );
+
+      const message = [
+        `Assalamu'alaikum Bapak/Ibu ${delivery.guardian_name},`,
+        `Raport perkembangan ${delivery.student_name} dari ${delivery.school_name} telah tersedia.`,
+        "",
+        `Tautan raport: ${reportLink}`,
+        `PIN: ${pin}`,
+        "",
+        "Tautan sebelumnya sudah tidak berlaku. Silakan simpan tautan ini untuk membuka raport kembali kapan saja.",
+      ].join("\n");
+
+      return {
+        whatsAppUrl: `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+      };
+    }, actor.schoolId);
+  }
+
   @Post("deliveries/:deliveryId/open-whatsapp")
   async openWhatsApp(
     @Req() request: FastifyRequest,

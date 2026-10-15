@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 import type { Delivery, DeliveryContext, ManualDispatch, Recipient } from "../types";
 
 export function useReportDeliveries(reportId: string) {
@@ -8,6 +9,7 @@ export function useReportDeliveries(reportId: string) {
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [notice, setNotice] = useState("");
 	const [noticeIsError, setNoticeIsError] = useState(false);
+	const session = useQuery(authSessionQueryOptions);
 	const deliveries = useQuery({
 		queryKey: ["reports", reportId, "deliveries"],
 		queryFn: () => api<Delivery[]>(`/reports/${reportId}/deliveries`),
@@ -61,6 +63,12 @@ export function useReportDeliveries(reportId: string) {
 		mutationFn: (deliveryId: string) =>
 			api<ManualDispatch>(`/deliveries/${deliveryId}/open-whatsapp`, { method: "POST" }),
 	});
+	const regenerateAccess = useMutation({
+		mutationFn: (deliveryId: string) =>
+			api<ManualDispatch>(`/deliveries/${deliveryId}/regenerate-access`, {
+				method: "POST",
+			}),
+	});
 
 	function openWhatsApp(deliveryId: string) {
 		const popup = window.open("", "_blank");
@@ -112,6 +120,33 @@ export function useReportDeliveries(reportId: string) {
 		});
 	}
 
+	function regenerateParentAccess(deliveryId: string) {
+		const popup = window.open("", "_blank");
+		if (!popup) {
+			setNoticeIsError(true);
+			setNotice(
+				"Browser memblokir jendela WhatsApp. Izinkan pop-up untuk situs ini, lalu coba lagi.",
+			);
+			return;
+		}
+
+		regenerateAccess.mutate(deliveryId, {
+			onSuccess: ({ whatsAppUrl }) => {
+				popup.location.href = whatsAppUrl;
+				setNoticeIsError(false);
+				setNotice("Tautan dan PIN baru telah dibuat. Chat WhatsApp wali dibuka.");
+				void refresh();
+			},
+			onError: (error) => {
+				popup.close();
+				setNoticeIsError(true);
+				setNotice(
+					error instanceof Error ? error.message : "Tautan dan PIN baru belum dapat dibuat.",
+				);
+			},
+		});
+	}
+
 	function toggleRecipient(id: string) {
 		setSelectedIds((current) =>
 			current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
@@ -127,6 +162,7 @@ export function useReportDeliveries(reportId: string) {
 
 	return {
 		context,
+		canRegenerateAccess: session.data?.role === "SCHOOL_ADMIN",
 		deliveries,
 		notice,
 		noticeIsError,
@@ -134,6 +170,8 @@ export function useReportDeliveries(reportId: string) {
 		sendToWhatsApp,
 		recipients,
 		manualDispatch,
+		regenerateAccess,
+		regenerateParentAccess,
 		openWhatsApp,
 		retry,
 		selectedIds,

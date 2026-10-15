@@ -71,12 +71,15 @@ function ReportDeliveriesContent({ reportId }: { reportId: string }) {
 				onToggleRecipient={delivery.toggleRecipient}
 			/>
 			<DeliveryHistoryList
+				canRegenerateAccess={delivery.canRegenerateAccess}
 				loading={delivery.deliveries.isLoading}
 				error={delivery.deliveries.isError}
 				rows={delivery.deliveries.data ?? []}
 				pendingManualDispatch={delivery.manualDispatch.isPending}
+				pendingRegeneration={delivery.regenerateAccess.isPending}
 				pendingRetry={delivery.retry.isPending}
 				onManualDispatch={delivery.openWhatsApp}
+				onRegenerateAccess={delivery.regenerateParentAccess}
 				onReload={() => void delivery.deliveries.refetch()}
 				onRetry={(id) => delivery.retry.mutate(id)}
 			/>
