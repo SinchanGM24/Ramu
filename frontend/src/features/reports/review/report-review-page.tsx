@@ -37,7 +37,13 @@ export function ReportReviewPage() {
 						? "Raport telah disetujui."
 						: "Raport dikembalikan untuk direvisi.",
 			);
-			setSelectedReport(undefined);
+			if (variables.action === "review") {
+				setSelectedReport((current) =>
+					current?.id === variables.id ? { ...current, status: "IN_REVIEW" } : current,
+				);
+			} else {
+				setSelectedReport(undefined);
+			}
 			setRevisionNote("");
 			queryClient.invalidateQueries({ queryKey: ["reports", "review-queue"] });
 			queryClient.invalidateQueries({ queryKey: ["reports"] });

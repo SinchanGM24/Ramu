@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FileWarning } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingState } from "@/components/shared/loading-state";
+import { Button } from "@/components/ui/button";
 import { DevelopmentAreaCard } from "./components/development-area-card";
 import { ReportEditorHeader } from "./components/report-editor-header";
 import { ReportEditorProgressCard } from "./components/report-editor-progress-card";
@@ -30,6 +31,20 @@ export function ReportEditorPage({ id }: { id: string }) {
 	}, [submissionFeedback]);
 
 	if (workspace.isLoading) return <LoadingState label="Memuat ruang kerja raport..." />;
+	if (workspace.isError) {
+		return (
+			<EmptyState
+				icon={FileWarning}
+				title="Ruang kerja raport tidak dapat dimuat"
+				description="Periksa koneksi Anda, lalu coba muat ulang data raport ini."
+				action={
+					<Button variant="secondary" onClick={() => void workspace.refetch()}>
+						Coba lagi
+					</Button>
+				}
+			/>
+		);
+	}
 	if (!workspace.data) {
 		return (
 			<EmptyState

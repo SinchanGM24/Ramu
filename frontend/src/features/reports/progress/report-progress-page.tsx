@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LoadingState } from "@/components/shared/loading-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,12 @@ import { useReportProgress } from "./hooks/use-report-progress";
 
 export function ReportProgressPage() {
 	const progress = useReportProgress();
+	if (progress.semesters.isLoading) {
+		return <LoadingState label="Memuat pilihan semester..." />;
+	}
+	if (progress.semesters.isError) {
+		return <SemesterLoadError onRetry={() => void progress.semesters.refetch()} />;
+	}
 	if (!progress.semesters.data?.length) return <EmptyAcademicYear />;
 	return (
 		<>
@@ -44,6 +51,20 @@ export function ReportProgressPage() {
 				onSearchChange={progress.setSearch}
 			/>
 		</>
+	);
+}
+
+function SemesterLoadError({ onRetry }: { onRetry: () => void }) {
+	return (
+		<Card className="max-w-xl border-red-200 bg-red-50">
+			<h2 className="font-bold text-red-900">Semester tidak dapat dimuat</h2>
+			<p className="mt-2 text-sm leading-6 text-red-800">
+				Coba lagi untuk membuka daftar raport yang perlu diisi.
+			</p>
+			<Button className="mt-4" variant="secondary" onClick={onRetry}>
+				Coba lagi
+			</Button>
+		</Card>
 	);
 }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { LoadingState } from "@/components/shared/loading-state";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PublicationReportList } from "./components/publication-report-list";
 import { useReportPublication } from "./hooks/use-report-publication";
@@ -8,6 +10,12 @@ import { useReportPublication } from "./hooks/use-report-publication";
 export function ReportPublicationPage() {
 	const publication = useReportPublication();
 
+	if (publication.semesters.isLoading) {
+		return <LoadingState label="Memuat pilihan semester..." />;
+	}
+	if (publication.semesters.isError) {
+		return <SemesterLoadError onRetry={() => void publication.semesters.refetch()} />;
+	}
 	if (!publication.semesters.data?.length) {
 		return (
 			<Card className="max-w-xl border-dashed text-sm leading-6 text-[#637065]">
@@ -84,5 +92,19 @@ export function ReportPublicationPage() {
 				onSearchChange={publication.setSearch}
 			/>
 		</>
+	);
+}
+
+function SemesterLoadError({ onRetry }: { onRetry: () => void }) {
+	return (
+		<Card className="max-w-xl border-red-200 bg-red-50">
+			<h2 className="font-bold text-red-900">Semester tidak dapat dimuat</h2>
+			<p className="mt-2 text-sm leading-6 text-red-800">
+				Coba lagi untuk membuka daftar raport yang dapat diterbitkan.
+			</p>
+			<Button className="mt-4" variant="secondary" onClick={onRetry}>
+				Coba lagi
+			</Button>
+		</Card>
 	);
 }
