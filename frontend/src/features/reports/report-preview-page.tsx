@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingState } from "@/components/shared/loading-state";
@@ -24,6 +25,10 @@ type Data = {
 };
 
 export function ReportPreviewPage({ id }: { id: string }) {
+	const searchParams = useSearchParams();
+	const openedFromReview = searchParams.get("from") === "review";
+	const backHref = openedFromReview ? "/app/reports/review" : `/app/reports/${id}`;
+	const backLabel = openedFromReview ? "Kembali ke tinjauan" : "Kembali";
 	const published = useQuery({
 		queryKey: ["published-report", id],
 		queryFn: () => api<unknown | null>(`/reports/${id}/published-version`),
@@ -74,11 +79,8 @@ export function ReportPreviewPage({ id }: { id: string }) {
 					description="Dokumen baca-saja dengan tabel penilaian formal."
 					action={
 						<div className="flex gap-2">
-							<Link
-								href={`/app/reports/${id}`}
-								className="rounded-xl border px-4 py-2 text-sm font-semibold"
-							>
-								Kembali
+							<Link href={backHref} className="rounded-xl border px-4 py-2 text-sm font-semibold">
+								{backLabel}
 							</Link>
 							<button
 								onClick={() => window.print()}

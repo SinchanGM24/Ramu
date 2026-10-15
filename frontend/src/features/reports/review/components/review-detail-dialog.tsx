@@ -55,7 +55,7 @@ export function ReviewDetailDialog({
 				</div>
 			</section>
 
-			<Link href={`/app/reports/${report.id}/preview`} className="mt-4 inline-flex">
+			<Link href={`/app/reports/${report.id}/preview?from=review`} className="mt-4 inline-flex">
 				<Button variant="secondary">
 					<ExternalLink className="size-4" />
 					Buka raport lengkap
