@@ -22,6 +22,16 @@ const schoolAdminRequest = {
   },
 } as never;
 
+const principalRequest = {
+  auth: {
+    userId: "principal-1",
+    schoolId: "school-1",
+    role: "PRINCIPAL",
+    email: "kepala@example.test",
+    sessionId: "session-1",
+  },
+} as never;
+
 describe("ReportsController", () => {
   it("scopes the review queue to the current school and review stages", async () => {
     const queries: Array<{ sql: string; values?: unknown[] }> = [];
@@ -123,5 +133,45 @@ describe("ReportsController", () => {
     await expect(
       controller.move(request, "report-1", { action: "revision" }),
     ).rejects.toThrow("Alasan revisi wajib diisi");
+  });
+
+  it("allows a principal to preview a report only within the current school", async () => {
+    const queries: Array<{ sql: string; values?: unknown[] }> = [];
+    const client = {
+      query: async (sql: string, values?: unknown[]) => {
+        queries.push({ sql, values });
+        if (sql.startsWith("SELECT r.*")) {
+          return {
+            rows: [
+              {
+                id: "report-1",
+                student_id: "student-1",
+                semester_id: "semester-1",
+              },
+            ],
+          };
+        }
+        return { rows: [] };
+      },
+    };
+    const db = {
+      transaction: async (
+        callback: (input: typeof client) => Promise<unknown>,
+      ) => callback(client),
+    };
+    const controller = new ReportsController(
+      new AuthService({} as never),
+      db as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.editor(principalRequest, "report-1"),
+    ).resolves.toMatchObject({
+      report: { id: "report-1" },
+    });
+    expect(queries[0]?.sql).toContain("WHERE r.id=$1 AND r.school_id=$2");
+    expect(queries[0]?.values).toEqual(["report-1", "school-1"]);
   });
 });

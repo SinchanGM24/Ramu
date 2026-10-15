@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingState } from "@/components/shared/loading-state";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { FormalAssessmentTable } from "./presentation/formal-assessment-table";
 import { ReportScaleLegend } from "./presentation/report-scale-legend";
 import { PublishedReportPage } from "./published-report-page";
@@ -28,8 +31,37 @@ export function ReportPreviewPage({ id }: { id: string }) {
 	const query = useQuery({
 		queryKey: ["report-preview", id],
 		queryFn: () => api<Data | null>(`/reports/${id}/editor`),
-		enabled: !published.data,
+		enabled: published.isSuccess && !published.data,
 	});
+	if (published.isLoading) return <LoadingState label="Menyiapkan pratinjau raport..." />;
+	if (published.isError) {
+		const message =
+			published.error instanceof ApiError
+				? published.error.message
+				: "Pratinjau raport tidak dapat dimuat. Coba lagi beberapa saat lagi.";
+
+		return <PreviewError message={message} onRetry={() => void published.refetch()} />;
+	}
+	if (published.data) return <PublishedReportPage id={id} />;
+	if (query.isLoading || !published.isSuccess) {
+		return <LoadingState label="Menyiapkan pratinjau raport..." />;
+	}
+	if (query.isError) {
+		const message =
+			query.error instanceof ApiError
+				? query.error.message
+				: "Pratinjau raport tidak dapat dimuat. Coba lagi beberapa saat lagi.";
+
+		return <PreviewError message={message} onRetry={() => void query.refetch()} />;
+	}
+	if (!query.data) {
+		return (
+			<EmptyState
+				title="Data raport tidak ditemukan"
+				description="Raport mungkin telah dihapus atau Anda tidak memiliki akses ke data ini."
+			/>
+		);
+	}
 	if (published.data) return <PublishedReportPage id={id} />;
 	if (!query.data) return <Card className="text-sm text-[#68746a]">Memuat pratinjau raport…</Card>;
 	const data = query.data;
@@ -83,5 +115,17 @@ export function ReportPreviewPage({ id }: { id: string }) {
 				))}
 			</article>
 		</>
+	);
+}
+
+function PreviewError({ message, onRetry }: { message: string; onRetry: () => void }) {
+	return (
+		<Card className="max-w-xl border-red-200 bg-red-50 text-sm text-red-800">
+			<p className="font-semibold">Pratinjau raport tidak tersedia</p>
+			<p className="mt-1 leading-6">{message}</p>
+			<Button className="mt-4" variant="secondary" onClick={onRetry}>
+				Coba lagi
+			</Button>
+		</Card>
 	);
 }

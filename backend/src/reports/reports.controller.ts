@@ -513,12 +513,16 @@ export class ReportsController {
 
   @Get(":id/editor")
   async editor(@Req() request: FastifyRequest, @Param("id") id: string) {
-    const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    const actor = this.auth.require(request, [
+      "SCHOOL_ADMIN",
+      "PRINCIPAL",
+      "TEACHER",
+    ]);
     return this.db.transaction(async (client) => {
       const report = (
         await client.query(
-          "SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key IS NOT NULL AS school_has_logo,s.name AS student_name,s.student_number,grouping.name AS class_name,sem.name AS semester_name,(SELECT log.metadata->>'note' FROM audit_logs log WHERE log.school_id=r.school_id AND log.entity_type='report' AND log.entity_id=r.id AND log.action='report.revision' ORDER BY log.created_at DESC LIMIT 1) AS revision_note FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.id=$1",
-          [id],
+          "SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key IS NOT NULL AS school_has_logo,s.name AS student_name,s.student_number,grouping.name AS class_name,sem.name AS semester_name,(SELECT log.metadata->>'note' FROM audit_logs log WHERE log.school_id=r.school_id AND log.entity_type='report' AND log.entity_id=r.id AND log.action='report.revision' ORDER BY log.created_at DESC LIMIT 1) AS revision_note FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id WHERE r.id=$1 AND r.school_id=$2",
+          [id, actor.schoolId],
         )
       ).rows[0];
       if (!report) return null;
