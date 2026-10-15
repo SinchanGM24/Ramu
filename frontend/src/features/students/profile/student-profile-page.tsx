@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, UserRoundX } from "lucide-react";
@@ -17,6 +18,11 @@ import type { StudentProfile } from "./types";
 
 export function StudentProfilePage({ id }: { id: string }) {
 	const queryClient = useQueryClient();
+	const searchParams = useSearchParams();
+	const returnTarget = getStudentReturnTarget(
+		searchParams.get("from"),
+		searchParams.get("reportId"),
+	);
 	const [notice, setNotice] = useState("");
 	const student = useQuery({
 		queryKey: ["student", id],
@@ -35,7 +41,7 @@ export function StudentProfilePage({ id }: { id: string }) {
 	});
 
 	if (student.isLoading) return <LoadingState label="Memuat profil murid..." />;
-	if (!student.data) return <StudentNotFound />;
+	if (!student.data) return <StudentNotFound returnTarget={returnTarget} />;
 
 	const value = student.data;
 
@@ -46,10 +52,10 @@ export function StudentProfilePage({ id }: { id: string }) {
 				title={`Profil ${value.name}`}
 				description="Data ini tampil sebagai identitas baca-saja pada editor, pratinjau, dan raport terbit."
 				action={
-					<Link href="/app/academic/students">
+					<Link href={returnTarget.href}>
 						<Button variant="secondary">
 							<ArrowLeft className="mr-1 size-4" />
-							Kembali
+							{returnTarget.label}
 						</Button>
 					</Link>
 				}
@@ -65,6 +71,7 @@ export function StudentProfilePage({ id }: { id: string }) {
 				<EnrollmentHistory
 					enrollments={value.enrollments ?? []}
 					publishedReports={value.publishedReports ?? []}
+					studentId={id}
 				/>
 				<GuardiansSection studentId={id} guardians={value.guardians} />
 			</div>
@@ -72,19 +79,27 @@ export function StudentProfilePage({ id }: { id: string }) {
 	);
 }
 
-function StudentNotFound() {
+function StudentNotFound({ returnTarget }: { returnTarget: { href: string; label: string } }) {
 	return (
 		<EmptyState
 			icon={UserRoundX}
 			title="Murid tidak ditemukan"
 			description="Data murid mungkin sudah tidak tersedia atau Anda tidak memiliki akses ke halaman ini."
 			action={
-				<Link href="/app/academic/students">
-					<Button variant="secondary">Kembali ke data murid</Button>
+				<Link href={returnTarget.href}>
+					<Button variant="secondary">{returnTarget.label}</Button>
 				</Link>
 			}
 		/>
 	);
+}
+
+function getStudentReturnTarget(from: string | null, reportId: string | null) {
+	if (from === "deliveries" && reportId) {
+		return { href: `/app/reports/${reportId}/deliveries`, label: "Kembali ke pengiriman" };
+	}
+
+	return { href: "/app/academic/students", label: "Kembali ke data murid" };
 }
 
 function ProfileNotice({ notice }: { notice: string }) {

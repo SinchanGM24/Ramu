@@ -1,10 +1,19 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { reportPreviewHref } from "@/features/reports/utils/report-navigation";
 import type { Enrollment, PublishedReport } from "../types";
 
-type EnrollmentHistoryProps = { enrollments: Enrollment[]; publishedReports: PublishedReport[] };
+type EnrollmentHistoryProps = {
+	enrollments: Enrollment[];
+	publishedReports: PublishedReport[];
+	studentId: string;
+};
 
-export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentHistoryProps) {
+export function EnrollmentHistory({
+	enrollments,
+	publishedReports,
+	studentId,
+}: EnrollmentHistoryProps) {
 	return (
 		<Card>
 			<h2 className="text-lg font-bold tracking-[-0.02em] text-brand-950">Riwayat kelas</h2>
@@ -36,7 +45,7 @@ export function EnrollmentHistory({ enrollments, publishedReports }: EnrollmentH
 						publishedReports.map((report) => (
 							<Link
 								key={report.id}
-								href={`/app/reports/${report.id}/preview`}
+								href={reportPreviewHref(report.id, "student", { studentId })}
 								className="flex items-center justify-between rounded-xl border border-[#e7e7dc] p-3 text-sm transition hover:border-brand-300 hover:bg-brand-50/40"
 							>
 								<span>

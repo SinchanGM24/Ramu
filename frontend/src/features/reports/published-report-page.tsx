@@ -37,7 +37,13 @@ type PublishedVersion = {
 	snapshot: Snapshot;
 };
 
-export function PublishedReportPage({ id }: { id: string }) {
+export function PublishedReportPage({
+	id,
+	returnTarget = { href: "/app/academic/students", label: "Kembali ke data murid" },
+}: {
+	id: string;
+	returnTarget?: { href: string; label: string };
+}) {
 	const query = useQuery({
 		queryKey: ["published-report", id],
 		queryFn: () => api<PublishedVersion | null>(`/reports/${id}/published-version`),
@@ -74,10 +80,10 @@ export function PublishedReportPage({ id }: { id: string }) {
 					action={
 						<div className="flex flex-wrap gap-2">
 							<Link
-								href="/app/academic/students"
+								href={returnTarget.href}
 								className="rounded-xl border px-4 py-2 text-sm font-semibold"
 							>
-								Kembali
+								{returnTarget.label}
 							</Link>
 							<Link
 								href={`/app/reports/${id}/deliveries`}

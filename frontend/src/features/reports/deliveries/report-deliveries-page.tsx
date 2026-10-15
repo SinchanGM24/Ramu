@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,9 +9,12 @@ import { DeliveryHistoryList } from "./components/delivery-history-list";
 import { DeliveryRecipientSelector } from "./components/delivery-recipient-selector";
 import { useReportDeliveries } from "./hooks/use-report-deliveries";
 import type { Recipient } from "./types";
+import { reportPreviewHref } from "../utils/report-navigation";
 
 export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 	const delivery = useReportDeliveries(reportId);
+	const searchParams = useSearchParams();
+	const openedFromPublication = searchParams.get("from") === "publication";
 
 	return (
 		<>
@@ -19,9 +23,20 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 				title="Kirim raport kepada wali"
 				description="Pilih kontak penerima, lalu buka WhatsApp untuk mengirimkan tautan raport secara personal."
 				action={
-					<Link href={`/app/reports/${reportId}/preview`}>
-						<Button variant="secondary">Lihat raport</Button>
-					</Link>
+					<div className="flex flex-wrap gap-2">
+						{openedFromPublication ? (
+							<Link href="/app/reports/publication">
+								<Button variant="secondary">Kembali ke publikasi</Button>
+							</Link>
+						) : null}
+						<Link
+							href={reportPreviewHref(reportId, "deliveries", {
+								returnTo: openedFromPublication ? "publication" : undefined,
+							})}
+						>
+							<Button variant="secondary">Lihat raport</Button>
+						</Link>
+					</div>
 				}
 			/>
 			{delivery.notice ? (
@@ -40,6 +55,7 @@ export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
 				pending={delivery.sendToWhatsApp.isPending}
 				onOpenWhatsApp={delivery.sendSelectedToWhatsApp}
 				onReload={() => void delivery.recipients.refetch()}
+				reportId={reportId}
 				studentId={delivery.context.data?.studentId}
 				onToggleAll={delivery.toggleAllRecipients}
 				onToggleRecipient={delivery.toggleRecipient}
@@ -66,6 +82,7 @@ function RecipientPanel({
 	selectedIds,
 	onOpenWhatsApp,
 	onReload,
+	reportId,
 	studentId,
 	onToggleAll,
 	onToggleRecipient,
@@ -77,6 +94,7 @@ function RecipientPanel({
 	selectedIds: string[];
 	onOpenWhatsApp: () => void;
 	onReload: () => void;
+	reportId: string;
 	studentId?: string;
 	onToggleAll: () => void;
 	onToggleRecipient: (id: string) => void;
@@ -98,6 +116,7 @@ function RecipientPanel({
 			selectedIds={selectedIds}
 			pending={pending}
 			onOpenWhatsApp={onOpenWhatsApp}
+			reportId={reportId}
 			studentId={studentId}
 			onToggleAll={onToggleAll}
 			onToggleRecipient={onToggleRecipient}

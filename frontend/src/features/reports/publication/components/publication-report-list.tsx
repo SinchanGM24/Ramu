@@ -277,7 +277,7 @@ function PublicationAction({
 
 	if (report.status === "PUBLISHED") {
 		return (
-			<Link href={`/app/reports/${report.report_id}/deliveries`}>
+			<Link href={`/app/reports/${report.report_id}/deliveries?from=publication`}>
 				<Button variant="secondary" className={mobile ? "w-full" : undefined}>
 					Kirim ke wali
 				</Button>

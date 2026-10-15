@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check, ExternalLink } from "lucide-react";
 import { ModalDialog } from "@/components/shared/modal-dialog";
 import { Button } from "@/components/ui/button";
+import { reportPreviewHref } from "@/features/reports/utils/report-navigation";
 import { RevisionRequestForm } from "./revision-request-form";
 import { ReviewStatus } from "./review-status";
 import type { ReviewReport } from "../types";
@@ -55,7 +56,7 @@ export function ReviewDetailDialog({
 				</div>
 			</section>
 
-			<Link href={`/app/reports/${report.id}/preview?from=review`} className="mt-4 inline-flex">
+			<Link href={reportPreviewHref(report.id, "review")} className="mt-4 inline-flex">
 				<Button variant="secondary">
 					<ExternalLink className="size-4" />
 					Buka raport lengkap

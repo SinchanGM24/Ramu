@@ -12,6 +12,7 @@ import { api, ApiError } from "@/lib/api";
 import { FormalAssessmentTable } from "./presentation/formal-assessment-table";
 import { ReportScaleLegend } from "./presentation/report-scale-legend";
 import { PublishedReportPage } from "./published-report-page";
+import { getReportReturnTarget } from "./utils/report-navigation";
 
 type Data = {
 	report: { student_name: string; student_number?: string | null; semester_name: string };
@@ -26,9 +27,12 @@ type Data = {
 
 export function ReportPreviewPage({ id }: { id: string }) {
 	const searchParams = useSearchParams();
-	const openedFromReview = searchParams.get("from") === "review";
-	const backHref = openedFromReview ? "/app/reports/review" : `/app/reports/${id}`;
-	const backLabel = openedFromReview ? "Kembali ke tinjauan" : "Kembali";
+	const returnTarget = getReportReturnTarget({
+		from: searchParams.get("from"),
+		reportId: id,
+		returnTo: searchParams.get("returnTo"),
+		studentId: searchParams.get("studentId"),
+	});
 	const published = useQuery({
 		queryKey: ["published-report", id],
 		queryFn: () => api<unknown | null>(`/reports/${id}/published-version`),
@@ -47,7 +51,7 @@ export function ReportPreviewPage({ id }: { id: string }) {
 
 		return <PreviewError message={message} onRetry={() => void published.refetch()} />;
 	}
-	if (published.data) return <PublishedReportPage id={id} />;
+	if (published.data) return <PublishedReportPage id={id} returnTarget={returnTarget} />;
 	if (query.isLoading || !published.isSuccess) {
 		return <LoadingState label="Menyiapkan pratinjau raport..." />;
 	}
@@ -67,8 +71,6 @@ export function ReportPreviewPage({ id }: { id: string }) {
 			/>
 		);
 	}
-	if (published.data) return <PublishedReportPage id={id} />;
-	if (!query.data) return <Card className="text-sm text-[#68746a]">Memuat pratinjau raport…</Card>;
 	const data = query.data;
 	return (
 		<>
@@ -79,8 +81,11 @@ export function ReportPreviewPage({ id }: { id: string }) {
 					description="Dokumen baca-saja dengan tabel penilaian formal."
 					action={
 						<div className="flex gap-2">
-							<Link href={backHref} className="rounded-xl border px-4 py-2 text-sm font-semibold">
-								{backLabel}
+							<Link
+								href={returnTarget.href}
+								className="rounded-xl border px-4 py-2 text-sm font-semibold"
+							>
+								{returnTarget.label}
 							</Link>
 							<button
 								onClick={() => window.print()}

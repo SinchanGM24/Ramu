@@ -7,6 +7,7 @@ import type { Recipient } from "../types";
 type DeliveryRecipientSelectorProps = {
 	pending: boolean;
 	recipients: Recipient[];
+	reportId: string;
 	selectedIds: string[];
 	onOpenWhatsApp: () => void;
 	studentId?: string;
@@ -19,6 +20,7 @@ export function DeliveryRecipientSelector({
 	recipients,
 	selectedIds,
 	onOpenWhatsApp,
+	reportId,
 	studentId,
 	onToggleAll,
 	onToggleRecipient,
@@ -96,7 +98,10 @@ export function DeliveryRecipientSelector({
 						profil murid terlebih dahulu.
 					</p>
 					{studentId ? (
-						<Link href={`/app/academic/students/${studentId}`} className="mt-3 inline-flex">
+						<Link
+							href={`/app/academic/students/${studentId}?from=deliveries&reportId=${reportId}`}
+							className="mt-3 inline-flex"
+						>
 							<Button variant="secondary">Kelola profil murid</Button>
 						</Link>
 					) : null}
