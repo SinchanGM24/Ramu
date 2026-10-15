@@ -29,10 +29,13 @@ import {
 const transition = z
   .object({
     action: z.enum(["submit", "review", "revision", "approve"]),
-    note: z.string().max(1000).optional(),
+    note: z.string().trim().max(1000).optional(),
   })
   .refine((input) => input.action !== "submit", {
     message: "Gunakan pemeriksaan kelengkapan raport sebelum mengirim",
+  })
+  .refine((input) => input.action !== "revision" || Boolean(input.note), {
+    message: "Alasan revisi wajib diisi",
   });
 const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
 

@@ -1,91 +1,36 @@
-import { Check, RotateCcw } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { RevisionRequestForm } from "./revision-request-form";
+import { ReviewStatus } from "./review-status";
 import type { ReviewReport } from "../types";
 
-const status: Record<ReviewReport["status"], { label: string; tone: "green" | "amber" | "slate" }> =
-	{
-		SUBMITTED: { label: "Menunggu ditinjau", tone: "amber" },
-		IN_REVIEW: { label: "Sedang ditinjau", tone: "amber" },
-	};
-
 type ReviewQueueItemProps = {
-	openRevision: boolean;
-	pending: boolean;
 	report: ReviewReport;
-	revisionNote: string;
-	onApprove: () => void;
-	onOpenRevision: () => void;
-	onRevisionNoteChange: (note: string) => void;
-	onStartReview: () => void;
-	onSubmitRevision: () => void;
-	onCancelRevision: () => void;
+	onOpenDetail: () => void;
 };
 
-export function ReviewQueueItem({
-	openRevision,
-	pending,
-	report,
-	revisionNote,
-	onApprove,
-	onCancelRevision,
-	onOpenRevision,
-	onRevisionNoteChange,
-	onStartReview,
-	onSubmitRevision,
-}: ReviewQueueItemProps) {
+export function ReviewQueueItem({ report, onOpenDetail }: ReviewQueueItemProps) {
 	return (
-		<Card className="border-[#e5e7dc] bg-[#fffefa]">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<div className="flex flex-wrap items-center gap-2">
-						<h2 className="font-bold text-[#17251b]">{report.student_name}</h2>
-						<StatusBadge tone={status[report.status].tone}>
-							{status[report.status].label}
-						</StatusBadge>
-					</div>
-					<p className="mt-1 text-sm text-[#637065]">
-						{report.semester_name} · Dikirim {submittedAt(report.submitted_at)}
-					</p>
-				</div>
-				<div className="flex flex-wrap gap-2">
-					{report.status === "SUBMITTED" ? (
-						<Button disabled={pending} onClick={onStartReview}>
-							Mulai tinjau
-						</Button>
-					) : null}
-					{report.status === "IN_REVIEW" ? (
-						<>
-							<Button disabled={pending} variant="secondary" onClick={onOpenRevision}>
-								<RotateCcw className="mr-1 size-4" />
-								Minta revisi
-							</Button>
-							<Button disabled={pending} onClick={onApprove}>
-								<Check className="mr-1 size-4" />
-								Setujui raport
-							</Button>
-						</>
-					) : null}
-				</div>
+		<article className="grid gap-3 border-b border-[#edf0e8] px-5 py-4 last:border-0 sm:grid-cols-[minmax(0,1.4fr)_minmax(8rem,0.8fr)_auto_auto] sm:items-center sm:px-6">
+			<div className="min-w-0">
+				<h2 className="truncate font-semibold text-[#17251b]" title={report.student_name}>
+					{report.student_name}
+				</h2>
+				<p className="mt-1 text-xs text-[#637065]">Dikirim {submittedAt(report.submitted_at)}</p>
 			</div>
-			{openRevision ? (
-				<RevisionRequestForm
-					note={revisionNote}
-					pending={pending}
-					onCancel={onCancelRevision}
-					onNoteChange={onRevisionNoteChange}
-					onSubmit={onSubmitRevision}
-				/>
-			) : null}
-		</Card>
+			<p className="text-sm text-[#526156]">{report.semester_name}</p>
+			<ReviewStatus status={report.status} />
+			<div className="sm:text-right">
+				<Button variant="secondary" className="min-h-9 px-3" onClick={onOpenDetail}>
+					<Eye className="size-4" />
+					Detail
+				</Button>
+			</div>
+		</article>
 	);
 }
 
 function submittedAt(value: string | null) {
 	if (!value) return "Belum tersedia";
-	return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(
-		new Date(value),
-	);
+
+	return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(new Date(value));
 }

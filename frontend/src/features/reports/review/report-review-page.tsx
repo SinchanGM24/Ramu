@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/shared/page-header";
 import { api, ApiError } from "@/lib/api";
+import { ReviewDetailDialog } from "./components/review-detail-dialog";
 import { ReviewFeedback } from "./components/review-feedback";
 import { ReviewQueue } from "./components/review-queue";
 import type { ReviewReport } from "./types";
 
 export function ReportReviewPage() {
 	const queryClient = useQueryClient();
-	const [openRevisionFor, setOpenRevisionFor] = useState<string>();
+	const [selectedReport, setSelectedReport] = useState<ReviewReport>();
 	const [revisionNote, setRevisionNote] = useState("");
 	const [notice, setNotice] = useState<string>();
 	const reports = useQuery({
@@ -36,7 +37,7 @@ export function ReportReviewPage() {
 						? "Raport telah disetujui."
 						: "Raport dikembalikan untuk direvisi.",
 			);
-			setOpenRevisionFor(undefined);
+			setSelectedReport(undefined);
 			setRevisionNote("");
 			queryClient.invalidateQueries({ queryKey: ["reports", "review-queue"] });
 			queryClient.invalidateQueries({ queryKey: ["reports"] });
@@ -61,26 +62,34 @@ export function ReportReviewPage() {
 				loading={reports.isLoading}
 				error={reports.isError}
 				queue={reports.data ?? []}
-				openRevisionFor={openRevisionFor}
-				revisionNote={revisionNote}
-				transitionPending={transition.isPending}
 				onRetry={() => void reports.refetch()}
-				onApprove={(id) => transition.mutate({ id, action: "approve" })}
-				onOpenRevision={(id) => {
-					setOpenRevisionFor(openRevisionFor === id ? undefined : id);
+				onOpenDetail={(report) => {
+					transition.reset();
+					setSelectedReport(report);
 					setRevisionNote("");
-				}}
-				onCancelRevision={() => {
-					setOpenRevisionFor(undefined);
-					setRevisionNote("");
-				}}
-				onRevisionNoteChange={setRevisionNote}
-				onStartReview={(id) => transition.mutate({ id, action: "review" })}
-				onSubmitRevision={(id) => {
-					const note = revisionNote.trim();
-					if (note) transition.mutate({ id, action: "revision", note });
 				}}
 			/>
+			{selectedReport ? (
+				<ReviewDetailDialog
+					error={error}
+					pending={transition.isPending}
+					report={selectedReport}
+					revisionNote={revisionNote}
+					onClose={() => {
+						if (transition.isPending) return;
+						transition.reset();
+						setSelectedReport(undefined);
+						setRevisionNote("");
+					}}
+					onNoteChange={setRevisionNote}
+					onStartReview={() => transition.mutate({ id: selectedReport.id, action: "review" })}
+					onApprove={() => transition.mutate({ id: selectedReport.id, action: "approve" })}
+					onRequestRevision={() => {
+						const note = revisionNote.trim();
+						if (note) transition.mutate({ id: selectedReport.id, action: "revision", note });
+					}}
+				/>
+			) : null}
 		</>
 	);
 }

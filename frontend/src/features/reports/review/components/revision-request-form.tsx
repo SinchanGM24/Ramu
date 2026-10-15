@@ -18,7 +18,10 @@ export function RevisionRequestForm({
 	return (
 		<div className="mt-5 border-t border-[#e7e9df] pt-5">
 			<label className="block text-sm font-semibold text-[#35443a]">
-				Catatan revisi
+				Alasan revisi <span className="text-red-700">(wajib)</span>
+				<p className="mt-1 text-xs font-normal leading-5 text-[#637065]">
+					Jelaskan perbaikan yang diperlukan agar guru dapat memperbarui raport dengan tepat.
+				</p>
 				<textarea
 					value={note}
 					onChange={(event) => onNoteChange(event.target.value)}

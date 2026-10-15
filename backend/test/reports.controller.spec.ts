@@ -111,4 +111,17 @@ describe("ReportsController", () => {
     expect(update?.sql).toContain("status=$1::report_status");
     expect(update?.values).toEqual(["IN_REVIEW", "report-1", false, false]);
   });
+
+  it("requires a revision reason before returning a report to a teacher", async () => {
+    const controller = new ReportsController(
+      new AuthService({} as never),
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.move(request, "report-1", { action: "revision" }),
+    ).rejects.toThrow("Alasan revisi wajib diisi");
+  });
 });

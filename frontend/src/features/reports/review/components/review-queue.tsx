@@ -7,17 +7,9 @@ import type { ReviewReport } from "../types";
 export type ReviewQueueProps = {
 	error: boolean;
 	loading: boolean;
-	openRevisionFor?: string;
 	queue: ReviewReport[];
-	revisionNote: string;
-	transitionPending: boolean;
-	onApprove: (id: string) => void;
-	onCancelRevision: () => void;
-	onOpenRevision: (id: string) => void;
+	onOpenDetail: (report: ReviewReport) => void;
 	onRetry: () => void;
-	onRevisionNoteChange: (note: string) => void;
-	onStartReview: (id: string) => void;
-	onSubmitRevision: (id: string) => void;
 };
 
 export function ReviewQueue(props: ReviewQueueProps) {
@@ -42,22 +34,20 @@ export function ReviewQueue(props: ReviewQueueProps) {
 			</Card>
 		);
 	return (
-		<div className="space-y-4">
+		<Card className="overflow-hidden p-0">
+			<div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(8rem,0.8fr)_auto_auto] gap-3 border-b border-[#e7e9df] bg-[#f5f7f1] px-6 py-3 text-xs font-semibold uppercase tracking-[0.1em] text-[#637065] sm:grid">
+				<span>Murid</span>
+				<span>Semester</span>
+				<span>Status</span>
+				<span className="text-right">Tindakan</span>
+			</div>
 			{props.queue.map((report) => (
 				<ReviewQueueItem
 					key={report.id}
 					report={report}
-					openRevision={props.openRevisionFor === report.id}
-					pending={props.transitionPending}
-					revisionNote={props.revisionNote}
-					onApprove={() => props.onApprove(report.id)}
-					onCancelRevision={props.onCancelRevision}
-					onOpenRevision={() => props.onOpenRevision(report.id)}
-					onRevisionNoteChange={props.onRevisionNoteChange}
-					onStartReview={() => props.onStartReview(report.id)}
-					onSubmitRevision={() => props.onSubmitRevision(report.id)}
+					onOpenDetail={() => props.onOpenDetail(report)}
 				/>
 			))}
-		</div>
+		</Card>
 	);
 }
