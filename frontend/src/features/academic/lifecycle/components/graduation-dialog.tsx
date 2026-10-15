@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { LifecycleActionPanel } from "./lifecycle-action-panel";
-import type { LifecycleStudent } from "../types";
+import type { LifecycleProposal, LifecycleStudent } from "../types";
 
 const today = () => new Date().toISOString().slice(0, 10);
 export function GraduationDialog({
@@ -12,15 +12,17 @@ export function GraduationDialog({
 	onSuccess,
 	onError,
 	isTeacher,
+	initialProposal,
 }: {
 	students: LifecycleStudent[];
 	onClose: () => void;
 	onSuccess: (message: string) => Promise<void>;
 	onError: (message: string) => void;
 	isTeacher: boolean;
+	initialProposal?: LifecycleProposal | null;
 }) {
-	const [effectiveOn, setEffectiveOn] = useState(today());
-	const [reason, setReason] = useState("");
+	const [effectiveOn, setEffectiveOn] = useState(initialProposal?.payload.effectiveOn ?? today());
+	const [reason, setReason] = useState(initialProposal?.reason ?? "");
 	const [saving, setSaving] = useState(false);
 	async function submit() {
 		setSaving(true);
@@ -34,12 +36,15 @@ export function GraduationDialog({
 						studentIds: students.map((student) => student.id),
 						effectiveOn,
 						reason: reason || undefined,
+						resubmittedFromRequestId: initialProposal?.id,
 					}),
 				},
 			);
 			await onSuccess(
 				isTeacher
-					? `${result.submitted} pengajuan kelulusan telah dikirim ke Kepala Sekolah.`
+					? initialProposal
+						? `${result.submitted} pengajuan kelulusan yang diperbaiki telah dikirim ke Kepala Sekolah.`
+						: `${result.submitted} pengajuan kelulusan telah dikirim ke Kepala Sekolah.`
 					: `${result.processed} murid telah masuk ke Arsip.`,
 			);
 		} catch (error) {
@@ -49,7 +54,15 @@ export function GraduationDialog({
 		}
 	}
 	return (
-		<LifecycleActionPanel title="Tinjau kelulusan" onClose={onClose}>
+		<LifecycleActionPanel
+			title={initialProposal ? "Perbaiki pengajuan kelulusan" : "Tinjau kelulusan"}
+			onClose={onClose}
+		>
+			{initialProposal?.review_note ? (
+				<p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+					<b>Catatan Kepala Sekolah:</b> {initialProposal.review_note}
+				</p>
+			) : null}
 			<p className="mt-3 text-sm leading-6 text-slate-600">
 				Murid yang dikonfirmasi lulus akan dipindahkan ke Arsip. Riwayat akademik dan raport mereka
 				tetap tersimpan.

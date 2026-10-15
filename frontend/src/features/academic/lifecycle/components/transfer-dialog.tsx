@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { LifecycleActionPanel } from "./lifecycle-action-panel";
-import type { LifecycleClassGroup, LifecycleStudent } from "../types";
+import type { LifecycleClassGroup, LifecycleProposal, LifecycleStudent } from "../types";
 
 const today = () => new Date().toISOString().slice(0, 10);
 export function TransferDialog({
@@ -13,17 +13,22 @@ export function TransferDialog({
 	onSuccess,
 	onError,
 	isTeacher,
+	initialProposal,
 }: {
 	students: LifecycleStudent[];
 	onClose: () => void;
 	onSuccess: (message: string) => Promise<void>;
 	onError: (message: string) => void;
 	isTeacher: boolean;
+	initialProposal?: LifecycleProposal | null;
 }) {
-	const [defaultTarget, setDefaultTarget] = useState("");
-	const [destinations, setDestinations] = useState<Record<string, string>>({});
-	const [effectiveOn, setEffectiveOn] = useState(today());
-	const [reason, setReason] = useState("");
+	const previousItems = initialProposal?.payload.items ?? [];
+	const [defaultTarget, setDefaultTarget] = useState(previousItems[0]?.targetClassGroupId ?? "");
+	const [destinations, setDestinations] = useState<Record<string, string>>(
+		Object.fromEntries(previousItems.map((item) => [item.studentId, item.targetClassGroupId])),
+	);
+	const [effectiveOn, setEffectiveOn] = useState(previousItems[0]?.effectiveOn ?? today());
+	const [reason, setReason] = useState(initialProposal?.reason ?? "");
 	const [saving, setSaving] = useState(false);
 	const classGroups = useQuery({
 		queryKey: ["academic", "class-groups", "active"],
@@ -47,12 +52,15 @@ export function TransferDialog({
 							reason: reason || undefined,
 						})),
 						reason: reason || undefined,
+						resubmittedFromRequestId: initialProposal?.id,
 					}),
 				},
 			);
 			await onSuccess(
 				isTeacher
-					? `${result.submitted} pengajuan perpindahan telah dikirim ke Kepala Sekolah.`
+					? initialProposal
+						? `${result.submitted} pengajuan perpindahan yang diperbaiki telah dikirim ke Kepala Sekolah.`
+						: `${result.submitted} pengajuan perpindahan telah dikirim ke Kepala Sekolah.`
 					: `${result.processed} murid berhasil dipindahkan.`,
 			);
 		} catch (error) {
@@ -62,7 +70,15 @@ export function TransferDialog({
 		}
 	}
 	return (
-		<LifecycleActionPanel title="Atur perpindahan kelas" onClose={onClose}>
+		<LifecycleActionPanel
+			title={initialProposal ? "Perbaiki pengajuan perpindahan" : "Atur perpindahan kelas"}
+			onClose={onClose}
+		>
+			{initialProposal?.review_note ? (
+				<p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+					<b>Catatan Kepala Sekolah:</b> {initialProposal.review_note}
+				</p>
+			) : null}
 			<div className="mt-5 grid gap-3 md:grid-cols-2">
 				<label className="text-sm font-medium">
 					Kelas tujuan default

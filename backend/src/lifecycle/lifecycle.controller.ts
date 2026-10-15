@@ -25,11 +25,13 @@ const transferItem = z.object({
 const transferSchema = z.object({
   items: z.array(transferItem).min(1).max(200),
   reason: z.string().trim().max(1000).optional(),
+  resubmittedFromRequestId: z.string().uuid().optional(),
 });
 const graduationSchema = z.object({
   studentIds: z.array(z.string().uuid()).min(1).max(200),
   effectiveOn: date,
   reason: z.string().trim().max(1000).optional(),
+  resubmittedFromRequestId: z.string().uuid().optional(),
 });
 const reversalSchema = z.object({
   studentId: z.string().uuid(),
@@ -76,7 +78,52 @@ export class LifecycleController {
       async (c) =>
         (
           await c.query(
-            `SELECT request.id,request.request_type AS operation_type,request.reason,request.payload,request.status,request.created_at,requester.name AS requester_name FROM lifecycle_requests request JOIN users requester ON requester.id=request.requested_by WHERE request.school_id=$1 AND request.status='PENDING' AND ($2::uuid IS NULL OR request.requested_by=$2) ORDER BY request.created_at DESC`,
+            `SELECT request.id,request.request_type AS operation_type,request.reason,request.payload,request.status,request.created_at,request.updated_at,request.reviewed_at,request.review_note,request.resubmitted_from_request_id,requester.name AS requester_name,
+              CASE
+                WHEN request.request_type IN ('TRANSFER','CONTINUATION') THEN (
+                  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                    'studentId',student.id,'studentName',student.name,
+                    'className',current_class.name,'targetClassName',target_class.name,
+                    'targetClassGroupId',item->>'targetClassGroupId',
+                    'effectiveOn',item->>'effectiveOn','reason',item->>'reason'
+                  ) ORDER BY student.name),'[]'::jsonb)
+                  FROM jsonb_array_elements(request.payload->'items') item
+                  JOIN students student ON student.id=(item->>'studentId')::uuid AND student.school_id=request.school_id
+                  LEFT JOIN LATERAL (
+                    SELECT grouping.name FROM student_enrollments enrollment
+                    LEFT JOIN class_periods period ON period.id=enrollment.class_period_id AND period.school_id=enrollment.school_id
+                    LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id AND grouping.school_id=period.school_id
+                    WHERE enrollment.student_id=student.id AND enrollment.school_id=request.school_id
+                      AND enrollment.effective_start_on<=CURRENT_DATE
+                      AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE)
+                    ORDER BY enrollment.effective_start_on DESC LIMIT 1
+                  ) current_class ON true
+                  LEFT JOIN class_groups target_class ON target_class.id=(item->>'targetClassGroupId')::uuid AND target_class.school_id=request.school_id
+                )
+                ELSE (
+                  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                    'studentId',student.id,'studentName',student.name,
+                    'className',current_class.name,'effectiveOn',request.payload->>'effectiveOn'
+                  ) ORDER BY student.name),'[]'::jsonb)
+                  FROM jsonb_array_elements_text(request.payload->'studentIds') item(student_id)
+                  JOIN students student ON student.id=item.student_id::uuid AND student.school_id=request.school_id
+                  LEFT JOIN LATERAL (
+                    SELECT grouping.name FROM student_enrollments enrollment
+                    LEFT JOIN class_periods period ON period.id=enrollment.class_period_id AND period.school_id=enrollment.school_id
+                    LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id AND grouping.school_id=period.school_id
+                    WHERE enrollment.student_id=student.id AND enrollment.school_id=request.school_id
+                      AND enrollment.effective_start_on<=CURRENT_DATE
+                      AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE)
+                    ORDER BY enrollment.effective_start_on DESC LIMIT 1
+                  ) current_class ON true
+                )
+              END AS students
+             FROM lifecycle_requests request
+             JOIN users requester ON requester.id=request.requested_by
+             WHERE request.school_id=$1
+               AND (request.status='PENDING' OR ($2::uuid IS NOT NULL AND request.status='REJECTED'))
+               AND ($2::uuid IS NULL OR request.requested_by=$2)
+             ORDER BY CASE WHEN request.status='PENDING' THEN 0 ELSE 1 END,request.updated_at DESC`,
             [actor.schoolId, actor.role === "TEACHER" ? actor.userId : null],
           )
         ).rows,
@@ -96,6 +143,7 @@ export class LifecycleController {
       input,
       input.reason,
       input.items.map((item) => item.studentId),
+      input.resubmittedFromRequestId,
     );
   }
   @Post("proposals/graduations") async proposeGraduation(
@@ -110,6 +158,7 @@ export class LifecycleController {
       input,
       input.reason,
       input.studentIds,
+      input.resubmittedFromRequestId,
     );
   }
 
@@ -301,18 +350,32 @@ export class LifecycleController {
     payload: unknown,
     reason: string | undefined,
     studentIds: string[],
+    resubmittedFromRequestId?: string,
   ) {
     return this.db.transaction(async (c) => {
       await this.assertTeacherStudents(c, actor, studentIds);
+      if (resubmittedFromRequestId) {
+        const previous = (
+          await c.query(
+            "SELECT id FROM lifecycle_requests WHERE id=$1 AND school_id=$2 AND requested_by=$3 AND request_type=$4 AND status='REJECTED'",
+            [resubmittedFromRequestId, actor.schoolId, actor.userId, requestType],
+          )
+        ).rows[0];
+        if (!previous)
+          throw new BadRequestException(
+            "Pengajuan yang akan diperbaiki tidak ditemukan atau tidak dapat diajukan ulang.",
+          );
+      }
       const request = (
         await c.query(
-          "INSERT INTO lifecycle_requests(school_id,request_type,requested_by,reason,payload) VALUES($1,$2,$3,$4,$5) RETURNING id,status",
+          "INSERT INTO lifecycle_requests(school_id,request_type,requested_by,reason,payload,resubmitted_from_request_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,status",
           [
             actor.schoolId,
             requestType,
             actor.userId,
             reason ?? null,
             JSON.stringify(payload),
+            resubmittedFromRequestId ?? null,
           ],
         )
       ).rows[0];
@@ -320,10 +383,12 @@ export class LifecycleController {
         {
           schoolId: actor.schoolId,
           actorUserId: actor.userId,
-          action: "lifecycle.request_created",
+          action: resubmittedFromRequestId
+            ? "lifecycle.request_resubmitted"
+            : "lifecycle.request_created",
           entityType: "lifecycle_request",
           entityId: request.id,
-          metadata: { requestType, count: studentIds.length },
+          metadata: { requestType, count: studentIds.length, resubmittedFromRequestId },
         },
         c,
       );
