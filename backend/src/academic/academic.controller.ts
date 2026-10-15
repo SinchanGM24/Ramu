@@ -18,6 +18,7 @@ import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 
 const yearSchema = z.object({ name: z.string().regex(/^\d{4}$/) });
+const activeAcademicContextSchema = z.object({ semesterId: z.string().uuid() });
 const classPeriodSchema = z.object({
   name: z.string().trim().min(2).max(100),
   academicYearId: z.string().uuid(),
@@ -105,7 +106,7 @@ export class AcademicController {
           )
         ).rows[0];
         await c.query(
-          "INSERT INTO semesters(school_id,academic_year_id,name,starts_on,ends_on) VALUES($1,$2,'Semester I',$3,$4),($1,$2,'Semester II',$5,$6)",
+          "INSERT INTO semesters(school_id,academic_year_id,name,starts_on,ends_on,is_active) VALUES($1,$2,'Semester I',$3,$4,$7),($1,$2,'Semester II',$5,$6,false)",
           [
             actor.schoolId,
             year.id,
@@ -113,6 +114,7 @@ export class AcademicController {
             period.semesterOneEnd,
             period.semesterTwoStart,
             period.endsOn,
+            !hasActiveYear,
           ],
         );
         await this.audit.record(
@@ -136,11 +138,27 @@ export class AcademicController {
   @Post("years/:id/activate") async activateYear(
     @Req() request: FastifyRequest,
     @Param("id") id: string,
+    @Body() body: unknown,
   ) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = activeAcademicContextSchema.parse(body);
     return this.db.transaction(async (c) => {
+      const semester = (
+        await c.query(
+          "SELECT id,name FROM semesters WHERE id=$1 AND academic_year_id=$2 AND school_id=$3",
+          [input.semesterId, id, actor.schoolId],
+        )
+      ).rows[0];
+      if (!semester)
+        throw new NotFoundException(
+          "Semester tidak ditemukan pada tahun ajaran yang dipilih.",
+        );
       await c.query(
         "UPDATE academic_years SET is_active=false WHERE school_id=$1",
+        [actor.schoolId],
+      );
+      await c.query(
+        "UPDATE semesters SET is_active=false WHERE school_id=$1",
         [actor.schoolId],
       );
       const year = (
@@ -150,6 +168,10 @@ export class AcademicController {
         )
       ).rows[0];
       if (!year) throw new NotFoundException("Tahun ajaran tidak ditemukan.");
+      await c.query(
+        "UPDATE semesters SET is_active=true WHERE id=$1 AND school_id=$2",
+        [input.semesterId, actor.schoolId],
+      );
       await this.audit.record(
         {
           schoolId: actor.schoolId,
@@ -157,6 +179,7 @@ export class AcademicController {
           action: "academic_year.activated",
           entityType: "academic_year",
           entityId: id,
+          metadata: { semesterId: input.semesterId },
         },
         c,
       );
@@ -169,11 +192,39 @@ export class AcademicController {
       async (c) =>
         (
           await c.query(
-            "SELECT sem.id,sem.name,sem.academic_year_id,year.name AS academic_year_name FROM semesters sem JOIN academic_years year ON year.id=sem.academic_year_id ORDER BY year.starts_on DESC,sem.starts_on",
+            `SELECT sem.id,sem.name,sem.academic_year_id,sem.is_active,year.name AS academic_year_name
+             FROM semesters sem
+             JOIN academic_years year ON year.id=sem.academic_year_id AND year.school_id=sem.school_id
+             WHERE sem.school_id=$1
+               AND ($2::boolean=false OR (sem.is_active AND year.is_active))
+             ORDER BY year.starts_on DESC,sem.starts_on`,
+            [actor.schoolId, actor.role === "TEACHER"],
           )
         ).rows,
       actor.schoolId,
     );
+  }
+
+  @Get("active-semester") activeSemester(@Req() request: FastifyRequest) {
+    const actor = this.auth.require(request, [
+      "SCHOOL_ADMIN",
+      "TEACHER",
+      "PRINCIPAL",
+    ]);
+    return this.db.transaction(async (c) => {
+      return (
+        (
+          await c.query(
+            `SELECT sem.id,sem.name,sem.academic_year_id,sem.is_active,year.name AS academic_year_name
+             FROM semesters sem
+             JOIN academic_years year ON year.id=sem.academic_year_id AND year.school_id=sem.school_id
+             WHERE sem.school_id=$1 AND sem.is_active AND year.is_active
+             LIMIT 1`,
+            [actor.schoolId],
+          )
+        ).rows[0] ?? null
+      );
+    }, actor.schoolId);
   }
 
   @Get("class-groups") listClassGroups(

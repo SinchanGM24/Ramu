@@ -390,10 +390,17 @@ async function seed() {
         [schoolId, yearId, firstStart, firstEnd, secondStart, secondEnd],
       );
     }
+    await client.query("UPDATE semesters SET is_active=false WHERE school_id=$1", [
+      schoolId,
+    ]);
     const activeSemesterId = await id(
       client,
       "SELECT id FROM semesters WHERE school_id=$1 AND academic_year_id=$2 AND name='Semester I'",
       [schoolId, activeYearId],
+    );
+    await client.query(
+      "UPDATE semesters SET is_active=true WHERE id=$1 AND school_id=$2",
+      [activeSemesterId, schoolId],
     );
 
     const groupIds = {} as Record<ClassName, string>;

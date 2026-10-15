@@ -1,7 +1,7 @@
 "use client";
 
-import { PageHeader } from "@/components/shared/page-header";
 import { LoadingState } from "@/components/shared/loading-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PublicationReportList } from "./components/publication-report-list";
@@ -10,16 +10,16 @@ import { useReportPublication } from "./hooks/use-report-publication";
 export function ReportPublicationPage() {
 	const publication = useReportPublication();
 
-	if (publication.semesters.isLoading) {
-		return <LoadingState label="Memuat pilihan semester..." />;
+	if (publication.activeSemester.isLoading) {
+		return <LoadingState label="Memuat konteks semester..." />;
 	}
-	if (publication.semesters.isError) {
-		return <SemesterLoadError onRetry={() => void publication.semesters.refetch()} />;
+	if (publication.activeSemester.isError) {
+		return <SemesterLoadError onRetry={() => void publication.activeSemester.refetch()} />;
 	}
-	if (!publication.semesters.data?.length) {
+	if (!publication.activeSemester.data) {
 		return (
 			<Card className="max-w-xl border-dashed text-sm leading-6 text-[#637065]">
-				Belum ada semester untuk menampilkan publikasi raport.
+				Admin Sekolah perlu memilih tahun ajaran dan semester aktif pada Data Akademik.
 			</Card>
 		);
 	}
@@ -47,27 +47,19 @@ export function ReportPublicationPage() {
 					{publication.error}
 				</p>
 			) : null}
-			<div className="mb-6 max-w-3xl rounded-2xl border border-[#e7e7dc] bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_60%,#eef5ec_100%)] p-5 shadow-soft">
-				<p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-700">
-					Konteks publikasi
-				</p>
-				<p className="mt-1 text-sm leading-6 text-[#637065]">
-					Pilih semester sebelum menerbitkan versi raport final atau meninjau riwayat pengiriman.
-				</p>
-				<label className="mt-4 block max-w-sm text-sm font-semibold text-[#35443a]">
-					Semester
-					<select
-						value={publication.semesterId}
-						onChange={(event) => publication.setSemesterId(event.target.value)}
-						className="mt-2 block w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-2.5 text-sm text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-					>
-						{publication.semesters.data.map((semester) => (
-							<option key={semester.id} value={semester.id}>
-								{semester.name} · {semester.academic_year_name}
-							</option>
-						))}
-					</select>
-				</label>
+			<div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#e7e7dc] bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_60%,#eef5ec_100%)] p-5 shadow-soft sm:flex-row sm:items-end sm:justify-between">
+				<div>
+					<p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-700">
+						Konteks publikasi
+					</p>
+					<p className="mt-1 text-sm leading-6 text-[#637065]">
+						Semester aktif ditentukan Admin Sekolah pada Data Akademik.
+					</p>
+				</div>
+				<div className="rounded-xl border border-brand-100 bg-[#fffefa] px-4 py-3 text-sm font-semibold text-[#17251b] sm:min-w-56">
+					{publication.activeSemester.data.name} ·{" "}
+					{publication.activeSemester.data.academic_year_name}
+				</div>
 			</div>
 			<PublicationReportList
 				canPublish={publication.canPublish}
@@ -98,9 +90,9 @@ export function ReportPublicationPage() {
 function SemesterLoadError({ onRetry }: { onRetry: () => void }) {
 	return (
 		<Card className="max-w-xl border-red-200 bg-red-50">
-			<h2 className="font-bold text-red-900">Semester tidak dapat dimuat</h2>
+			<h2 className="font-bold text-red-900">Konteks semester tidak dapat dimuat</h2>
 			<p className="mt-2 text-sm leading-6 text-red-800">
-				Coba lagi untuk membuka daftar raport yang dapat diterbitkan.
+				Coba lagi untuk membuka daftar publikasi raport.
 			</p>
 			<Button className="mt-4" variant="secondary" onClick={onRetry}>
 				Coba lagi

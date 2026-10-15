@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ClipboardCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { LoadingState } from "@/components/shared/loading-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/shared/page-header";
 
 type Semester = { id: string; name: string; academic_year_name: string };
 type Data = {
@@ -19,14 +18,11 @@ type Data = {
 
 export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 	const queryClient = useQueryClient();
-	const [semesterId, setSemesterId] = useState("");
-	const semesters = useQuery({
-		queryKey: ["academic", "semesters"],
-		queryFn: () => api<Semester[]>("/academic/semesters"),
+	const activeSemester = useQuery({
+		queryKey: ["academic", "active-semester"],
+		queryFn: () => api<Semester | null>("/academic/active-semester"),
 	});
-	useEffect(() => {
-		if (!semesterId && semesters.data?.[0]) setSemesterId(semesters.data[0].id);
-	}, [semesterId, semesters.data]);
+	const semesterId = activeSemester.data?.id || "";
 	const work = useQuery({
 		queryKey: ["assessment", studentId, semesterId],
 		enabled: Boolean(semesterId),
@@ -45,23 +41,7 @@ export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 		await queryClient.invalidateQueries({ queryKey: ["assessment", studentId, semesterId] });
 	}
 
-	if (!semesters.isLoading && !semesters.data?.length)
-		return (
-			<>
-				<PageHeader
-					title="Penilaian murid"
-					description="Semester I dan Semester II dibuat otomatis bersama tahun ajaran."
-				/>
-				<Card className="space-y-3">
-					<p className="font-semibold">Tahun ajaran belum tersedia.</p>
-					<Link href="/app/academic">
-						<Button>Buat tahun ajaran</Button>
-					</Link>
-				</Card>
-			</>
-		);
-
-	if (semesters.isLoading || (Boolean(semesterId) && work.isLoading)) {
+	if (activeSemester.isLoading || (Boolean(semesterId) && work.isLoading)) {
 		return (
 			<>
 				<PageHeader
@@ -74,30 +54,41 @@ export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 		);
 	}
 
+	if (!activeSemester.data) {
+		return (
+			<>
+				<PageHeader
+					title="Penilaian murid"
+					description="Semester aktif ditetapkan Admin Sekolah dari Data Akademik."
+				/>
+				<Card className="space-y-3">
+					<p className="font-semibold">Semester aktif belum dipilih.</p>
+					<Link href="/app/academic">
+						<Button>Buka Data Akademik</Button>
+					</Link>
+				</Card>
+			</>
+		);
+	}
+
 	return (
 		<>
 			<PageHeader
 				eyebrow="Penilaian individual"
-				title={work.data?.student.name || "Memuat murid…"}
-				description="Pilih semester dan satu tingkat perkembangan untuk setiap indikator. Perubahan tersimpan otomatis."
+				title={work.data?.student.name || "Memuat murid..."}
+				description="Pilih satu tingkat perkembangan untuk setiap indikator. Perubahan tersimpan otomatis."
 			/>
 			<Card className="mb-5 flex flex-col gap-5 bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_60%,#eef5ec_100%)] sm:flex-row sm:items-end sm:justify-between">
-				<label htmlFor="assessment-semester" className="text-sm font-semibold text-[#35443a]">
-					Semester aktif
-				</label>
-				<select
-					id="assessment-semester"
-					value={semesterId}
-					onChange={(event) => setSemesterId(event.target.value)}
-					className="mt-2 w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-2.5 text-sm text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:max-w-sm"
-				>
-					{semesters.data?.map((semester) => (
-						<option key={semester.id} value={semester.id}>
-							{semester.name} · {semester.academic_year_name}
-						</option>
-					))}
-				</select>
-				<div className="mt-4 flex items-center gap-3 rounded-2xl border border-brand-100 bg-[#fffdf8]/90 px-4 py-3 sm:mt-0">
+				<div>
+					<p className="text-sm font-semibold text-[#35443a]">Semester aktif</p>
+					<p className="mt-1 text-sm text-[#637065]">
+						Ditentukan Admin Sekolah pada Data Akademik.
+					</p>
+				</div>
+				<div className="rounded-xl border border-brand-100 bg-[#fffefa] px-4 py-3 text-sm font-semibold text-[#17251b]">
+					{activeSemester.data.name} · {activeSemester.data.academic_year_name}
+				</div>
+				<div className="flex items-center gap-3 rounded-2xl border border-brand-100 bg-[#fffdf8]/90 px-4 py-3">
 					<span className="grid size-10 place-items-center rounded-xl bg-brand-50 text-brand-700">
 						<ClipboardCheck size={19} />
 					</span>
@@ -141,9 +132,9 @@ export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 						</div>
 					</Card>
 				))}
-				{work.data?.indicators.length === 0 && (
+				{work.data?.indicators.length === 0 ? (
 					<Card>Indikator penilaian belum tersedia. Muat ulang halaman beberapa saat lagi.</Card>
-				)}
+				) : null}
 			</div>
 		</>
 	);

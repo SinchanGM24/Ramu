@@ -15,6 +15,7 @@ import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { DEFAULT_TK_TEMPLATE_NAME } from "./default-tk-template";
 import { ensureDefaultTkFramework } from "./ensure-default-tk-framework";
+import { assertTeacherActiveSemester } from "../academic/active-semester";
 
 const scoreSchema = z.object({
   semesterId: z.string().uuid(),
@@ -39,6 +40,7 @@ export class AssessmentController {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(async (client) => {
       await ensureDefaultTkFramework(client, actor.schoolId);
+      await assertTeacherActiveSemester(client, actor, semesterId);
       await this.assertTeacherAssignment(
         client,
         actor.role,
@@ -81,6 +83,7 @@ export class AssessmentController {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     const input = scoreSchema.parse(body);
     return this.db.transaction(async (client) => {
+      await assertTeacherActiveSemester(client, actor, input.semesterId);
       await this.assertTeacherAssignment(
         client,
         actor.role,

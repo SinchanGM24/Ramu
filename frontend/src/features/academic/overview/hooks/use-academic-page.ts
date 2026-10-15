@@ -3,11 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAcademicYears } from "./use-academic-years";
 import { useClassPeriods } from "./use-class-periods";
+import { useAcademicSemesters } from "./use-academic-semesters";
 import type { ClassPeriod } from "../types";
 
 export function useAcademicPage() {
 	const queryClient = useQueryClient();
 	const years = useAcademicYears();
+	const semesters = useAcademicSemesters();
 	const periods = useClassPeriods(years.activeYear?.id);
 	const [error, setError] = useState("");
 	const [notice, setNotice] = useState("");
@@ -46,6 +48,8 @@ export function useAcademicPage() {
 						: `Tahun ajaran ${year.name} berhasil ditambahkan. Aktifkan saat siap digunakan.`,
 				);
 				await queryClient.invalidateQueries({ queryKey: ["academic", "years"] });
+				await queryClient.invalidateQueries({ queryKey: ["academic", "semesters"] });
+				await queryClient.invalidateQueries({ queryKey: ["academic", "active-semester"] });
 			})
 			.catch((reason) =>
 				setError(reason instanceof Error ? reason.message : "Tahun ajaran tidak dapat dibuat."),
@@ -64,12 +68,18 @@ export function useAcademicPage() {
 				() => setClassFormOpen(false),
 			);
 	}
-	const activateYear = (id: string) =>
-		request(`/academic/years/${id}/activate`, {}, ["academic", "years"], () =>
+	const activateYear = (id: string, semesterId: string) =>
+		request(`/academic/years/${id}/activate`, { semesterId }, ["academic", "years"], () =>
 			setYearSwitchOpen(false),
-		);
+		).then(async () => {
+			await queryClient.invalidateQueries({ queryKey: ["academic", "semesters"] });
+			await queryClient.invalidateQueries({ queryKey: ["academic", "active-semester"] });
+			await queryClient.invalidateQueries({ queryKey: ["reports"] });
+			await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+		});
 	return {
 		years,
+		semesters,
 		periods,
 		error,
 		notice,

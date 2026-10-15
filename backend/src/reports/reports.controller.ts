@@ -16,6 +16,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { createHash, randomBytes, randomInt } from "crypto";
 import { z } from "zod";
 import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
+import { assertTeacherActiveSemester } from "../academic/active-semester";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
@@ -57,8 +58,9 @@ export class ReportsController {
   ) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     return this.db.transaction(
-      async (client) =>
-        (
+      async (client) => {
+        await assertTeacherActiveSemester(client, actor, semesterId);
+        return (
           await client.query(
             `WITH framework_totals AS (
               SELECT count(DISTINCT indicator.id)::int AS indicator_count,count(DISTINCT area.id)::int AS narrative_count
@@ -111,7 +113,8 @@ export class ReportsController {
               actor.schoolId,
             ],
           )
-        ).rows,
+        ).rows;
+      },
       actor.schoolId,
     );
   }
@@ -140,6 +143,7 @@ export class ReportsController {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     const input = z.object({ semesterId: z.string().uuid() }).parse(body);
     return this.db.transaction(async (client) => {
+      await assertTeacherActiveSemester(client, actor, input.semesterId);
       const enrollment = (
         await client.query(
           `SELECT enrollment.id FROM student_enrollments enrollment JOIN students student ON student.id=enrollment.student_id JOIN semesters semester ON semester.id=$2 LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.ended_at IS NULL WHERE enrollment.student_id=$1 AND enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on <= CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on > CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($3::uuid IS NULL OR assignment.teacher_user_id=$3)`,

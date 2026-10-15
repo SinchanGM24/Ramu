@@ -69,6 +69,7 @@ describe("DashboardController", () => {
     ]);
     expect(statsQuery.sql).toContain("assignment.teacher_user_id=$2");
     expect(statsQuery.sql).toContain("enrollment.school_id=$1");
+    expect(statsQuery.sql).toContain("semester.is_active");
     expect(statsQuery.values).toEqual(["school-1", "user-1"]);
   });
 

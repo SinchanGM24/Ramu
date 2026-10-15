@@ -5,10 +5,12 @@ import type { AcademicYear } from "../types";
 
 export function ActiveYearCard({
 	activeYear,
+	activeSemesterName,
 	onCreate,
 	onChange,
 }: {
 	activeYear?: AcademicYear;
+	activeSemesterName?: string;
 	onCreate: () => void;
 	onChange: () => void;
 }) {
@@ -40,11 +42,13 @@ export function ActiveYearCard({
 					<div>
 						<p className="text-sm text-[#637065]">Tahun ajaran aktif</p>
 						<h2 className="font-bold text-brand-950">{activeYear.name}</h2>
-						<p className="text-xs text-[#637065]">Semester I dan Semester II tersedia</p>
+						<p className="text-xs text-[#637065]">
+							{activeSemesterName ? `${activeSemesterName} sedang aktif` : "Pilih semester aktif"}
+						</p>
 					</div>
 				</div>
 				<Button variant="secondary" onClick={onChange}>
-					Ganti tahun ajaran
+					Ganti konteks akademik
 				</Button>
 			</div>
 		</Card>

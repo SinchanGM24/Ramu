@@ -60,7 +60,23 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 	}
 	if (options.method && options.method !== "GET") return { id: reportId, status: "DRAFT" };
 	if (path === "/academic/semesters")
-		return [{ id: semesterId, name: "Semester I", academic_year_name: "2026" }];
+		return [
+			{
+				id: semesterId,
+				name: "Semester I",
+				academic_year_id: "demo-year",
+				academic_year_name: "2026",
+				is_active: true,
+			},
+		];
+	if (path === "/academic/active-semester")
+		return {
+			id: semesterId,
+			name: "Semester I",
+			academic_year_id: "demo-year",
+			academic_year_name: "2026",
+			is_active: true,
+		};
 	if (path === "/academic/years") return [{ id: "demo-year", name: "2026", is_active: true }];
 	if (path === "/academic/class-groups")
 		return [{ id: "demo-group", name: "Kelas Apel", is_active: true }];

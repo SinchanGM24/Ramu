@@ -20,6 +20,7 @@ export function AcademicPage() {
 			<AcademicFeedback error={page.error} notice={page.notice} />
 			<ActiveYearCard
 				activeYear={activeYear}
+				activeSemesterName={page.semesters.data?.find((semester) => semester.is_active)?.name}
 				onCreate={() => page.setYearFormOpen(true)}
 				onChange={() => page.setYearSwitchOpen(true)}
 			/>
@@ -43,7 +44,9 @@ export function AcademicPage() {
 			{page.isYearSwitchOpen && (
 				<YearSwitchModal
 					years={page.years.data || []}
+					semesters={page.semesters.data || []}
 					activeId={activeYear?.id}
+					activeSemesterId={page.semesters.data?.find((semester) => semester.is_active)?.id}
 					onActivate={page.activateYear}
 					onClose={() => page.setYearSwitchOpen(false)}
 				/>

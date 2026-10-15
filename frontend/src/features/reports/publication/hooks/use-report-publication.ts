@@ -9,7 +9,6 @@ const pageSize = 10;
 
 export function useReportPublication() {
 	const queryClient = useQueryClient();
-	const [semesterId, setSemesterId] = useState("");
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [notice, setNotice] = useState("");
@@ -18,14 +17,11 @@ export function useReportPublication() {
 	);
 	const debouncedSearch = useDebouncedValue(search);
 	const session = useQuery(authSessionQueryOptions);
-	const semesters = useQuery({
-		queryKey: ["academic", "semesters"],
-		queryFn: () => api<Semester[]>("/academic/semesters"),
+	const activeSemester = useQuery({
+		queryKey: ["academic", "active-semester"],
+		queryFn: () => api<Semester | null>("/academic/active-semester"),
 	});
-
-	useEffect(() => {
-		if (!semesterId && semesters.data?.[0]) setSemesterId(semesters.data[0].id);
-	}, [semesterId, semesters.data]);
+	const semesterId = activeSemester.data?.id || "";
 
 	const progress = useQuery({
 		queryKey: ["reports", semesterId],
@@ -119,10 +115,9 @@ export function useReportPublication() {
 		reports,
 		search,
 		semesterId,
-		semesters,
+		activeSemester,
 		setPage,
 		setSearch,
-		setSemesterId,
 	};
 }
 

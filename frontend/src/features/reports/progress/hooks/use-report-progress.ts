@@ -9,18 +9,15 @@ import { getProgressCounts, pageSize } from "../utils";
 export function useReportProgress() {
 	const queryClient = useQueryClient();
 	const router = useRouter();
-	const [semesterId, setSemesterId] = useState("");
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [error, setError] = useState("");
 	const debouncedSearch = useDebouncedValue(search);
-	const semesters = useQuery({
-		queryKey: ["academic", "semesters"],
-		queryFn: () => api<Semester[]>("/academic/semesters"),
+	const activeSemester = useQuery({
+		queryKey: ["academic", "active-semester"],
+		queryFn: () => api<Semester | null>("/academic/active-semester"),
 	});
-	useEffect(() => {
-		if (!semesterId && semesters.data?.[0]) setSemesterId(semesters.data[0].id);
-	}, [semesterId, semesters.data]);
+	const semesterId = activeSemester.data?.id || "";
 	const progress = useQuery({
 		queryKey: ["reports", semesterId],
 		enabled: Boolean(semesterId),
@@ -28,9 +25,11 @@ export function useReportProgress() {
 	});
 	const items = useMemo(() => progress.data ?? [], [progress.data]);
 	const counts = useMemo(() => getProgressCounts(items), [items]);
+
 	useEffect(() => {
 		setPage(1);
-	}, [semesterId, debouncedSearch]);
+	}, [debouncedSearch, semesterId]);
+
 	const editableItems = items.filter(
 		(item) => !item.status || ["DRAFT", "REVISION_REQUIRED"].includes(item.status),
 	);
@@ -38,6 +37,7 @@ export function useReportProgress() {
 		item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
 	);
 	const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);
+
 	async function createDraft(studentId: string) {
 		if (!semesterId) return;
 		setError("");
@@ -52,7 +52,9 @@ export function useReportProgress() {
 			setError(reason instanceof Error ? reason.message : "Draf raport tidak dapat dibuat.");
 		}
 	}
+
 	return {
+		activeSemester,
 		counts,
 		createDraft,
 		error,
@@ -63,9 +65,7 @@ export function useReportProgress() {
 		progress,
 		search,
 		semesterId,
-		semesters,
 		setPage,
 		setSearch,
-		setSemesterId,
 	};
 }

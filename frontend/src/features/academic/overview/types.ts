@@ -1,4 +1,11 @@
 export type AcademicYear = { id: string; name: string; is_active: boolean };
+export type AcademicSemester = {
+	id: string;
+	name: string;
+	academic_year_id: string;
+	academic_year_name: string;
+	is_active: boolean;
+};
 export type ClassPeriod = {
 	id: string;
 	name: string;

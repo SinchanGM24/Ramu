@@ -41,8 +41,7 @@ export class DashboardController {
 					LEFT JOIN academic_years year ON year.school_id=school.id AND year.is_active
 					LEFT JOIN LATERAL (
 						SELECT name FROM semesters
-						WHERE academic_year_id=year.id
-						ORDER BY CASE WHEN starts_on<=CURRENT_DATE AND ends_on>=CURRENT_DATE THEN 0 ELSE 1 END,starts_on DESC
+						WHERE academic_year_id=year.id AND is_active
 						LIMIT 1
 					) semester ON true
 					WHERE school.id=$1`,
@@ -85,8 +84,7 @@ export class DashboardController {
 					SELECT semester.id
 					FROM semesters semester
 					JOIN academic_years year ON year.id=semester.academic_year_id AND year.school_id=semester.school_id
-					WHERE year.school_id=$1 AND year.is_active
-					ORDER BY CASE WHEN semester.starts_on<=CURRENT_DATE AND semester.ends_on>=CURRENT_DATE THEN 0 ELSE 1 END,semester.starts_on DESC
+					WHERE year.school_id=$1 AND year.is_active AND semester.is_active
 					LIMIT 1
 				), students_in_scope AS (
 					SELECT DISTINCT enrollment.student_id

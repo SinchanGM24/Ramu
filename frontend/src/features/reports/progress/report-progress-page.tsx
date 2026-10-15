@@ -11,13 +11,15 @@ import { useReportProgress } from "./hooks/use-report-progress";
 
 export function ReportProgressPage() {
 	const progress = useReportProgress();
-	if (progress.semesters.isLoading) {
-		return <LoadingState label="Memuat pilihan semester..." />;
+
+	if (progress.activeSemester.isLoading) {
+		return <LoadingState label="Memuat konteks semester..." />;
 	}
-	if (progress.semesters.isError) {
-		return <SemesterLoadError onRetry={() => void progress.semesters.refetch()} />;
+	if (progress.activeSemester.isError) {
+		return <SemesterLoadError onRetry={() => void progress.activeSemester.refetch()} />;
 	}
-	if (!progress.semesters.data?.length) return <EmptyAcademicYear />;
+	if (!progress.activeSemester.data) return <EmptyAcademicContext />;
+
 	return (
 		<>
 			<PageHeader
@@ -33,11 +35,7 @@ export function ReportProgressPage() {
 					{progress.error}
 				</p>
 			) : null}
-			<SemesterContext
-				semesterId={progress.semesterId}
-				semesters={progress.semesters.data}
-				onChange={progress.setSemesterId}
-			/>
+			<SemesterContext semester={progress.activeSemester.data} />
 			<ReportProgressSummary counts={progress.counts} />
 			<ReportProgressList
 				counts={progress.counts}
@@ -57,7 +55,7 @@ export function ReportProgressPage() {
 function SemesterLoadError({ onRetry }: { onRetry: () => void }) {
 	return (
 		<Card className="max-w-xl border-red-200 bg-red-50">
-			<h2 className="font-bold text-red-900">Semester tidak dapat dimuat</h2>
+			<h2 className="font-bold text-red-900">Konteks semester tidak dapat dimuat</h2>
 			<p className="mt-2 text-sm leading-6 text-red-800">
 				Coba lagi untuk membuka daftar raport yang perlu diisi.
 			</p>
@@ -68,29 +66,21 @@ function SemesterLoadError({ onRetry }: { onRetry: () => void }) {
 	);
 }
 
-function EmptyAcademicYear() {
+function EmptyAcademicContext() {
 	return (
 		<Card className="max-w-xl space-y-3 border-dashed">
-			<h2 className="font-bold text-[#17251b]">Tahun ajaran belum tersedia</h2>
+			<h2 className="font-bold text-[#17251b]">Semester aktif belum dipilih</h2>
 			<p className="text-sm leading-6 text-[#637065]">
-				Buat tahun ajaran pada Data Akademik. Sistem akan menambahkan Semester I dan Semester II
-				secara otomatis.
+				Admin Sekolah perlu memilih tahun ajaran dan semester aktif pada Data Akademik.
 			</p>
 			<Link href="/app/academic">
-				<Button>Buat tahun ajaran</Button>
+				<Button>Buka Data Akademik</Button>
 			</Link>
 		</Card>
 	);
 }
-function SemesterContext({
-	semesterId,
-	semesters,
-	onChange,
-}: {
-	semesterId: string;
-	semesters: { id: string; name: string; academic_year_name: string }[];
-	onChange: (id: string) => void;
-}) {
+
+function SemesterContext({ semester }: { semester: { name: string; academic_year_name: string } }) {
 	return (
 		<Card className="mb-6 flex flex-col gap-4 bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_60%,#eef5ec_100%)] sm:flex-row sm:items-end sm:justify-between">
 			<div>
@@ -98,23 +88,12 @@ function SemesterContext({
 					Konteks pengisian
 				</p>
 				<p className="mt-1 text-sm leading-6 text-[#637065]">
-					Pilih semester untuk melihat status raport murid.
+					Semester ditentukan Admin Sekolah pada Data Akademik.
 				</p>
 			</div>
-			<label className="block text-sm font-semibold text-[#35443a]">
-				Semester
-				<select
-					value={semesterId}
-					onChange={(event) => onChange(event.target.value)}
-					className="mt-2 block w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-2.5 text-sm text-[#17251b] outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:w-80"
-				>
-					{semesters.map((semester) => (
-						<option key={semester.id} value={semester.id}>
-							{semester.name} · {semester.academic_year_name}
-						</option>
-					))}
-				</select>
-			</label>
+			<div className="rounded-xl border border-brand-100 bg-[#fffefa] px-4 py-3 text-sm font-semibold text-[#17251b] sm:min-w-56">
+				{semester.name} · {semester.academic_year_name}
+			</div>
 		</Card>
 	);
 }
