@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -26,6 +27,14 @@ type Data = {
 };
 
 export function ReportPreviewPage({ id }: { id: string }) {
+	return (
+		<Suspense fallback={<LoadingState label="Menyiapkan pratinjau raport..." />}>
+			<ReportPreviewContent id={id} />
+		</Suspense>
+	);
+}
+
+function ReportPreviewContent({ id }: { id: string }) {
 	const searchParams = useSearchParams();
 	const returnTarget = getReportReturnTarget({
 		from: searchParams.get("from"),
