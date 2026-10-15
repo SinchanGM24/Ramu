@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ReportProgressList } from "./components/report-progress-list";
 import { ReportProgressSummary } from "./components/report-progress-summary";
+import { SemesterContextCard } from "./components/semester-context-card";
 import { useReportProgress } from "./hooks/use-report-progress";
 
 export function ReportProgressPage() {
@@ -35,7 +36,7 @@ export function ReportProgressPage() {
 					{progress.error}
 				</p>
 			) : null}
-			<SemesterContext semester={progress.activeSemester.data} />
+			<SemesterContextCard semester={progress.activeSemester.data} />
 			<ReportProgressSummary counts={progress.counts} />
 			<ReportProgressList
 				counts={progress.counts}
@@ -76,24 +77,6 @@ function EmptyAcademicContext() {
 			<Link href="/app/academic">
 				<Button>Buka Data Akademik</Button>
 			</Link>
-		</Card>
-	);
-}
-
-function SemesterContext({ semester }: { semester: { name: string; academic_year_name: string } }) {
-	return (
-		<Card className="mb-6 flex flex-col gap-4 bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_60%,#eef5ec_100%)] sm:flex-row sm:items-end sm:justify-between">
-			<div>
-				<p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-700">
-					Konteks pengisian
-				</p>
-				<p className="mt-1 text-sm leading-6 text-[#637065]">
-					Semester ditentukan Admin Sekolah pada Data Akademik.
-				</p>
-			</div>
-			<div className="rounded-xl border border-brand-100 bg-[#fffefa] px-4 py-3 text-sm font-semibold text-[#17251b] sm:min-w-56">
-				{semester.name} · {semester.academic_year_name}
-			</div>
 		</Card>
 	);
 }
