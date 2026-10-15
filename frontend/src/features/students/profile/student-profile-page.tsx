@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +18,14 @@ import { StudentProfileForm } from "./components/student-profile-form";
 import type { StudentProfile } from "./types";
 
 export function StudentProfilePage({ id }: { id: string }) {
+	return (
+		<Suspense fallback={<LoadingState label="Memuat profil murid..." />}>
+			<StudentProfileContent id={id} />
+		</Suspense>
+	);
+}
+
+function StudentProfileContent({ id }: { id: string }) {
 	const queryClient = useQueryClient();
 	const searchParams = useSearchParams();
 	const returnTarget = getStudentReturnTarget(

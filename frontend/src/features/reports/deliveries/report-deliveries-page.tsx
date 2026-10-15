@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { LoadingState } from "@/components/shared/loading-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +14,14 @@ import type { Recipient } from "./types";
 import { reportPreviewHref } from "../utils/report-navigation";
 
 export function ReportDeliveriesPage({ reportId }: { reportId: string }) {
+	return (
+		<Suspense fallback={<LoadingState label="Memuat pengiriman raport..." />}>
+			<ReportDeliveriesContent reportId={reportId} />
+		</Suspense>
+	);
+}
+
+function ReportDeliveriesContent({ reportId }: { reportId: string }) {
 	const delivery = useReportDeliveries(reportId);
 	const searchParams = useSearchParams();
 	const openedFromPublication = searchParams.get("from") === "publication";
