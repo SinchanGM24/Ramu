@@ -17,7 +17,12 @@ const request = (role: "SCHOOL_ADMIN" | "TEACHER" | "PRINCIPAL") =>
 describe("ReportWorkflowController", () => {
   it("resumes a revision only inside the authenticated school and records the action", async () => {
     const queries: Array<{ sql: string; values: unknown[] }> = [];
-    const audit = { record: async () => undefined };
+    const auditCalls: Array<{ action: string; entityId: string }> = [];
+    const audit = {
+      record: async (event: { action: string; entityId: string }) => {
+        auditCalls.push(event);
+      },
+    };
     const db = {
       transaction: async (
         callback: (client: {
@@ -45,6 +50,9 @@ describe("ReportWorkflowController", () => {
     ).resolves.toEqual({ id: "report-1" });
     expect(queries[0].sql).toContain("school_id=$2");
     expect(queries[0].values).toEqual(["report-1", "school-1"]);
+    expect(auditCalls).toMatchObject([
+      { action: "report.revision_resumed", entityId: "report-1" },
+    ]);
   });
 
   it("rejects correction attempts by a teacher", async () => {

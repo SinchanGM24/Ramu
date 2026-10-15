@@ -36,7 +36,13 @@ export function ReportCompletenessPanel({
 		queryFn: () => api<Completeness>(`/reports/${reportId}/completeness`),
 	});
 	const submit = useMutation({
-		mutationFn: () => api(`/reports/${reportId}/workspace/submit`, { method: "POST" }),
+		mutationFn: async () => {
+			if (reportStatus === "REVISION_REQUIRED") {
+				await api(`/reports/${reportId}/resume-revision`, { method: "POST" });
+			}
+
+			return api(`/reports/${reportId}/workspace/submit`, { method: "POST" });
+		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["report-completeness", reportId] });
 			queryClient.invalidateQueries({ queryKey: ["report-workspace", reportId] });
@@ -61,6 +67,7 @@ export function ReportCompletenessPanel({
 		...(data.missingSemesterData ? ["Data kehadiran"] : []),
 	];
 	const submitted = reportStatus === "SUBMITTED";
+	const canSubmit = ["DRAFT", "REVISION_REQUIRED"].includes(reportStatus);
 
 	function goToFirstMissingField() {
 		const selector = data.missingAssessments.length
@@ -85,7 +92,7 @@ export function ReportCompletenessPanel({
 	}
 
 	if (compact) {
-		if (submitted) return null;
+		if (!canSubmit) return null;
 		return (
 			<div className="mt-6 flex justify-end border-t border-[#e7e9df] pt-5">
 				<Button disabled={submit.isPending} onClick={handleSubmit}>
@@ -130,7 +137,7 @@ export function ReportCompletenessPanel({
 						)}
 					</div>
 				</div>
-				{!submitted ? (
+				{canSubmit ? (
 					<Button disabled={submit.isPending} onClick={handleSubmit}>
 						{submit.isPending ? "Mengirim…" : "Kirim untuk ditinjau"}
 					</Button>
