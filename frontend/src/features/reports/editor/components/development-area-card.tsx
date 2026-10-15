@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronDown, Circle, CircleDot } from "lucide-react";
+import { CheckCircle2, Circle, CircleDot } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { NarrativeEditor } from "./narrative-editor";
 import { ReportAssessmentTable } from "./report-assessment-table";
@@ -51,27 +51,20 @@ export function DevelopmentAreaCard({
 					<Circle className="text-slate-400" />
 				)}
 			</div>
-			{area.subAreas.map((subArea, index) => (
-				<details
+			{area.subAreas.map((subArea) => (
+				<div
 					key={subArea.id}
-					open={index === 0}
 					className="mt-4 overflow-hidden rounded-xl border border-[#e4e7de] bg-[#fffdf8]"
 				>
-					<summary className="flex cursor-pointer list-none justify-between bg-[#f4f6f0] p-4 font-semibold text-[#35443a] transition hover:bg-[#edf2e9]">
-						{subArea.name}
-						<ChevronDown className="size-4" />
-					</summary>
-					<div className="border-t">
-						<ReportAssessmentTable
-							subArea={subArea}
-							scales={scales}
-							editable={editable}
-							savingIndicatorId={savingIndicatorId}
-							pendingScaleOptionIds={pendingScaleOptionIds}
-							onChoose={onChoose}
-						/>
-					</div>
-				</details>
+					<ReportAssessmentTable
+						subArea={subArea}
+						scales={scales}
+						editable={editable}
+						savingIndicatorId={savingIndicatorId}
+						pendingScaleOptionIds={pendingScaleOptionIds}
+						onChoose={onChoose}
+					/>
+				</div>
 			))}
 			<NarrativeEditor
 				reportId={reportId}
