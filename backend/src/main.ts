@@ -20,7 +20,10 @@ dotenv.config({ path: resolve(__dirname, "../.env") });
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: process.env.NODE_ENV === "production" }),
+    new FastifyAdapter({
+      logger: process.env.NODE_ENV === "production",
+      trustProxy: process.env.TRUST_PROXY === "true",
+    }),
   );
   await app.register(cookie);
   await app.register(multipart, {

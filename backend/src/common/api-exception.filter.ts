@@ -12,6 +12,7 @@ import { ZodError } from "zod";
 type ErrorResponse = {
   message?: string | string[];
   error?: string;
+  retryAfterSeconds?: number;
 };
 
 @Catch()
@@ -28,7 +29,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
     if (reply.sent) return;
 
-    const { statusCode, message, error } = this.toErrorResponse(exception);
+    const { statusCode, message, error, retryAfterSeconds } =
+      this.toErrorResponse(exception);
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
         `[${correlationId}] ${request.method} ${request.url} -> ${statusCode}`,
@@ -40,10 +42,16 @@ export class ApiExceptionFilter implements ExceptionFilter {
       );
     }
 
-    reply
-      .header("X-Correlation-Id", correlationId)
-      .status(statusCode)
-      .send({ statusCode, message, error, correlationId });
+    if (retryAfterSeconds)
+      reply.header("Retry-After", String(retryAfterSeconds));
+
+    reply.header("X-Correlation-Id", correlationId).status(statusCode).send({
+      statusCode,
+      message,
+      error,
+      correlationId,
+      ...(retryAfterSeconds ? { retryAfterSeconds } : {}),
+    });
   }
 
   private toErrorResponse(exception: unknown) {
@@ -59,6 +67,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
           ? details.message.join(", ")
           : (details.message ?? "Permintaan tidak dapat diproses."),
         error: details.error ?? exception.name,
+        retryAfterSeconds: details.retryAfterSeconds,
       };
     }
 

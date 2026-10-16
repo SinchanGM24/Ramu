@@ -13,26 +13,45 @@ import { createHash, randomBytes } from "crypto";
 import { z } from "zod";
 import { DatabaseService } from "../database/database.service";
 import { ReportPdfService } from "../files/report-pdf.service";
+import {
+  rateLimitFingerprint,
+  RequestRateLimiter,
+} from "../common/request-rate-limiter";
 
 const sessionCookieName = "ramu_parent_session";
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
+const fifteenMinutes = 15 * 60_000;
 
 @Controller("parent")
 export class ParentController {
   constructor(
     private readonly db: DatabaseService,
     private readonly pdf: ReportPdfService,
+    private readonly rateLimiter = new RequestRateLimiter(),
   ) {}
 
   @Post("verify")
   async verify(
     @Body() body: unknown,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest = {} as FastifyRequest,
   ) {
     const input = z
       .object({ token: z.string().min(20), pin: z.string().regex(/^\d{6}$/) })
       .parse(body);
+    const ip = rateLimitFingerprint(request.ip ?? "unknown");
+    const token = rateLimitFingerprint(input.token);
+    this.rateLimiter.assert({
+      key: `parent-verify:ip:${ip}`,
+      limit: 120,
+      windowMs: fifteenMinutes,
+    });
+    this.rateLimiter.assert({
+      key: `parent-verify:token:${ip}:${token}`,
+      limit: 30,
+      windowMs: fifteenMinutes,
+    });
     const verified = await this.db.query<{
       verify_parent_report: { reportVersionId: string } | null;
     }>("SELECT verify_parent_report($1,$2)", [input.token, input.pin]);

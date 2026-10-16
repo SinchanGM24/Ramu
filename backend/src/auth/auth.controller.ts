@@ -17,6 +17,13 @@ import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { AuthService, Role } from "./auth.service";
 import { ensureDefaultTkFramework } from "../assessment/ensure-default-tk-framework";
+import {
+  rateLimitFingerprint,
+  RequestRateLimiter,
+} from "../common/request-rate-limiter";
+
+const fifteenMinutes = 15 * 60_000;
+const oneHour = 60 * 60_000;
 
 const registrationSchema = z.object({
   name: z.string().min(2).max(120),
@@ -60,14 +67,21 @@ export class AuthController {
     private readonly db: DatabaseService,
     private readonly auth: AuthService,
     private readonly audit: AuditService,
+    private readonly rateLimiter = new RequestRateLimiter(),
   ) {}
 
   @Post("register-school")
   async register(
     @Body() body: unknown,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest = {} as FastifyRequest,
   ) {
     const input = registrationSchema.parse(body);
+    this.rateLimiter.assert({
+      key: `register:${rateLimitFingerprint(request.ip ?? "unknown")}`,
+      limit: 10,
+      windowMs: oneHour,
+    });
     const existing = await this.db.query(
       "SELECT 1 FROM users WHERE lower(email) = lower($1)",
       [input.email],
@@ -105,8 +119,21 @@ export class AuthController {
   async login(
     @Body() body: unknown,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Req() request: FastifyRequest = {} as FastifyRequest,
   ) {
     const input = loginSchema.parse(body);
+    const ip = rateLimitFingerprint(request.ip ?? "unknown");
+    const email = rateLimitFingerprint(input.email.trim().toLowerCase());
+    this.rateLimiter.assert({
+      key: `login:ip:${ip}`,
+      limit: 80,
+      windowMs: fifteenMinutes,
+    });
+    this.rateLimiter.assert({
+      key: `login:identity:${ip}:${email}`,
+      limit: 15,
+      windowMs: fifteenMinutes,
+    });
     const account = await this.db.query<{ id: string; password_hash: string }>(
       "SELECT id, password_hash FROM users WHERE lower(email)=lower($1)",
       [input.email],
@@ -130,11 +157,9 @@ export class AuthController {
       ).rows;
     });
     if (!memberships.length)
-      throw new UnauthorizedException("Akun tidak memiliki akses sekolah");
+      throw new UnauthorizedException("Email atau kata sandi salah");
     if (memberships.length > 1) {
-      throw new ConflictException(
-        "Akun terhubung ke lebih dari satu sekolah. Hubungi Admin Sekolah untuk memperbaiki akses akun.",
-      );
+      throw new UnauthorizedException("Email atau kata sandi salah");
     }
     const membership = memberships[0];
     await this.auth.createSession(user.id, membership.school_id, reply);

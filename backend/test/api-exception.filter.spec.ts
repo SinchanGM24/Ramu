@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  HttpException,
   HttpStatus,
   Logger,
   NotFoundException,
@@ -88,5 +89,19 @@ describe("ApiExceptionFilter", () => {
     expect(
       invoke(new NotFoundException("Raport tidak ditemukan")).statusCode,
     ).toBe(HttpStatus.NOT_FOUND);
+  });
+
+  it("keeps a retry delay from a rate-limit response", () => {
+    const response = invoke(
+      new HttpException(
+        {
+          message: "Terlalu banyak percobaan. Silakan coba lagi beberapa saat.",
+          retryAfterSeconds: 45,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      ),
+    );
+
+    expect(response.body).toMatchObject({ retryAfterSeconds: 45 });
   });
 });

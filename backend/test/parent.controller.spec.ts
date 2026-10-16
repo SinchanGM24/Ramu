@@ -1,8 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { UnauthorizedException } from "@nestjs/common";
 import { ParentController } from "../src/parent/parent.controller";
+import { RequestRateLimiter } from "../src/common/request-rate-limiter";
 
 describe("ParentController", () => {
+  it("limits repeated PIN verification before another database verification runs", async () => {
+    let verificationCount = 0;
+    const controller = new ParentController(
+      {
+        query: async (sql: string) => {
+          if (sql.includes("verify_parent_report")) {
+            verificationCount += 1;
+            return { rows: [{ verify_parent_report: null }] };
+          }
+          return { rows: [] };
+        },
+      } as never,
+      {} as never,
+      new RequestRateLimiter(),
+    );
+    const request = { ip: "203.0.113.5" } as never;
+    const body = { pin: "123456", token: "a-valid-parent-token-value" };
+
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      await expect(
+        controller.verify(body, { setCookie: () => undefined } as never, request),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    }
+    await expect(
+      controller.verify(body, { setCookie: () => undefined } as never, request),
+    ).rejects.toMatchObject({ status: 429 });
+    expect(verificationCount).toBe(30);
+  });
+
   it("returns an unauthorized error instead of a server error for an invalid PIN", async () => {
     const controller = new ParentController(
       {
