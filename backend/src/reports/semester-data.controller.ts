@@ -1,4 +1,12 @@
-import { Body, Controller, Param, Put, Req } from "@nestjs/common";
+import {
+  ConflictException,
+  Body,
+  Controller,
+  NotFoundException,
+  Param,
+  Put,
+  Req,
+} from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
 import { AuthService } from "../auth/auth.service";
@@ -48,11 +56,11 @@ export class SemesterDataController {
           id,
         ])
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
 
       await assertReportAccess(client, actor, id);
       if (report.status === "PUBLISHED")
-        throw new Error("Raport terbit tidak dapat diubah");
+        throw new ConflictException("Raport terbit tidak dapat diubah");
 
       await client.query(
         `INSERT INTO growth_records(school_id,student_id,semester_id,weight_kg,height_cm,head_circumference_cm)

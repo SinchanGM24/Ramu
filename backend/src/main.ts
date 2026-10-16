@@ -2,6 +2,7 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 import { resolve } from "path";
 import { ValidationPipe } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import { NestFactory } from "@nestjs/core";
 import {
   FastifyAdapter,
@@ -12,6 +13,7 @@ import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import { AppModule } from "./app.module";
 import { AuthService } from "./auth/auth.service";
+import { ApiExceptionFilter } from "./common/api-exception.filter";
 
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
@@ -31,6 +33,26 @@ async function bootstrap() {
   });
   app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalFilters(new ApiExceptionFilter());
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook(
+      "onRequest",
+      async (
+        request: import("fastify").FastifyRequest,
+        reply: import("fastify").FastifyReply,
+      ) => {
+        const suppliedId = request.headers["x-correlation-id"];
+        const correlationId =
+          typeof suppliedId === "string" &&
+          /^[a-zA-Z0-9_-]{8,128}$/.test(suppliedId)
+            ? suppliedId
+            : randomUUID();
+        request.headers["x-correlation-id"] = correlationId;
+        reply.header("X-Correlation-Id", correlationId);
+      },
+    );
   app
     .getHttpAdapter()
     .getInstance()

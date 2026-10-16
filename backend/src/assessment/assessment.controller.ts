@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   ForbiddenException,
   Get,
@@ -104,7 +105,7 @@ export class AssessmentController {
         ],
       );
       if (!valid.rowCount)
-        throw new Error(
+        throw new BadRequestException(
           "Indikator, skala, murid, atau semester tidak ditemukan",
         );
       const saved = (

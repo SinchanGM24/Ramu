@@ -1,6 +1,9 @@
 import {
+  BadRequestException,
   Body,
+  ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   InternalServerErrorException,
   Logger,
@@ -57,12 +60,11 @@ export class ReportsController {
     @Query("semesterId") semesterId: string,
   ) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
-    return this.db.transaction(
-      async (client) => {
-        await assertTeacherActiveSemester(client, actor, semesterId);
-        return (
-          await client.query(
-            `WITH framework_totals AS (
+    return this.db.transaction(async (client) => {
+      await assertTeacherActiveSemester(client, actor, semesterId);
+      return (
+        await client.query(
+          `WITH framework_totals AS (
               SELECT count(DISTINCT indicator.id)::int AS indicator_count,count(DISTINCT area.id)::int AS narrative_count
               FROM assessment_frameworks framework
               JOIN development_areas area ON area.framework_id=framework.id AND area.school_id=framework.school_id
@@ -123,17 +125,15 @@ export class ReportsController {
             CROSS JOIN framework_totals
             WHERE enrollment.school_id=$4 AND enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($2::uuid IS NULL OR assignment.teacher_user_id=$2)
             ORDER BY student.name`,
-            [
-              semesterId,
-              actor.role === "TEACHER" ? actor.userId : null,
-              DEFAULT_TK_TEMPLATE_NAME,
-              actor.schoolId,
-            ],
-          )
-        ).rows;
-      },
-      actor.schoolId,
-    );
+          [
+            semesterId,
+            actor.role === "TEACHER" ? actor.userId : null,
+            DEFAULT_TK_TEMPLATE_NAME,
+            actor.schoolId,
+          ],
+        )
+      ).rows;
+    }, actor.schoolId);
   }
 
   @Get("review-queue")
@@ -172,7 +172,9 @@ export class ReportsController {
         )
       ).rows[0];
       if (!enrollment)
-        throw new Error("Murid tidak berada pada kelas yang dapat dikelola.");
+        throw new BadRequestException(
+          "Murid tidak berada pada kelas yang dapat dikelola.",
+        );
       const result = await client.query(
         "INSERT INTO reports(school_id,student_id,semester_id,student_enrollment_id) VALUES($1,$2,$3,$4) ON CONFLICT(student_id,semester_id) DO UPDATE SET student_enrollment_id=CASE WHEN reports.status IN ('DRAFT','REVISION_REQUIRED') THEN EXCLUDED.student_enrollment_id ELSE reports.student_enrollment_id END,updated_at=now() RETURNING *",
         [actor.schoolId, studentId, input.semesterId, enrollment.id],
@@ -210,15 +212,18 @@ export class ReportsController {
           id,
         ])
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status))
-        throw new Error("Raport tidak dapat diubah pada status saat ini");
+        throw new ConflictException(
+          "Raport tidak dapat diubah pada status saat ini",
+        );
       const valid = await client.query(
         `SELECT 1 FROM indicators i JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options o ON o.scale_id=f.scale_id WHERE i.id=$1 AND o.id=$2 AND f.name=$3 AND f.is_active`,
         [indicatorId, input.scaleOptionId, DEFAULT_TK_TEMPLATE_NAME],
       );
-      if (!valid.rowCount) throw new Error("Indikator atau skala tidak valid");
+      if (!valid.rowCount)
+        throw new BadRequestException("Indikator atau skala tidak valid");
       const saved = (
         await client.query(
           `INSERT INTO student_assessments(school_id,student_id,semester_id,indicator_id,scale_option_id,assessed_by) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(student_id,semester_id,indicator_id) DO UPDATE SET scale_option_id=EXCLUDED.scale_option_id,assessed_by=EXCLUDED.assessed_by,assessed_at=now() RETURNING *`,
@@ -262,7 +267,7 @@ export class ReportsController {
           [id],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       const rules: Record<string, [string, string[]]> = {
         submit: ["SUBMITTED", ["DRAFT"]],
@@ -272,17 +277,17 @@ export class ReportsController {
       };
       const [to, from] = rules[input.action];
       if (!from.includes(report.status))
-        throw new Error("Perubahan status tidak valid");
+        throw new ConflictException("Perubahan status tidak valid");
       if (
         input.action === "submit" &&
         !(["SCHOOL_ADMIN", "TEACHER"] as string[]).includes(actor.role)
       )
-        throw new Error("Akses ditolak");
+        throw new ForbiddenException("Akses ditolak");
       if (
         ["review", "revision", "approve"].includes(input.action) &&
         !(["SCHOOL_ADMIN", "PRINCIPAL"] as string[]).includes(actor.role)
       )
-        throw new Error("Akses ditolak");
+        throw new ForbiddenException("Akses ditolak");
       const updated = (
         await client.query(
           "UPDATE reports SET status=$1::report_status,submitted_at=CASE WHEN $3 THEN now() ELSE submitted_at END,approved_at=CASE WHEN $4 THEN now() ELSE approved_at END,updated_at=now() WHERE id=$2 RETURNING *",
@@ -315,9 +320,11 @@ export class ReportsController {
           [id, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
       if (report.status !== "APPROVED")
-        throw new Error("Hanya raport yang disetujui dapat diterbitkan");
+        throw new ConflictException(
+          "Hanya raport yang disetujui dapat diterbitkan",
+        );
       const completeness = await getReportCompleteness(client, {
         id: report.id,
         studentId: report.student_id,
@@ -325,7 +332,7 @@ export class ReportsController {
         schoolId: actor.schoolId,
       });
       if (!completeness.complete)
-        throw new Error(completenessError(completeness));
+        throw new BadRequestException(completenessError(completeness));
       const assessmentRows = (
         await client.query<any>(
           `SELECT da.name AS area_name,da.position AS area_position,sa.name AS sub_area_name,sa.position AS sub_area_position,i.description,i.position,opt.code FROM student_assessments assessment JOIN indicators i ON i.id=assessment.indicator_id JOIN sub_areas sa ON sa.id=i.sub_area_id JOIN development_areas da ON da.id=sa.development_area_id JOIN assessment_frameworks f ON f.id=da.framework_id JOIN assessment_scale_options opt ON opt.id=assessment.scale_option_id WHERE assessment.student_id=$1 AND assessment.semester_id=$2 AND f.name=$3 AND f.is_active ORDER BY da.position,sa.position,i.position`,
@@ -605,17 +612,19 @@ export class ReportsController {
         "SELECT id,status FROM reports WHERE id=$1",
         [id],
       );
-      if (!report.rowCount) throw new Error("Raport tidak ditemukan");
+      if (!report.rowCount)
+        throw new NotFoundException("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (report.rows[0].status === "PUBLISHED")
-        throw new Error("Raport terbit tidak dapat diubah");
+        throw new ConflictException("Raport terbit tidak dapat diubah");
       const saved = (
         await client.query(
           "INSERT INTO report_narratives(school_id,report_id,development_area_id,content,updated_by) SELECT $1,$2,$3,$4,$5 WHERE EXISTS(SELECT 1 FROM development_areas WHERE id=$3) ON CONFLICT(report_id,development_area_id) DO UPDATE SET content=EXCLUDED.content,updated_by=EXCLUDED.updated_by,updated_at=now() RETURNING *",
           [actor.schoolId, id, areaId, input.content, actor.userId],
         )
       ).rows[0];
-      if (!saved) throw new Error("Area perkembangan tidak ditemukan");
+      if (!saved)
+        throw new BadRequestException("Area perkembangan tidak ditemukan");
       await this.audit.record(
         {
           schoolId: actor.schoolId,

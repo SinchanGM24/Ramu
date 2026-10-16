@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Post, Req } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+} from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
@@ -40,9 +48,9 @@ export class ReportPortfolioController {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
     const file = await request.file();
     if (!file || !acceptedImageTypes.has(file.mimetype))
-      throw new Error("Pilih foto JPG, PNG, atau WebP");
+      throw new BadRequestException("Pilih foto JPG, PNG, atau WebP");
     const buffer = await file.toBuffer();
-    if (!buffer.length) throw new Error("Foto portfolio kosong");
+    if (!buffer.length) throw new BadRequestException("Foto portfolio kosong");
     const fields = file.fields as Record<string, { value?: string }>;
     const caption = fields.caption?.value?.trim().slice(0, 500) || null;
     const included = fields.includedInReport?.value !== "false";
@@ -54,7 +62,9 @@ export class ReportPortfolioController {
         )
       ).rows[0];
       if (!report)
-        throw new Error("Raport tidak ditemukan atau sudah diterbitkan");
+        throw new ConflictException(
+          "Raport tidak ditemukan atau sudah diterbitkan",
+        );
       await assertReportAccess(client, actor, id);
       const storageKey = await this.files.storePortfolioImage({
         schoolId: actor.schoolId,

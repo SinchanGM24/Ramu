@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req } from "@nestjs/common";
+import { Controller, Get, NotFoundException, Param, Req } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
@@ -30,7 +30,7 @@ export class ReportCompletenessController {
           [id, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       return getReportCompleteness(client, {
         id: report.id,

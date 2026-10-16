@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Body,
   Controller,
   Delete,
@@ -61,7 +62,9 @@ export class ReportExtracurricularController {
         )
       ).rows[0];
       if (!report)
-        throw new Error("Raport tidak ditemukan atau sudah diterbitkan");
+        throw new ConflictException(
+          "Raport tidak ditemukan atau sudah diterbitkan",
+        );
       await assertReportAccess(client, actor, id);
       const saved = (
         await client.query(
@@ -105,7 +108,7 @@ export class ReportExtracurricularController {
         )
       ).rows[0];
       if (!deleted)
-        throw new Error(
+        throw new ConflictException(
           "Data ekstrakurikuler tidak ditemukan atau raport sudah diterbitkan",
         );
       await this.audit.record(

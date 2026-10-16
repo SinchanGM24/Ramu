@@ -1,7 +1,24 @@
 import { describe, expect, it } from "vitest";
+import { UnauthorizedException } from "@nestjs/common";
 import { ParentController } from "../src/parent/parent.controller";
 
 describe("ParentController", () => {
+  it("returns an unauthorized error instead of a server error for an invalid PIN", async () => {
+    const controller = new ParentController(
+      {
+        query: async () => ({ rows: [{ verify_parent_report: null }] }),
+      } as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.verify(
+        { pin: "123456", token: "a-valid-parent-token-value" },
+        { setCookie: () => undefined } as never,
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
   it("creates a parent session from the verified database function without directly reading report access", async () => {
     const queries: Array<{ sql: string; values: unknown[] }> = [];
     const db = {

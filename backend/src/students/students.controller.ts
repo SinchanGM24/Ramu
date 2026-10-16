@@ -3,9 +3,11 @@ import {
   Body,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Patch,
+  NotFoundException,
   Post,
   Query,
   Req,
@@ -94,7 +96,9 @@ export class StudentsController {
     return this.db.transaction(async (client) => {
       if (actor.role === "TEACHER") {
         if (!input.classGroupId)
-          throw new Error("Pilih kelas penugasan Anda untuk murid baru.");
+          throw new BadRequestException(
+            "Pilih kelas penugasan Anda untuk murid baru.",
+          );
         await this.assertTeacherClassGroup(
           client,
           actor.userId,
@@ -244,7 +248,7 @@ export class StudentsController {
         )
       ).rows[0];
       if (!requestRow)
-        throw new Error(
+        throw new NotFoundException(
           "Pengajuan murid menunggu persetujuan tidak ditemukan.",
         );
       if (input.decision === "REJECTED") {
@@ -367,7 +371,8 @@ export class StudentsController {
           input.address ?? null,
         ],
       );
-      if (!result.rowCount) throw new Error("Murid tidak ditemukan");
+      if (!result.rowCount)
+        throw new NotFoundException("Murid tidak ditemukan");
       await this.audit.record(
         {
           schoolId: actor.schoolId,
@@ -427,7 +432,8 @@ export class StudentsController {
           isDeliveryRecipient,
         ],
       );
-      if (!result.rowCount) throw new Error("Data wali tidak ditemukan");
+      if (!result.rowCount)
+        throw new NotFoundException("Data wali tidak ditemukan");
       await this.audit.record(
         {
           schoolId: actor.schoolId,
@@ -478,7 +484,9 @@ export class StudentsController {
       )
     ).rows[0];
     if (!group)
-      throw new Error("Kelas tujuan tidak aktif atau tidak ditemukan.");
+      throw new BadRequestException(
+        "Kelas tujuan tidak aktif atau tidak ditemukan.",
+      );
     const year = (
       await client.query(
         "SELECT id FROM academic_years WHERE school_id=$1 AND is_active FOR UPDATE",
@@ -486,7 +494,7 @@ export class StudentsController {
       )
     ).rows[0];
     if (!year)
-      throw new Error(
+      throw new ConflictException(
         "Aktifkan tahun ajaran sebelum menempatkan murid ke kelas.",
       );
     const period = (
@@ -557,7 +565,7 @@ export class StudentsController {
         [studentId, schoolId],
       )
     ).rows[0];
-    if (!student) throw new Error("Murid tidak ditemukan");
+    if (!student) throw new NotFoundException("Murid tidak ditemukan");
     return student;
   }
   private async assertTeacherClassGroup(
@@ -572,7 +580,10 @@ export class StudentsController {
         [schoolId, userId, classGroupId],
       )
     ).rows[0];
-    if (!row) throw new Error("Kelas tersebut bukan penugasan aktif Anda.");
+    if (!row)
+      throw new ForbiddenException(
+        "Kelas tersebut bukan penugasan aktif Anda.",
+      );
   }
   private async assertTeacherStudent(
     client: { query: Function },
@@ -587,6 +598,8 @@ export class StudentsController {
       )
     ).rows[0];
     if (!row)
-      throw new Error("Murid ini bukan bagian dari kelas penugasan Anda.");
+      throw new ForbiddenException(
+        "Murid ini bukan bagian dari kelas penugasan Anda.",
+      );
   }
 }

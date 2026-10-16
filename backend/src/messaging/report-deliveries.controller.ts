@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Req,
+  Body,
+} from "@nestjs/common";
 import { createHash, randomBytes, randomInt } from "crypto";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
@@ -23,7 +33,7 @@ function whatsappPhone(phone: string) {
   const normalized = digits.startsWith("0") ? `62${digits.slice(1)}` : digits;
 
   if (normalized.length < 10 || normalized.length > 15) {
-    throw new Error("Nomor WhatsApp wali tidak valid");
+    throw new BadRequestException("Nomor WhatsApp wali tidak valid");
   }
 
   return normalized;
@@ -84,7 +94,7 @@ export class ReportDeliveriesController {
           [reportId, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport terbit tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport terbit tidak ditemukan");
       return (
         await client.query(
           `SELECT id,name,relationship,phone,is_primary,$3::text AS student_lifecycle_status
@@ -112,7 +122,7 @@ export class ReportDeliveriesController {
           [reportId, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport terbit tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport terbit tidak ditemukan");
       return { studentId: report.student_id };
     }, actor.schoolId);
   }
@@ -141,7 +151,8 @@ export class ReportDeliveriesController {
         )
       ).rows[0];
 
-      if (!version) throw new Error("Raport terbit tidak ditemukan");
+      if (!version)
+        throw new NotFoundException("Raport terbit tidak ditemukan");
 
       const guardians = await client.query<{ id: string; phone: string }>(
         `SELECT id, phone
@@ -153,13 +164,13 @@ export class ReportDeliveriesController {
       );
 
       if (!guardians.rowCount) {
-        throw new Error("Kontak wali penerima tidak ditemukan");
+        throw new BadRequestException("Kontak wali penerima tidak ditemukan");
       }
       if (
         input.guardianContactIds &&
         guardians.rowCount !== input.guardianContactIds.length
       ) {
-        throw new Error(
+        throw new BadRequestException(
           "Satu atau lebih kontak wali tidak terkait dengan siswa pada raport ini",
         );
       }
@@ -217,7 +228,8 @@ export class ReportDeliveriesController {
             [deliveryId, actor.schoolId],
           )
         ).rows[0];
-        if (!report) throw new Error("Pengiriman gagal tidak ditemukan");
+        if (!report)
+          throw new NotFoundException("Pengiriman gagal tidak ditemukan");
         await assertReportAccess(client, actor, report.report_id);
       }
       const delivery = (
@@ -230,7 +242,8 @@ export class ReportDeliveriesController {
         )
       ).rows[0];
 
-      if (!delivery) throw new Error("Pengiriman gagal tidak ditemukan");
+      if (!delivery)
+        throw new NotFoundException("Pengiriman gagal tidak ditemukan");
       await this.audit.record(
         {
           schoolId: actor.schoolId,
@@ -278,7 +291,7 @@ export class ReportDeliveriesController {
         )
       ).rows[0];
 
-      if (!delivery) throw new Error("Pengiriman tidak ditemukan");
+      if (!delivery) throw new NotFoundException("Pengiriman tidak ditemukan");
 
       const phone = whatsappPhone(delivery.recipient_phone);
       const token = randomBytes(32).toString("base64url");
@@ -385,7 +398,7 @@ export class ReportDeliveriesController {
         )
       ).rows[0];
 
-      if (!delivery) throw new Error("Pengiriman tidak ditemukan");
+      if (!delivery) throw new NotFoundException("Pengiriman tidak ditemukan");
       if (actor.role === "TEACHER")
         await assertReportAccess(client, actor, delivery.report_id);
       const phone = whatsappPhone(delivery.recipient_phone);
@@ -406,7 +419,7 @@ export class ReportDeliveriesController {
           )
         ).rows[0];
         if (!access) {
-          throw new Error(
+          throw new ConflictException(
             "Tautan wali sudah tidak berlaku. Admin Sekolah dapat membuat tautan baru.",
           );
         }
@@ -430,7 +443,12 @@ export class ReportDeliveriesController {
             `INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash,status)
              VALUES($1,$2,$3,$4,'ACTIVE')
              RETURNING id`,
-            [actor.schoolId, delivery.report_version_id, hash(token), hash(pin)],
+            [
+              actor.schoolId,
+              delivery.report_version_id,
+              hash(token),
+              hash(pin),
+            ],
           )
         ).rows[0];
         await client.query(

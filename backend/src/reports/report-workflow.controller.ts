@@ -1,4 +1,11 @@
-import { Controller, Param, Post, Req } from "@nestjs/common";
+import {
+  ConflictException,
+  Controller,
+  NotFoundException,
+  Param,
+  Post,
+  Req,
+} from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
@@ -28,7 +35,9 @@ export class ReportWorkflowController {
         )
       ).rows[0];
       if (!report)
-        throw new Error("Raport yang perlu direvisi tidak ditemukan");
+        throw new NotFoundException(
+          "Raport yang perlu direvisi tidak ditemukan",
+        );
       await this.audit.record(
         {
           schoolId: actor.schoolId,
@@ -57,7 +66,9 @@ export class ReportWorkflowController {
         )
       ).rows[0];
       if (!report)
-        throw new Error("Hanya raport terbit yang dapat dibuatkan koreksi");
+        throw new ConflictException(
+          "Hanya raport terbit yang dapat dibuatkan koreksi",
+        );
       const previousVersion = (
         await client.query<{ id: string; version_number: number }>(
           "SELECT id,version_number FROM report_versions WHERE report_id=$1 ORDER BY version_number DESC LIMIT 1",
@@ -65,7 +76,7 @@ export class ReportWorkflowController {
         )
       ).rows[0];
       if (!previousVersion)
-        throw new Error("Versi raport terbit tidak ditemukan");
+        throw new NotFoundException("Versi raport terbit tidak ditemukan");
       const updated = (
         await client.query(
           "UPDATE reports SET status='DRAFT',submitted_at=NULL,approved_at=NULL,updated_at=now() WHERE id=$1 RETURNING *",

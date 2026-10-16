@@ -1,5 +1,11 @@
 import { createHash, randomBytes, randomInt } from "crypto";
-import { Controller, Param, Post, Req } from "@nestjs/common";
+import {
+  Controller,
+  NotFoundException,
+  Param,
+  Post,
+  Req,
+} from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
@@ -42,7 +48,7 @@ export class ReportAccessController {
       ).rows[0];
 
       if (!version) {
-        throw new Error("Raport terbit tidak ditemukan");
+        throw new NotFoundException("Raport terbit tidak ditemukan");
       }
 
       const token = randomBytes(32).toString("base64url");

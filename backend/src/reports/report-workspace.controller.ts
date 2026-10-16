@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Post, Put, Req } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Put,
+  Req,
+  Body,
+} from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
 import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
@@ -96,14 +107,12 @@ export class ReportWorkspaceController {
             name: row.sub_area_name,
             indicators: [],
           });
-        area.subAreas
-          .get(row.sub_area_id)
-          .indicators.push({
-            id: row.indicator_id,
-            description: row.description,
-            scaleOptionId: row.scale_option_id,
-            scaleCode: row.scale_code,
-          });
+        area.subAreas.get(row.sub_area_id).indicators.push({
+          id: row.indicator_id,
+          description: row.description,
+          scaleOptionId: row.scale_option_id,
+          scaleCode: row.scale_code,
+        });
       }
       const structuredAreas = [...areas.values()].map((area) => {
         const generation = generationsByArea.get(area.id);
@@ -170,15 +179,18 @@ export class ReportWorkspaceController {
           [id],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status))
-        throw new Error("Raport tidak dapat diubah pada status saat ini");
+        throw new ConflictException(
+          "Raport tidak dapat diubah pada status saat ini",
+        );
       const validArea = await client.query(
         `SELECT 1 FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id WHERE da.id=$1 AND f.name=$2 AND f.is_active`,
         [areaId, DEFAULT_TK_TEMPLATE_NAME],
       );
-      if (!validArea.rowCount) throw new Error("Area perkembangan tidak valid");
+      if (!validArea.rowCount)
+        throw new BadRequestException("Area perkembangan tidak valid");
       const content = input.content.trim();
       if (!content) {
         await client.query(
@@ -239,17 +251,19 @@ export class ReportWorkspaceController {
           [id],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (!["DRAFT", "REVISION_REQUIRED"].includes(report.status))
-        throw new Error("Raport tidak dapat diubah pada status saat ini");
+        throw new ConflictException(
+          "Raport tidak dapat diubah pada status saat ini",
+        );
       const area = (
         await client.query<{ name: string }>(
           `SELECT da.name FROM development_areas da JOIN assessment_frameworks f ON f.id=da.framework_id WHERE da.id=$1 AND f.name=$2 AND f.is_active`,
           [areaId, DEFAULT_TK_TEMPLATE_NAME],
         )
       ).rows[0];
-      if (!area) throw new Error("Area perkembangan tidak valid");
+      if (!area) throw new BadRequestException("Area perkembangan tidak valid");
       const rows = (
         await client.query<{
           id: string;
@@ -276,9 +290,11 @@ export class ReportWorkspaceController {
         )
       ).rows;
       if (!rows.length)
-        throw new Error("Area perkembangan tidak memiliki indikator");
+        throw new BadRequestException(
+          "Area perkembangan tidak memiliki indikator",
+        );
       if (rows.some((row) => !row.code))
-        throw new Error(
+        throw new BadRequestException(
           "Lengkapi semua indikator pada area ini sebelum membuat draf narasi",
         );
       const draft = buildNarrativeDraft({
@@ -300,7 +316,9 @@ export class ReportWorkspaceController {
         })),
       });
       if (!draft.content)
-        throw new Error("Draf narasi tidak dapat dibuat dari data saat ini");
+        throw new BadRequestException(
+          "Draf narasi tidak dapat dibuat dari data saat ini",
+        );
       const content = draft.content;
       const saved = (
         await client.query(
@@ -367,10 +385,10 @@ export class ReportWorkspaceController {
           [id, actor.schoolId],
         )
       ).rows[0];
-      if (!report) throw new Error("Raport tidak ditemukan");
+      if (!report) throw new NotFoundException("Raport tidak ditemukan");
       await assertReportAccess(client, actor, id);
       if (report.status !== "DRAFT")
-        throw new Error("Hanya raport draf yang dapat dikirim");
+        throw new ConflictException("Hanya raport draf yang dapat dikirim");
       const completeness = await getReportCompleteness(client, {
         id: report.id,
         studentId: report.student_id,
@@ -378,7 +396,7 @@ export class ReportWorkspaceController {
         schoolId: actor.schoolId,
       });
       if (!completeness.complete)
-        throw new Error(completenessError(completeness));
+        throw new BadRequestException(completenessError(completeness));
       const saved = (
         await client.query(
           "UPDATE reports SET status='SUBMITTED',submitted_at=now(),updated_at=now() WHERE id=$1 RETURNING *",

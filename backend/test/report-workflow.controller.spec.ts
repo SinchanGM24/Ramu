@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UnauthorizedException } from "@nestjs/common";
+import { ConflictException, UnauthorizedException } from "@nestjs/common";
 import { AuthService } from "../src/auth/auth.service";
 import { ReportWorkflowController } from "../src/reports/report-workflow.controller";
 
@@ -64,6 +64,25 @@ describe("ReportWorkflowController", () => {
     await expect(
       controller.startCorrection(request("TEACHER"), "report-1"),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it("returns a conflict when the report is not published before a correction starts", async () => {
+    const db = {
+      transaction: async (
+        callback: (client: {
+          query: () => Promise<{ rows: Array<{ id: string }> }>;
+        }) => Promise<unknown>,
+      ) => callback({ query: async () => ({ rows: [] }) }),
+    };
+    const controller = new ReportWorkflowController(
+      new AuthService({} as never),
+      db as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.startCorrection(request("SCHOOL_ADMIN"), "report-1"),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it("starts a correction without mutating the previous version, parent access, or delivery history", async () => {
