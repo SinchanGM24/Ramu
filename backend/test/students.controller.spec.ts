@@ -84,3 +84,82 @@ describe("StudentsController list", () => {
     expect(queries[1].values[4]).toBe("00000000-0000-4000-8000-000000000001");
   });
 });
+
+describe("StudentsController student admission resubmission", () => {
+  it("creates an auditable pending request without creating a student or placement", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const auditEntries: unknown[] = [];
+    const db = {
+      transaction: async (
+        callback: (client: {
+          query: (
+            sql: string,
+            values: unknown[],
+          ) => Promise<{ rowCount?: number; rows: Array<Record<string, unknown>> }>;
+        }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async (sql, values) => {
+            queries.push({ sql, values });
+            if (sql.includes("status='REJECTED' FOR UPDATE")) {
+              return { rows: [{ id: "request-old" }] };
+            }
+            if (sql.includes("FROM teacher_class_assignments")) {
+              return { rows: [{}] };
+            }
+            if (sql.startsWith("SELECT id FROM student_admission_requests")) {
+              return { rowCount: 0, rows: [] };
+            }
+            if (sql.startsWith("INSERT INTO student_admission_requests")) {
+              return {
+                rows: [
+                  {
+                    id: "request-new",
+                    resubmitted_from_request_id: "request-old",
+                    status: "PENDING",
+                  },
+                ],
+              };
+            }
+            return { rows: [] };
+          },
+        }),
+    };
+    const audit = { record: async (entry: unknown) => auditEntries.push(entry) };
+    const controller = new StudentsController(
+      new AuthService({} as never),
+      db as never,
+      audit as never,
+    );
+
+    await expect(
+      controller.resubmitRequest(
+        request("TEACHER"),
+        "request-old",
+        {
+          classGroupId: "00000000-0000-4000-8000-000000000004",
+          name: "Murid Perbaikan",
+        },
+      ),
+    ).resolves.toMatchObject({
+      id: "request-new",
+      requestPending: true,
+      status: "PENDING",
+    });
+
+    expect(queries[0].values).toEqual([
+      "request-old",
+      "00000000-0000-4000-8000-000000000002",
+      "00000000-0000-4000-8000-000000000001",
+    ]);
+    expect(
+      queries.some((query) => query.sql.startsWith("INSERT INTO students")),
+    ).toBe(false);
+    expect(
+      queries.some((query) => query.sql.includes("INSERT INTO student_enrollments")),
+    ).toBe(false);
+    expect(auditEntries).toContainEqual(
+      expect.objectContaining({ action: "student_admission.resubmitted" }),
+    );
+  });
+});

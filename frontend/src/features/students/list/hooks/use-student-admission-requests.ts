@@ -28,5 +28,21 @@ export function useStudentAdmissionRequests(enabled: boolean) {
 			void queryClient.invalidateQueries({ queryKey: ["students"] });
 		},
 	});
-	return { requests, decide };
+	const resubmit = useMutation({
+		mutationFn: ({
+			id,
+			body,
+		}: {
+			id: string;
+			body: { classGroupId: string; gender?: string; name: string; studentNumber?: string };
+		}) =>
+			api<{ requestPending?: boolean }>(`/students/requests/${id}/resubmit`, {
+				method: "POST",
+				body: JSON.stringify(body),
+			}),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["student-requests"] });
+		},
+	});
+	return { requests, decide, resubmit };
 }

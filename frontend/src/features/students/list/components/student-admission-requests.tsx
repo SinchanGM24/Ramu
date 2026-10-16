@@ -7,18 +7,27 @@ type StudentAdmissionRequestsProps = {
 	isTeacher: boolean;
 	loading: boolean;
 	pending: boolean;
+	resubmittingId?: string;
 	rows: AdmissionRequest[];
 	onDecide: (id: string, decision: "APPROVED" | "REJECTED", note?: string) => void;
+	onResubmit: (request: AdmissionRequest) => void;
 };
 
 export function StudentAdmissionRequests({
 	isTeacher,
 	loading,
 	pending,
+	resubmittingId,
 	rows,
 	onDecide,
+	onResubmit,
 }: StudentAdmissionRequestsProps) {
 	const [notes, setNotes] = useState<Record<string, string>>({});
+	const resubmittedRequestIds = new Set(
+		rows.flatMap((item) =>
+			item.resubmitted_from_request_id ? [item.resubmitted_from_request_id] : [],
+		),
+	);
 
 	if (loading) {
 		return (
@@ -69,6 +78,19 @@ export function StudentAdmissionRequests({
 									Tolak
 								</Button>
 							</div>
+						) : null}
+						{isTeacher && item.status === "REJECTED" && !resubmittedRequestIds.has(item.id) ? (
+							<Button
+								className="shrink-0"
+								variant="secondary"
+								disabled={Boolean(resubmittingId)}
+								onClick={() => onResubmit(item)}
+							>
+								{resubmittingId === item.id ? "Menyiapkan formulir…" : "Perbaiki dan ajukan ulang"}
+							</Button>
+						) : null}
+						{isTeacher && item.status === "REJECTED" && resubmittedRequestIds.has(item.id) ? (
+							<p className="text-sm font-medium text-slate-500">Pengajuan ulang sudah dibuat</p>
 						) : null}
 					</div>
 					{!isTeacher && item.status === "PENDING" ? (

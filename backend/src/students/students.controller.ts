@@ -1,5 +1,7 @@
 import {
+  BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   Param,
@@ -152,12 +154,78 @@ export class StudentsController {
       async (client) =>
         (
           await client.query(
-            `SELECT request.id,request.status,request.payload,request.review_note,request.created_at,request.target_class_group_id,grouping.name AS class_name,requester.name AS requester_name FROM student_admission_requests request JOIN class_groups grouping ON grouping.id=request.target_class_group_id AND grouping.school_id=request.school_id JOIN users requester ON requester.id=request.requested_by WHERE request.school_id=$1 AND ($2::uuid IS NULL OR request.requested_by=$2) ORDER BY request.created_at DESC`,
+            `SELECT request.id,request.status,request.payload,request.review_note,request.created_at,request.updated_at,request.target_class_group_id,request.resubmitted_from_request_id,grouping.name AS class_name,requester.name AS requester_name FROM student_admission_requests request JOIN class_groups grouping ON grouping.id=request.target_class_group_id AND grouping.school_id=request.school_id JOIN users requester ON requester.id=request.requested_by WHERE request.school_id=$1 AND ($2::uuid IS NULL OR request.requested_by=$2) ORDER BY request.created_at DESC`,
             [actor.schoolId, actor.role === "TEACHER" ? actor.userId : null],
           )
         ).rows,
       actor.schoolId,
     );
+  }
+
+  @Post("requests/:id/resubmit")
+  async resubmitRequest(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["TEACHER"]);
+    const input = createStudentSchema.parse(body);
+    const classGroupId = input.classGroupId;
+    if (!classGroupId)
+      throw new BadRequestException("Pilih kelas penugasan untuk murid ini.");
+
+    return this.db.transaction(async (client) => {
+      const previous = (
+        await client.query(
+          "SELECT id FROM student_admission_requests WHERE id=$1 AND school_id=$2 AND requested_by=$3 AND status='REJECTED' FOR UPDATE",
+          [id, actor.schoolId, actor.userId],
+        )
+      ).rows[0];
+      if (!previous)
+        throw new BadRequestException(
+          "Pengajuan yang akan diperbaiki tidak ditemukan atau tidak dapat diajukan ulang.",
+        );
+
+      await this.assertTeacherClassGroup(
+        client,
+        actor.userId,
+        actor.schoolId,
+        classGroupId,
+      );
+      const existingResubmission = await client.query(
+        "SELECT id FROM student_admission_requests WHERE school_id=$1 AND resubmitted_from_request_id=$2",
+        [actor.schoolId, id],
+      );
+      if (existingResubmission.rowCount)
+        throw new ConflictException(
+          "Pengajuan ini sudah pernah diajukan ulang. Perbaiki pengajuan terbaru bila masih diperlukan.",
+        );
+
+      const admission = (
+        await client.query(
+          "INSERT INTO student_admission_requests(school_id,requested_by,target_class_group_id,payload,resubmitted_from_request_id) VALUES($1,$2,$3,$4,$5) RETURNING id,status,resubmitted_from_request_id",
+          [
+            actor.schoolId,
+            actor.userId,
+            classGroupId,
+            JSON.stringify(input),
+            id,
+          ],
+        )
+      ).rows[0];
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "student_admission.resubmitted",
+          entityType: "student_admission_request",
+          entityId: admission.id,
+          metadata: { classGroupId, resubmittedFromRequestId: id },
+        },
+        client,
+      );
+      return { ...admission, requestPending: true };
+    }, actor.schoolId);
   }
 
   @Post("requests/:id/decision")

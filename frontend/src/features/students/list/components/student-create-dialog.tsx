@@ -10,6 +10,12 @@ const inputClass =
 type StudentCreateDialogProps = {
 	classes: ClassGroup[];
 	error: string;
+	initialValues?: {
+		classGroupId?: string | null;
+		gender?: "MALE" | "FEMALE" | null;
+		name?: string;
+		studentNumber?: string | null;
+	};
 	isTeacher: boolean;
 	onClose: () => void;
 	onSubmit: (body: {
@@ -18,14 +24,19 @@ type StudentCreateDialogProps = {
 		name: string;
 		studentNumber?: string;
 	}) => void;
+	submitLabel?: string;
+	title?: string;
 };
 
 export function StudentCreateDialog({
 	classes,
 	error,
+	initialValues,
 	isTeacher,
 	onClose,
 	onSubmit,
+	submitLabel = "Simpan murid",
+	title = "Tambah murid",
 }: StudentCreateDialogProps) {
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -41,7 +52,7 @@ export function StudentCreateDialog({
 	return (
 		<ModalDialog
 			eyebrow="Data murid"
-			title="Tambah murid"
+			title={title}
 			onClose={onClose}
 			labelledBy="student-modal-title"
 			contentClassName="mx-auto my-10 w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
@@ -70,9 +81,25 @@ export function StudentCreateDialog({
 				</p>
 			) : null}
 			<form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2">
-				<input required name="name" placeholder="Nama lengkap murid" className={inputClass} />
-				<input name="studentNumber" placeholder="Nomor induk (opsional)" className={inputClass} />
-				<select required name="classGroupId" className={inputClass}>
+				<input
+					required
+					name="name"
+					defaultValue={initialValues?.name}
+					placeholder="Nama lengkap murid"
+					className={inputClass}
+				/>
+				<input
+					name="studentNumber"
+					defaultValue={initialValues?.studentNumber ?? ""}
+					placeholder="Nomor induk (opsional)"
+					className={inputClass}
+				/>
+				<select
+					required
+					name="classGroupId"
+					defaultValue={initialValues?.classGroupId ?? ""}
+					className={inputClass}
+				>
 					<option value="">Pilih kelas</option>
 					{classes.map((item) => (
 						<option key={item.id} value={item.id}>
@@ -80,7 +107,7 @@ export function StudentCreateDialog({
 						</option>
 					))}
 				</select>
-				<select name="gender" className={inputClass}>
+				<select name="gender" defaultValue={initialValues?.gender ?? ""} className={inputClass}>
 					<option value="">Jenis kelamin (opsional)</option>
 					<option value="MALE">Laki-laki</option>
 					<option value="FEMALE">Perempuan</option>
@@ -89,7 +116,7 @@ export function StudentCreateDialog({
 					<Button type="button" variant="secondary" onClick={onClose}>
 						Batal
 					</Button>
-					<Button>Simpan murid</Button>
+					<Button>{submitLabel}</Button>
 				</div>
 			</form>
 		</ModalDialog>

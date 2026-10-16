@@ -12,17 +12,18 @@ import { StudentCreateDialog } from "./components/student-create-dialog";
 import { StudentDirectoryTable } from "./components/student-directory-table";
 import { useStudentAdmissionRequests } from "./hooks/use-student-admission-requests";
 import { useStudentDirectory } from "./hooks/use-student-directory";
-import type { StudentTab } from "./types";
+import type { AdmissionRequest, StudentTab } from "./types";
 
 export function StudentsPage() {
 	const queryClient = useQueryClient();
 	const [tab, setTab] = useState<StudentTab>("students");
 	const [modalOpen, setModalOpen] = useState(false);
 	const [formError, setFormError] = useState("");
+	const [requestToResubmit, setRequestToResubmit] = useState<AdmissionRequest | null>(null);
 	const session = useQuery(authSessionQueryOptions);
 	const isTeacher = session.data?.role === "TEACHER";
 	const directory = useStudentDirectory();
-	const { requests, decide } = useStudentAdmissionRequests(tab === "requests");
+	const { requests, decide, resubmit } = useStudentAdmissionRequests(tab === "requests");
 
 	async function createStudent(body: {
 		classGroupId: string;
@@ -32,11 +33,14 @@ export function StudentsPage() {
 	}) {
 		setFormError("");
 		try {
-			const result = await api<{ requestPending?: boolean }>("/students", {
-				method: "POST",
-				body: JSON.stringify(body),
-			});
+			const result = requestToResubmit
+				? await resubmit.mutateAsync({ id: requestToResubmit.id, body })
+				: await api<{ requestPending?: boolean }>("/students", {
+						method: "POST",
+						body: JSON.stringify(body),
+					});
 			setModalOpen(false);
+			setRequestToResubmit(null);
 			if (result.requestPending) setTab("requests");
 			await queryClient.invalidateQueries({ queryKey: ["students"] });
 			await queryClient.invalidateQueries({ queryKey: ["student-requests"] });
@@ -59,6 +63,7 @@ export function StudentsPage() {
 					<Button
 						onClick={() => {
 							setFormError("");
+							setRequestToResubmit(null);
 							setModalOpen(true);
 						}}
 					>
@@ -88,8 +93,14 @@ export function StudentsPage() {
 					rows={requests.data ?? []}
 					loading={requests.isLoading}
 					isTeacher={isTeacher}
-					pending={decide.isPending}
+					pending={decide.isPending || resubmit.isPending}
+					resubmittingId={resubmit.isPending ? requestToResubmit?.id : undefined}
 					onDecide={(id, decision, note) => decide.mutate({ id, decision, note })}
+					onResubmit={(request) => {
+						setFormError("");
+						setRequestToResubmit(request);
+						setModalOpen(true);
+					}}
 				/>
 			)}
 			{modalOpen ? (
@@ -97,7 +108,22 @@ export function StudentsPage() {
 					classes={directory.classes.data ?? []}
 					error={formError}
 					isTeacher={isTeacher}
-					onClose={() => setModalOpen(false)}
+					initialValues={
+						requestToResubmit
+							? {
+									...requestToResubmit.payload,
+									classGroupId:
+										requestToResubmit.payload.classGroupId ??
+										requestToResubmit.target_class_group_id,
+								}
+							: undefined
+					}
+					title={requestToResubmit ? "Perbaiki pengajuan murid" : undefined}
+					submitLabel={requestToResubmit ? "Ajukan ulang" : undefined}
+					onClose={() => {
+						setModalOpen(false);
+						setRequestToResubmit(null);
+					}}
 					onSubmit={createStudent}
 				/>
 			) : null}

@@ -10,10 +10,17 @@ export type ClassGroup = { id: string; name: string };
 export type AdmissionRequest = {
 	id: string;
 	status: "PENDING" | "APPROVED" | "REJECTED";
-	payload: { name: string };
+	payload: {
+		name: string;
+		studentNumber?: string | null;
+		gender?: "MALE" | "FEMALE" | null;
+		classGroupId?: string | null;
+	};
 	class_name: string;
 	requester_name: string;
 	review_note?: string | null;
 	created_at: string;
+	target_class_group_id: string;
+	resubmitted_from_request_id?: string | null;
 };
 export type StudentTab = "students" | "requests";
