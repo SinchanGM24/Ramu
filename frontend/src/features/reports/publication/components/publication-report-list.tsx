@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, CheckCheck, Circle, Info, RotateCcw, Search, Send } from "lucide-react";
+import { Check, Circle, Info, RotateCcw, Search, Send } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -48,13 +48,13 @@ const deliveryStatusCopy: Record<
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	DELIVERED: {
-		Icon: CheckCheck,
-		label: "Diterima di WhatsApp",
+		Icon: Check,
+		label: "WhatsApp pernah dibuka",
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	READ: {
-		Icon: CheckCheck,
-		label: "Dibaca di WhatsApp",
+		Icon: Check,
+		label: "WhatsApp pernah dibuka",
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	FAILED: {
@@ -73,11 +73,6 @@ const deliveryLegend = [
 	{
 		Icon: Check,
 		label: "WhatsApp pernah dibuka",
-		className: "bg-emerald-50 text-emerald-700",
-	},
-	{
-		Icon: CheckCheck,
-		label: "Diterima atau dibaca bila tersedia",
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	{
@@ -268,7 +263,7 @@ function DeliveryStatusLegend() {
 					</p>
 				</div>
 			</div>
-			<div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+			<div className="mt-3 grid gap-2 sm:grid-cols-3">
 				{deliveryLegend.map(({ Icon, className, label }) => (
 					<div
 						key={label}
