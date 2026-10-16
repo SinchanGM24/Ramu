@@ -65,4 +65,61 @@ describe("ReportWorkflowController", () => {
       controller.startCorrection(request("TEACHER"), "report-1"),
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
+
+  it("starts a correction without mutating the previous version, parent access, or delivery history", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const auditCalls: Array<{ action: string; metadata?: Record<string, unknown> }> = [];
+    const db = {
+      transaction: async (
+        callback: (client: {
+          query: (
+            sql: string,
+            values: unknown[],
+          ) => Promise<{ rows: Array<Record<string, unknown>> }>;
+        }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async (sql, values) => {
+            queries.push({ sql, values });
+            if (sql.startsWith("SELECT id FROM reports")) return { rows: [{ id: "report-1" }] };
+            if (sql.startsWith("SELECT id,version_number FROM report_versions")) {
+              return { rows: [{ id: "version-1", version_number: 1 }] };
+            }
+            if (sql.startsWith("UPDATE reports")) return { rows: [{ id: "report-1", status: "DRAFT" }] };
+            return { rows: [] };
+          },
+        }),
+    };
+    const audit = {
+      record: async (event: { action: string; metadata?: Record<string, unknown> }) => {
+        auditCalls.push(event);
+      },
+    };
+    const controller = new ReportWorkflowController(
+      new AuthService({} as never),
+      db as never,
+      audit as never,
+    );
+
+    await expect(
+      controller.startCorrection(request("SCHOOL_ADMIN"), "report-1"),
+    ).resolves.toMatchObject({ id: "report-1", status: "DRAFT" });
+
+    expect(queries[0].values).toEqual(["report-1", "school-1"]);
+    expect(
+      queries.some((query) => /(?:UPDATE|DELETE)\s+report_versions/i.test(query.sql)),
+    ).toBe(false);
+    expect(
+      queries.some((query) => /(?:UPDATE|DELETE)\s+report_access/i.test(query.sql)),
+    ).toBe(false);
+    expect(
+      queries.some((query) => /(?:UPDATE|DELETE)\s+report_deliveries/i.test(query.sql)),
+    ).toBe(false);
+    expect(auditCalls).toContainEqual(
+      expect.objectContaining({
+        action: "report.correction_started",
+        metadata: { previousVersionId: "version-1", previousVersionNumber: 1 },
+      }),
+    );
+  });
 });

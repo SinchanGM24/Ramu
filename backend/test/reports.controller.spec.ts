@@ -60,6 +60,76 @@ describe("ReportsController", () => {
     expect(queries[0]?.values).toEqual(["school-1"]);
   });
 
+  it("returns prior publication metadata with progress so an active correction stays distinct", async () => {
+    const queries: Array<{ sql: string; values?: unknown[] }> = [];
+    const client = {
+      query: async (sql: string, values?: unknown[]) => {
+        queries.push({ sql, values });
+        return { rows: [] };
+      },
+    };
+    const db = {
+      transaction: async (
+        callback: (input: typeof client) => Promise<unknown>,
+      ) => callback(client),
+    };
+    const controller = new ReportsController(
+      new AuthService({} as never),
+      db as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.progress(schoolAdminRequest, "semester-1"),
+    ).resolves.toEqual([]);
+
+    expect(queries[0].sql).toContain("latest_published_version_number");
+    expect(queries[0].sql).toContain("latest_published_at");
+    expect(queries[0].values).toEqual([
+      "semester-1",
+      null,
+      expect.any(String),
+      "school-1",
+    ]);
+  });
+
+  it("returns current report status with the immutable published version", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const client = {
+      query: async (sql: string, values: unknown[]) => {
+        queries.push({ sql, values });
+        return {
+          rows: [
+            {
+              current_status: "DRAFT",
+              id: "version-1",
+              version_number: 1,
+            },
+          ],
+        };
+      },
+    };
+    const db = {
+      transaction: async (
+        callback: (input: typeof client) => Promise<unknown>,
+      ) => callback(client),
+    };
+    const controller = new ReportsController(
+      new AuthService({} as never),
+      db as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.publishedVersion(schoolAdminRequest, "report-1"),
+    ).resolves.toMatchObject({ current_status: "DRAFT", id: "version-1" });
+
+    expect(queries[0].sql).toContain("report.status AS current_status");
+    expect(queries[0].values).toEqual(["report-1", "school-1"]);
+  });
+
   it("locks only the report row while loading publication data", async () => {
     const queries: Array<{ sql: string; values: unknown[] }> = [];
     const client = {

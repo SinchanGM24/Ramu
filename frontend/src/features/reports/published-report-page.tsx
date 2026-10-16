@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { LoadingState } from "@/components/shared/loading-state";
 import { api } from "@/lib/api";
+import { StartReportCorrectionAction } from "./components/start-report-correction-action";
 import { FormalAssessmentTable } from "./presentation/formal-assessment-table";
 import { ReportScaleLegend } from "./presentation/report-scale-legend";
 
@@ -31,6 +32,7 @@ type Snapshot = {
 	} | null;
 };
 type PublishedVersion = {
+	current_status: string;
 	id: string;
 	version_number: number;
 	published_at: string;
@@ -91,6 +93,9 @@ export function PublishedReportPage({
 							>
 								Kirim ke wali
 							</Link>
+							{query.data.current_status === "PUBLISHED" ? (
+								<StartReportCorrectionAction reportId={id} />
+							) : null}
 							<button
 								onClick={() => window.print()}
 								className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"

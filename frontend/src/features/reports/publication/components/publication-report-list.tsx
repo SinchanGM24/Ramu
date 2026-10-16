@@ -7,6 +7,7 @@ import { PaginationControls } from "@/components/shared/pagination-controls";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { BatchPublishAction } from "./batch-publish-action";
 import { PublishReportAction } from "./publish-report-action";
+import { isActiveCorrection } from "../utils";
 import type {
 	DeliveryFilter,
 	DeliveryStatus,
@@ -18,7 +19,7 @@ type PublicationReportListProps = {
 	canPublish: boolean;
 	batchPending: boolean;
 	batchProgress?: { completed: number; total: number } | null;
-	counts: { approved: number; published: number; waitingReview: number };
+	counts: { approved: number; correction: number; published: number; waitingReview: number };
 	deliveryFilter: DeliveryFilter;
 	loading: boolean;
 	page: number;
@@ -34,6 +35,8 @@ type PublicationReportListProps = {
 };
 
 const statusCopy: Record<PublicationStatus, { label: string; tone: "green" | "amber" }> = {
+	DRAFT: { label: "Koreksi sedang dikerjakan", tone: "amber" },
+	REVISION_REQUIRED: { label: "Koreksi perlu dilengkapi", tone: "amber" },
 	SUBMITTED: { label: "Menunggu ditinjau", tone: "amber" },
 	IN_REVIEW: { label: "Sedang ditinjau", tone: "amber" },
 	APPROVED: { label: "Menunggu diterbitkan", tone: "amber" },
@@ -126,6 +129,12 @@ export function PublicationReportList({
 					<span>{counts.approved} menunggu terbit</span>
 					<span aria-hidden="true">·</span>
 					<span>{counts.published} telah terbit</span>
+					{counts.correction ? (
+						<>
+							<span aria-hidden="true">Â·</span>
+							<span>{counts.correction} koreksi berjalan</span>
+						</>
+					) : null}
 					{canPublish ? (
 						<BatchPublishAction
 							count={counts.approved}
@@ -196,6 +205,7 @@ export function PublicationReportList({
 										<StatusBadge tone={statusCopy[report.status].tone}>
 											{statusCopy[report.status].label}
 										</StatusBadge>
+										<PublishedVersionNote report={report} />
 									</td>
 									<td className="px-4 py-4">
 										<DeliveryStatusBadge
@@ -236,6 +246,7 @@ export function PublicationReportList({
 									{statusCopy[report.status].label}
 								</StatusBadge>
 							</div>
+							<PublishedVersionNote report={report} className="mt-2" />
 							<div className="mt-4 border-t border-[#edf0e8] pt-3">
 								<div className="mb-3">
 									<DeliveryStatusBadge
@@ -259,6 +270,24 @@ export function PublicationReportList({
 				<PaginationControls page={page} pageSize={10} total={total} onPageChange={onPageChange} />
 			</div>
 		</Card>
+	);
+}
+
+function PublishedVersionNote({
+	className,
+	report,
+}: {
+	className?: string;
+	report: PublicationReport;
+}) {
+	if (!report.latest_published_version_number) return null;
+
+	return (
+		<p className={`mt-1 text-xs text-[#637065] ${className ?? ""}`.trim()}>
+			{isActiveCorrection(report)
+				? `Versi ${report.latest_published_version_number} tetap tersimpan`
+				: `Versi ${report.latest_published_version_number} terbit`}
+		</p>
 	);
 }
 
@@ -381,6 +410,20 @@ function PublicationAction({
 					Kirim ke wali
 				</Button>
 			</Link>
+		);
+	}
+
+	if (isActiveCorrection(report)) {
+		return (
+			<div className={mobile ? "space-y-2" : "text-right"}>
+				<p className="text-sm leading-6 text-amber-800">Koreksi sedang dikerjakan.</p>
+				<Link
+					href={`/app/reports/${report.report_id}/published?from=publication`}
+					className="text-sm font-semibold text-brand-700 hover:text-brand-800"
+				>
+					Lihat versi terbit
+				</Link>
+			</div>
 		);
 	}
 

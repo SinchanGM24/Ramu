@@ -26,6 +26,8 @@ type Data = {
 	}[];
 };
 
+type PublishedVersionState = { current_status: string };
+
 export function ReportPreviewPage({ id }: { id: string }) {
 	return (
 		<Suspense fallback={<LoadingState label="Menyiapkan pratinjau raport..." />}>
@@ -44,12 +46,12 @@ function ReportPreviewContent({ id }: { id: string }) {
 	});
 	const published = useQuery({
 		queryKey: ["published-report", id],
-		queryFn: () => api<unknown | null>(`/reports/${id}/published-version`),
+		queryFn: () => api<PublishedVersionState | null>(`/reports/${id}/published-version`),
 	});
 	const query = useQuery({
 		queryKey: ["report-preview", id],
 		queryFn: () => api<Data | null>(`/reports/${id}/editor`),
-		enabled: published.isSuccess && !published.data,
+		enabled: published.isSuccess && published.data?.current_status !== "PUBLISHED",
 	});
 	if (published.isLoading) return <LoadingState label="Menyiapkan pratinjau raport..." />;
 	if (published.isError) {
@@ -60,7 +62,9 @@ function ReportPreviewContent({ id }: { id: string }) {
 
 		return <PreviewError message={message} onRetry={() => void published.refetch()} />;
 	}
-	if (published.data) return <PublishedReportPage id={id} returnTarget={returnTarget} />;
+	if (published.data?.current_status === "PUBLISHED") {
+		return <PublishedReportPage id={id} returnTarget={returnTarget} />;
+	}
 	if (query.isLoading || !published.isSuccess) {
 		return <LoadingState label="Menyiapkan pratinjau raport..." />;
 	}

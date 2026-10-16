@@ -3,9 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { authSessionQueryOptions } from "@/features/auth/session";
-import type { DeliveryFilter, PublicationReport, Semester } from "../types";
+import type { DeliveryFilter, PublicationReport, PublicationStatus, Semester } from "../types";
+import { isActiveCorrection } from "../utils";
 
 const pageSize = 10;
+type PublicationProgressItem = Partial<PublicationReport> & {
+	id: string;
+	name: string;
+	report_id?: string;
+	status?: PublicationStatus | null;
+};
 
 export function useReportPublication() {
 	const queryClient = useQueryClient();
@@ -27,10 +34,7 @@ export function useReportPublication() {
 	const progress = useQuery({
 		queryKey: ["reports", semesterId],
 		enabled: Boolean(semesterId),
-		queryFn: () =>
-			api<
-				Array<PublicationReport | { id: string; name: string; report_id?: string; status?: string }>
-			>(`/reports/progress?semesterId=${semesterId}`),
+		queryFn: () => api<PublicationProgressItem[]>(`/reports/progress?semesterId=${semesterId}`),
 	});
 	const publish = useMutation({
 		mutationFn: (reportId: string) => api(`/reports/${reportId}/publish`, { method: "POST" }),
@@ -72,7 +76,9 @@ export function useReportPublication() {
 				.filter(
 					(item): item is PublicationReport =>
 						Boolean(item.report_id) &&
-						["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(item.status ?? ""),
+						(["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(item.status ?? "") ||
+							(Boolean(item.latest_published_version_number) &&
+								["DRAFT", "REVISION_REQUIRED"].includes(item.status ?? ""))),
 				)
 				.sort((left, right) => {
 					const priorityDifference = deliveryPriority(left) - deliveryPriority(right);
@@ -93,7 +99,10 @@ export function useReportPublication() {
 			waitingReview: reports.filter((item) => ["SUBMITTED", "IN_REVIEW"].includes(item.status))
 				.length,
 			approved: reports.filter((item) => item.status === "APPROVED").length,
-			published: reports.filter((item) => item.status === "PUBLISHED").length,
+			published: reports.filter(
+				(item) => item.status === "PUBLISHED" || Boolean(item.latest_published_version_number),
+			).length,
+			correction: reports.filter((item) => isActiveCorrection(item)).length,
 		}),
 		[reports],
 	);

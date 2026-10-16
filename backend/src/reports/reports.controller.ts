@@ -88,6 +88,16 @@ export class ReportsController {
             )
             SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status,
               report.submitted_at,report.updated_at AS report_updated_at,
+              (SELECT version.version_number
+               FROM report_versions version
+               WHERE version.report_id=report.id AND version.school_id=report.school_id
+               ORDER BY version.version_number DESC
+               LIMIT 1) AS latest_published_version_number,
+              (SELECT version.published_at
+               FROM report_versions version
+               WHERE version.report_id=report.id AND version.school_id=report.school_id
+               ORDER BY version.version_number DESC
+               LIMIT 1) AS latest_published_at,
               (SELECT delivery.status
                FROM report_deliveries delivery
                JOIN report_versions version ON version.id=delivery.report_version_id AND version.school_id=delivery.school_id
@@ -473,7 +483,7 @@ export class ReportsController {
       return (
         (
           await client.query(
-            `SELECT version.id,version.version_number,version.published_at,version.snapshot,version.pdf_storage_key
+            `SELECT version.id,version.version_number,version.published_at,version.snapshot,version.pdf_storage_key,report.status AS current_status
         FROM report_versions version JOIN reports report ON report.id=version.report_id
         WHERE report.id=$1 AND report.school_id=$2 AND version.school_id=$2
         ORDER BY version.version_number DESC LIMIT 1`,

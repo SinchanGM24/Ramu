@@ -13,6 +13,8 @@ export type ProgressItem = {
 	revision_note?: string | null;
 	status?: ReportStatus;
 	completion_percent: number;
+	latest_published_version_number?: number | null;
+	latest_published_at?: string | null;
 };
 export type ProgressCounts = {
 	total: number;

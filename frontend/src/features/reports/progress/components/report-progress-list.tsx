@@ -111,6 +111,7 @@ export function ReportProgressList({
 											{item.status === "REVISION_REQUIRED" ? (
 												<ReportRevisionNote compact note={item.revision_note} />
 											) : null}
+											<PublishedVersionNote item={item} />
 										</td>
 										<td className="px-4 py-4">
 											{item.status ? (
@@ -161,6 +162,7 @@ export function ReportProgressList({
 										{item.status === "REVISION_REQUIRED" ? (
 											<ReportRevisionNote compact note={item.revision_note} />
 										) : null}
+										<PublishedVersionNote item={item} />
 									</div>
 									{item.status ? (
 										<StatusBadge tone={statusCopy[item.status].tone}>
@@ -200,6 +202,21 @@ export function ReportProgressList({
 				/>
 			</div>
 		</Card>
+	);
+}
+
+function PublishedVersionNote({ item }: { item: ProgressItem }) {
+	if (
+		!item.latest_published_version_number ||
+		!["DRAFT", "REVISION_REQUIRED"].includes(item.status ?? "")
+	) {
+		return null;
+	}
+
+	return (
+		<p className="mt-1 text-xs font-medium text-amber-800">
+			Koreksi versi {item.latest_published_version_number}; versi terbit sebelumnya tetap tersimpan.
+		</p>
 	);
 }
 
