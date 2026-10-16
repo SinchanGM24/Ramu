@@ -87,6 +87,7 @@ export class ReportsController {
               GROUP BY narrative.report_id
             )
             SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status,
+              report.submitted_at,report.updated_at AS report_updated_at,
               (SELECT delivery.status
                FROM report_deliveries delivery
                JOIN report_versions version ON version.id=delivery.report_version_id AND version.school_id=delivery.school_id

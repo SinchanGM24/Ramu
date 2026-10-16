@@ -67,11 +67,21 @@ export function useReportPublication() {
 
 	const reports = useMemo<PublicationReport[]>(
 		() =>
-			(progress.data ?? []).filter(
-				(item): item is PublicationReport =>
-					Boolean(item.report_id) &&
-					["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(item.status ?? ""),
-			),
+			(progress.data ?? [])
+				.filter(
+					(item): item is PublicationReport =>
+						Boolean(item.report_id) &&
+						["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(item.status ?? ""),
+				)
+				.sort((left, right) => {
+					const priorityDifference = deliveryPriority(left) - deliveryPriority(right);
+					if (priorityDifference) return priorityDifference;
+
+					const activityDifference = latestActivity(right) - latestActivity(left);
+					if (activityDifference) return activityDifference;
+
+					return left.name.localeCompare(right.name, "id-ID");
+				}),
 		[progress.data],
 	);
 	const counts = useMemo(
@@ -122,3 +132,18 @@ export function useReportPublication() {
 }
 
 export { pageSize };
+
+function deliveryPriority(report: PublicationReport) {
+	const needsDelivery =
+		report.status === "PUBLISHED" &&
+		!report.delivery_whatsapp_opened_at &&
+		(!report.delivery_status || ["QUEUED", "FAILED"].includes(report.delivery_status));
+
+	return needsDelivery ? 0 : 1;
+}
+
+function latestActivity(report: PublicationReport) {
+	const timestamp = report.report_updated_at || report.submitted_at;
+	const parsed = timestamp ? Date.parse(timestamp) : Number.NaN;
+	return Number.isNaN(parsed) ? 0 : parsed;
+}

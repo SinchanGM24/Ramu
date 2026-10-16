@@ -104,7 +104,8 @@ export function PublicationReportList({
 				<div>
 					<h2 className="font-bold text-[#17251b]">Daftar publikasi raport</h2>
 					<p className="mt-1 text-sm text-[#637065]">
-						Pantau proses tinjauan, penerbitan, dan pengiriman raport kepada wali.
+						Raport terbit yang belum dikirim ditampilkan lebih dahulu, lalu diurutkan dari perubahan
+						terbaru.
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-slate-500">
