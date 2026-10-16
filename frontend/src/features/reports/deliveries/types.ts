@@ -5,6 +5,7 @@ export type Delivery = {
 	attempt_count: number;
 	failure_reason?: string | null;
 	queued_at: string;
+	whatsapp_opened_at?: string | null;
 	guardian_name: string;
 	relationship: string;
 	version_number: number;

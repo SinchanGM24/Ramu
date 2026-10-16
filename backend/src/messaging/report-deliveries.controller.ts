@@ -6,6 +6,10 @@ import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { assertReportAccess } from "../reports/report-authorization";
+import {
+  decryptParentAccessCredentials,
+  encryptParentAccessCredentials,
+} from "./parent-access-credentials";
 
 const deliveryRequestSchema = z.object({
   guardianContactIds: z.array(z.string().uuid()).min(1).max(20).optional(),
@@ -44,7 +48,7 @@ export class ReportDeliveriesController {
         await assertReportAccess(client, actor, reportId);
       const result = await client.query(
         `SELECT d.id, d.channel, d.recipient_phone, d.status, d.attempt_count, d.failure_reason,
-                d.queued_at, d.sent_at, d.delivered_at, d.read_at, d.failed_at, d.created_at,
+                d.queued_at, d.sent_at, d.delivered_at, d.read_at, d.failed_at, d.whatsapp_opened_at, d.created_at,
                 g.name AS guardian_name, g.relationship, rv.version_number
          FROM report_deliveries d
          JOIN report_versions rv ON rv.id = d.report_version_id AND rv.school_id = d.school_id
@@ -295,16 +299,25 @@ export class ReportDeliveriesController {
          WHERE report_version_id=$1`,
         [delivery.report_version_id],
       );
-      await client.query(
-        `INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash,status)
-         VALUES($1,$2,$3,$4,'ACTIVE')`,
-        [actor.schoolId, delivery.report_version_id, hash(token), hash(pin)],
-      );
+      const access = (
+        await client.query<{ id: string }>(
+          `INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash,status)
+           VALUES($1,$2,$3,$4,'ACTIVE')
+           RETURNING id`,
+          [actor.schoolId, delivery.report_version_id, hash(token), hash(pin)],
+        )
+      ).rows[0];
       await client.query(
         `UPDATE report_deliveries
-         SET status='SENT', sent_at=now(), attempt_count=attempt_count+1, updated_at=now()
+         SET report_access_id=$3, access_credentials_ciphertext=$4, whatsapp_opened_at=now(),
+             attempt_count=attempt_count+1, updated_at=now()
          WHERE id=$1 AND school_id=$2`,
-        [delivery.id, actor.schoolId],
+        [
+          delivery.id,
+          actor.schoolId,
+          access.id,
+          encryptParentAccessCredentials({ token, pin }),
+        ],
       );
       await this.audit.record(
         {
@@ -348,12 +361,15 @@ export class ReportDeliveriesController {
           status: "QUEUED" | "SENT" | "DELIVERED" | "READ" | "FAILED";
           report_id: string;
           report_version_id: string;
+          report_access_id: string | null;
+          access_credentials_ciphertext: string | null;
           student_name: string;
           guardian_name: string;
           recipient_phone: string;
           school_name: string;
         }>(
           `SELECT delivery.id, delivery.status, delivery.report_version_id,
+          delivery.report_access_id, delivery.access_credentials_ciphertext,
           report.id AS report_id, student.name AS student_name,
           guardian.name AS guardian_name, delivery.recipient_phone,
           school.name AS school_name
@@ -372,29 +388,66 @@ export class ReportDeliveriesController {
       if (!delivery) throw new Error("Pengiriman tidak ditemukan");
       if (actor.role === "TEACHER")
         await assertReportAccess(client, actor, delivery.report_id);
-      if (delivery.status !== "QUEUED") {
-        throw new Error(
-          "Chat WhatsApp untuk pengiriman ini sudah pernah dibuka",
-        );
-      }
-
       const phone = whatsappPhone(delivery.recipient_phone);
+      let token: string;
+      let pin: string;
+      let reusedAccess = false;
 
-      const token = randomBytes(32).toString("base64url");
-      const pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      if (delivery.report_access_id && delivery.access_credentials_ciphertext) {
+        const access = (
+          await client.query<{ id: string }>(
+            `SELECT id FROM report_access
+             WHERE id=$1 AND school_id=$2 AND report_version_id=$3 AND status='ACTIVE'`,
+            [
+              delivery.report_access_id,
+              actor.schoolId,
+              delivery.report_version_id,
+            ],
+          )
+        ).rows[0];
+        if (!access) {
+          throw new Error(
+            "Tautan wali sudah tidak berlaku. Admin Sekolah dapat membuat tautan baru.",
+          );
+        }
+
+        ({ token, pin } = decryptParentAccessCredentials(
+          delivery.access_credentials_ciphertext,
+        ));
+        reusedAccess = true;
+      } else {
+        token = randomBytes(32).toString("base64url");
+        pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
+      }
       const origin = (
         process.env.FRONTEND_ORIGIN || "http://localhost:3001"
       ).replace(/\/$/, "");
       const reportLink = `${origin}/r/${token}`;
 
-      await client.query(
-        `INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash)
-         VALUES($1,$2,$3,$4)`,
-        [actor.schoolId, delivery.report_version_id, hash(token), hash(pin)],
-      );
+      if (!reusedAccess) {
+        const access = (
+          await client.query<{ id: string }>(
+            `INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash,status)
+             VALUES($1,$2,$3,$4,'ACTIVE')
+             RETURNING id`,
+            [actor.schoolId, delivery.report_version_id, hash(token), hash(pin)],
+          )
+        ).rows[0];
+        await client.query(
+          `UPDATE report_deliveries
+           SET report_access_id=$3, access_credentials_ciphertext=$4
+           WHERE id=$1 AND school_id=$2`,
+          [
+            delivery.id,
+            actor.schoolId,
+            access.id,
+            encryptParentAccessCredentials({ token, pin }),
+          ],
+        );
+      }
       await client.query(
         `UPDATE report_deliveries
-         SET status='SENT', sent_at=now(), attempt_count=attempt_count+1, updated_at=now()
+         SET whatsapp_opened_at=now(), attempt_count=attempt_count+1, updated_at=now()
          WHERE id=$1 AND school_id=$2`,
         [delivery.id, actor.schoolId],
       );
@@ -405,7 +458,10 @@ export class ReportDeliveriesController {
           action: "report_delivery.whatsapp_opened",
           entityType: "report_delivery",
           entityId: delivery.id,
-          metadata: { reportVersionId: delivery.report_version_id },
+          metadata: {
+            reportVersionId: delivery.report_version_id,
+            reusedAccess,
+          },
         },
         client,
       );

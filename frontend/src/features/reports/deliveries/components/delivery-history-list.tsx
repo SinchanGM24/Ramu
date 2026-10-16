@@ -151,27 +151,9 @@ function DeliveryAction({
 		</Button>
 	) : null;
 
-	if (delivery.status === "QUEUED") {
-		return (
-			<div className="flex items-center gap-1">
-				<Button
-					aria-label="Buka chat WhatsApp"
-					className="size-10 min-h-0 rounded-full p-0 text-slate-600"
-					disabled={pendingManualDispatch}
-					title="Buka chat WhatsApp"
-					variant="ghost"
-					onClick={() => onManualDispatch(delivery.id)}
-				>
-					<Send size={17} />
-				</Button>
-				{regenerateAction}
-			</div>
-		);
-	}
-
-	if (delivery.status === "FAILED") {
-		return (
-			<div className="flex items-center gap-1">
+	return (
+		<div className="flex items-center gap-1">
+			{delivery.status === "FAILED" ? (
 				<Button
 					aria-label="Siapkan ulang pengiriman"
 					className="size-10 min-h-0 rounded-full p-0"
@@ -181,28 +163,26 @@ function DeliveryAction({
 				>
 					<RotateCcw size={16} />
 				</Button>
-				{regenerateAction}
-			</div>
-		);
-	}
-
-	const completedTitle =
-		delivery.status === "DELIVERED"
-			? "Diterima di WhatsApp"
-			: delivery.status === "READ"
-				? "Dibaca di WhatsApp"
-				: "Dibuka di WhatsApp";
-
-	return (
-		<div className="flex items-center gap-1">
-			<span
-				aria-label={completedTitle}
-				className="grid size-10 place-items-center rounded-full bg-emerald-50 text-emerald-700"
-				role="img"
-				title={completedTitle}
+			) : null}
+			{delivery.whatsapp_opened_at ? (
+				<span
+					aria-label="Handoff WhatsApp sudah dibuka"
+					className="grid size-10 place-items-center rounded-full bg-emerald-50 text-emerald-700"
+					role="img"
+				>
+					<Check size={18} strokeWidth={2.5} />
+				</span>
+			) : null}
+			<Button
+				aria-label="Buka chat WhatsApp"
+				className="size-10 min-h-0 rounded-full p-0 text-slate-600"
+				disabled={pendingManualDispatch}
+				title="Buka chat WhatsApp"
+				variant="ghost"
+				onClick={() => onManualDispatch(delivery.id)}
 			>
-				<Check size={18} strokeWidth={2.5} />
-			</span>
+				<Send size={17} />
+			</Button>
 			{regenerateAction}
 		</div>
 	);

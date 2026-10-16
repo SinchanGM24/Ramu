@@ -57,6 +57,9 @@ describe("ReportDeliveriesController", () => {
             if (sql.includes("assignment.school_id=$3")) {
               return { rowCount: 1, rows: [{}] };
             }
+            if (sql.includes("INSERT INTO report_access")) {
+              return { rowCount: 1, rows: [{ id: "access-a" }] };
+            }
             return { rowCount: 1, rows: [{}] };
           },
         }),
@@ -76,6 +79,9 @@ describe("ReportDeliveriesController", () => {
       queries.some((query) => query.sql.includes("assignment.school_id=$3")),
     ).toBe(true);
     expect(result.whatsAppUrl).toContain("https://wa.me/6281234567890?");
+    expect(
+      queries.some((query) => query.sql.includes("status='SENT'")),
+    ).toBe(false);
   });
 
   it("rejects an invalid WhatsApp number before creating access credentials or changing delivery status", async () => {
@@ -166,6 +172,9 @@ describe("ReportDeliveriesController", () => {
                 ],
               };
             }
+            if (sql.includes("INSERT INTO report_access")) {
+              return { rowCount: 1, rows: [{ id: "access-a" }] };
+            }
             return { rowCount: 1, rows: [] };
           },
         }),
@@ -200,5 +209,73 @@ describe("ReportDeliveriesController", () => {
       expect.objectContaining({ action: "report_access.regenerated" }),
     );
     expect(result.whatsAppUrl).toContain("https://wa.me/6281234567890?");
+  });
+
+  it("reopens a WhatsApp handoff with its existing encrypted access credentials", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const auth = { require: (request: { auth: unknown }) => request.auth };
+    const { encryptParentAccessCredentials } = await import(
+      "../src/messaging/parent-access-credentials"
+    );
+    const db = {
+      transaction: async (
+        callback: (client: {
+          query: (
+            sql: string,
+            values: unknown[],
+          ) => Promise<{ rowCount: number; rows: unknown[] }>;
+        }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async (sql, values) => {
+            queries.push({ sql, values });
+            if (sql.includes("FROM report_deliveries delivery")) {
+              return {
+                rowCount: 1,
+                rows: [
+                  {
+                    access_credentials_ciphertext: encryptParentAccessCredentials({
+                      pin: "123456",
+                      token: "existing-parent-token",
+                    }),
+                    guardian_name: "Ibu Alya",
+                    id: "delivery-a",
+                    recipient_phone: "081234567890",
+                    report_access_id: "access-a",
+                    report_id: "report-a",
+                    report_version_id: "version-a",
+                    school_name: "TK Ceria",
+                    status: "QUEUED",
+                    student_name: "Alya",
+                  },
+                ],
+              };
+            }
+            if (sql.includes("assignment.school_id=$3")) {
+              return { rowCount: 1, rows: [{}] };
+            }
+            if (sql.includes("SELECT id FROM report_access")) {
+              return { rowCount: 1, rows: [{ id: "access-a" }] };
+            }
+            return { rowCount: 1, rows: [] };
+          },
+        }),
+    };
+    const controller = new ReportDeliveriesController(
+      auth as never,
+      db as never,
+      { record: async () => undefined } as never,
+    );
+
+    const result = await controller.openWhatsApp(teacherRequest, "delivery-a");
+
+    expect(result.whatsAppUrl).toContain("%2Fr%2Fexisting-parent-token");
+    expect(result.whatsAppUrl).toContain("PIN%3A%20123456");
+    expect(
+      queries.some((query) => query.sql.includes("INSERT INTO report_access")),
+    ).toBe(false);
+    expect(
+      queries.some((query) => query.sql.includes("whatsapp_opened_at=now()")),
+    ).toBe(true);
   });
 });
