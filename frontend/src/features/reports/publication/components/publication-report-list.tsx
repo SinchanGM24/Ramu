@@ -64,6 +64,29 @@ const deliveryStatusCopy: Record<
 	},
 };
 
+const deliveryLegend = [
+	{
+		Icon: Send,
+		label: "Belum dibuka",
+		className: "bg-slate-100 text-slate-500",
+	},
+	{
+		Icon: Check,
+		label: "WhatsApp pernah dibuka",
+		className: "bg-emerald-50 text-emerald-700",
+	},
+	{
+		Icon: CheckCheck,
+		label: "Diterima atau dibaca bila tersedia",
+		className: "bg-emerald-50 text-emerald-700",
+	},
+	{
+		Icon: RotateCcw,
+		label: "Perlu dicoba lagi",
+		className: "bg-amber-50 text-amber-700",
+	},
+];
+
 export function PublicationReportList({
 	canPublish,
 	batchPending,
@@ -105,7 +128,8 @@ export function PublicationReportList({
 					) : null}
 				</div>
 			</div>
-			<div className="px-5 py-4 sm:px-6">
+			<div className="space-y-3 px-5 py-4 sm:px-6">
+				<DeliveryStatusLegend />
 				<label className="relative block">
 					<span className="sr-only">Cari nama murid</span>
 					<Search
@@ -166,7 +190,10 @@ export function PublicationReportList({
 										</StatusBadge>
 									</td>
 									<td className="px-4 py-4">
-										<DeliveryStatusBadge status={report.delivery_status} />
+										<DeliveryStatusBadge
+											status={report.delivery_status}
+											whatsAppOpenedAt={report.delivery_whatsapp_opened_at}
+										/>
 									</td>
 									<td className="px-5 py-4 text-right sm:px-6">
 										<PublicationAction
@@ -203,7 +230,10 @@ export function PublicationReportList({
 							</div>
 							<div className="mt-4 border-t border-[#edf0e8] pt-3">
 								<div className="mb-3">
-									<DeliveryStatusBadge status={report.delivery_status} />
+									<DeliveryStatusBadge
+										status={report.delivery_status}
+										whatsAppOpenedAt={report.delivery_whatsapp_opened_at}
+									/>
 								</div>
 								<PublicationAction
 									canPublish={canPublish}
@@ -224,14 +254,43 @@ export function PublicationReportList({
 	);
 }
 
-function DeliveryStatusBadge({ status }: { status?: DeliveryStatus | null }) {
-	const copy = status
-		? deliveryStatusCopy[status]
-		: {
-				Icon: Circle,
-				label: "Belum dikirim",
-				className: "bg-slate-100 text-slate-400",
-			};
+function DeliveryStatusLegend() {
+	return (
+		<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-[#637065]">
+			<span className="font-semibold text-[#4b594e]">Arti ikon pengiriman:</span>
+			{deliveryLegend.map(({ Icon, className, label }) => (
+				<span key={label} className="inline-flex items-center gap-1.5">
+					<span className={`grid size-5 place-items-center rounded-full ${className}`}>
+						<Icon aria-hidden="true" size={12} strokeWidth={2.25} />
+					</span>
+					{label}
+				</span>
+			))}
+		</div>
+	);
+}
+
+function DeliveryStatusBadge({
+	status,
+	whatsAppOpenedAt,
+}: {
+	status?: DeliveryStatus | null;
+	whatsAppOpenedAt?: string | null;
+}) {
+	const copy =
+		status === "FAILED"
+			? deliveryStatusCopy.FAILED
+			: status === "DELIVERED" || status === "READ"
+				? deliveryStatusCopy[status]
+				: whatsAppOpenedAt || status === "SENT"
+					? deliveryStatusCopy.SENT
+					: status === "QUEUED"
+						? deliveryStatusCopy.QUEUED
+						: {
+								Icon: Circle,
+								label: "Belum dikirim",
+								className: "bg-slate-100 text-slate-400",
+							};
 	const Icon = copy.Icon;
 
 	return (
@@ -239,7 +298,6 @@ function DeliveryStatusBadge({ status }: { status?: DeliveryStatus | null }) {
 			aria-label={copy.label}
 			className={`grid size-8 place-items-center rounded-full ${copy.className}`}
 			role="img"
-			title={copy.label}
 		>
 			<Icon aria-hidden="true" size={15} strokeWidth={2.25} />
 			<span className="sr-only">{copy.label}</span>

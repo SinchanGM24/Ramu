@@ -7,6 +7,7 @@ export type PublicationReport = {
 	report_id: string;
 	status: PublicationStatus;
 	delivery_status?: DeliveryStatus | null;
+	delivery_whatsapp_opened_at?: string | null;
 };
 
 export type Semester = {

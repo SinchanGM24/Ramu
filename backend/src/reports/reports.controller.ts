@@ -93,6 +93,12 @@ export class ReportsController {
                WHERE version.report_id=report.id AND delivery.school_id=report.school_id
                ORDER BY version.version_number DESC, delivery.updated_at DESC
                LIMIT 1) AS delivery_status,
+              (SELECT delivery.whatsapp_opened_at
+               FROM report_deliveries delivery
+               JOIN report_versions version ON version.id=delivery.report_version_id AND version.school_id=delivery.school_id
+               WHERE version.report_id=report.id AND delivery.school_id=report.school_id
+               ORDER BY version.version_number DESC, delivery.updated_at DESC
+               LIMIT 1) AS delivery_whatsapp_opened_at,
               (SELECT log.metadata->>'note' FROM audit_logs log WHERE log.school_id=report.school_id AND log.entity_type='report' AND log.entity_id=report.id AND log.action='report.revision' ORDER BY log.created_at DESC LIMIT 1) AS revision_note,
               CASE WHEN report.id IS NULL THEN 0 ELSE COALESCE(ROUND(100.0*(COALESCE(assessment_progress.assessment_count,0)+COALESCE(narrative_progress.narrative_count,0)+CASE WHEN attendance.id IS NULL THEN 0 ELSE 1 END)/NULLIF(framework_totals.indicator_count+framework_totals.narrative_count+1,0)),0)::int END AS completion_percent
             FROM student_enrollments enrollment
