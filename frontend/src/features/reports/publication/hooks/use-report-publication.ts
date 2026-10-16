@@ -81,7 +81,10 @@ export function useReportPublication() {
 					const activityDifference = latestActivity(right) - latestActivity(left);
 					if (activityDifference) return activityDifference;
 
-					return left.name.localeCompare(right.name, "id-ID");
+					// Pertahankan urutan respons API saat prioritas dan waktu sama.
+					// Jangan gunakan abjad sebagai fallback agar filter "Semua"
+					// tetap mengikuti urutan kerja dan waktu.
+					return 0;
 				}),
 		[progress.data],
 	);
