@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, CheckCheck, Circle, RotateCcw, Search, Send } from "lucide-react";
+import { Check, CheckCheck, Circle, Info, RotateCcw, Search, Send } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -256,16 +256,31 @@ export function PublicationReportList({
 
 function DeliveryStatusLegend() {
 	return (
-		<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-[#637065]">
-			<span className="font-semibold text-[#4b594e]">Arti ikon pengiriman:</span>
-			{deliveryLegend.map(({ Icon, className, label }) => (
-				<span key={label} className="inline-flex items-center gap-1.5">
-					<span className={`grid size-5 place-items-center rounded-full ${className}`}>
-						<Icon aria-hidden="true" size={12} strokeWidth={2.25} />
-					</span>
-					{label}
+		<div className="rounded-2xl border border-brand-100 bg-[linear-gradient(105deg,#f3f8ef_0%,#fffefa_52%,#f7faf4_100%)] p-3 shadow-[0_4px_16px_rgba(28,64,39,0.05)] sm:p-4">
+			<div className="flex items-start gap-3">
+				<span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-white shadow-sm">
+					<Info aria-hidden="true" size={17} strokeWidth={2.4} />
 				</span>
-			))}
+				<div className="min-w-0">
+					<p className="text-sm font-bold text-[#1d3524]">Arti ikon pengiriman</p>
+					<p className="mt-0.5 text-xs leading-5 text-[#637065]">
+						Ikon hanya menjadi penanda handoff WhatsApp, bukan bukti pesan telah terkirim.
+					</p>
+				</div>
+			</div>
+			<div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+				{deliveryLegend.map(({ Icon, className, label }) => (
+					<div
+						key={label}
+						className="flex min-w-0 items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-2.5 py-2 text-xs font-medium text-[#4b594e]"
+					>
+						<span className={`grid size-7 shrink-0 place-items-center rounded-lg ${className}`}>
+							<Icon aria-hidden="true" size={14} strokeWidth={2.3} />
+						</span>
+						<span className="leading-4">{label}</span>
+					</div>
+				))}
+			</div>
 		</div>
 	);
 }
