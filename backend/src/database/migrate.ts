@@ -4,6 +4,10 @@ import { join } from "path";
 import { Pool } from "pg";
 
 async function migrate() {
+  if (process.env.NODE_ENV === "production" && !process.env.DATABASE_MIGRATION_URL)
+    throw new Error(
+      "DATABASE_MIGRATION_URL wajib diatur untuk migrasi production dan tidak boleh memakai DATABASE_URL aplikasi.",
+    );
   const connectionString =
     process.env.DATABASE_MIGRATION_URL || process.env.DATABASE_URL;
   if (!connectionString)
