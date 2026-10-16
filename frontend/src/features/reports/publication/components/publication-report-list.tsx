@@ -56,12 +56,12 @@ const deliveryStatusCopy: Record<
 	},
 	DELIVERED: {
 		Icon: Check,
-		label: "WhatsApp pernah dibuka",
+		label: "Sudah dibuka",
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	READ: {
 		Icon: Check,
-		label: "WhatsApp pernah dibuka",
+		label: "Sudah dibuka",
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	FAILED: {
@@ -81,7 +81,7 @@ const deliveryLegend = [
 	{
 		filter: "OPENED" as const,
 		Icon: Check,
-		label: "WhatsApp pernah dibuka",
+		label: "Sudah dibuka",
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	{
