@@ -13,9 +13,11 @@ import { ReportsModule } from "./reports/reports.module";
 import { StaffModule } from "./staff/staff.module";
 import { LifecycleModule } from "./lifecycle/lifecycle.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { CommonModule } from "./common/common.module";
 
 @Module({
   imports: [
+    CommonModule,
     DatabaseModule,
     AuditModule,
     AuthModule,

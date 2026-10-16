@@ -67,7 +67,7 @@ export class AuthController {
     private readonly db: DatabaseService,
     private readonly auth: AuthService,
     private readonly audit: AuditService,
-    private readonly rateLimiter = new RequestRateLimiter(),
+    private readonly rateLimiter: RequestRateLimiter = new RequestRateLimiter(),
   ) {}
 
   @Post("register-school")

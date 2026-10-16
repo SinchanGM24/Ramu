@@ -28,7 +28,7 @@ export class ParentController {
   constructor(
     private readonly db: DatabaseService,
     private readonly pdf: ReportPdfService,
-    private readonly rateLimiter = new RequestRateLimiter(),
+    private readonly rateLimiter: RequestRateLimiter = new RequestRateLimiter(),
   ) {}
 
   @Post("verify")

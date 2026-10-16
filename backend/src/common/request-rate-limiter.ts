@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { createHash } from "crypto";
 
 export type RateLimitRule = {
@@ -24,10 +24,16 @@ export function rateLimitFingerprint(value: string) {
  * of memory pressure. A shared Redis implementation can replace this class
  * when RAMU runs on more than one API instance.
  */
+@Injectable()
 export class RequestRateLimiter {
   private readonly buckets = new Map<string, RateLimitBucket>();
+  private now: () => number = () => Date.now();
 
-  constructor(private readonly now: () => number = () => Date.now()) {}
+  static withClock(now: () => number) {
+    const limiter = new RequestRateLimiter();
+    limiter.now = now;
+    return limiter;
+  }
 
   assert(rule: RateLimitRule) {
     const result = this.consume(rule);

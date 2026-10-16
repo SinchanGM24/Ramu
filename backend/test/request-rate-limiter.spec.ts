@@ -7,7 +7,7 @@ import {
 
 describe("RequestRateLimiter", () => {
   it("allows normal requests, then rejects only after the configured limit", () => {
-    const limiter = new RequestRateLimiter(() => 1_000);
+    const limiter = RequestRateLimiter.withClock(() => 1_000);
     const rule = { key: "login:opaque-key", limit: 3, windowMs: 60_000 };
 
     expect(limiter.consume(rule).allowed).toBe(true);
@@ -21,7 +21,7 @@ describe("RequestRateLimiter", () => {
 
   it("resets a bucket after its time window", () => {
     let now = 1_000;
-    const limiter = new RequestRateLimiter(() => now);
+    const limiter = RequestRateLimiter.withClock(() => now);
     const rule = { key: "parent:opaque-key", limit: 1, windowMs: 1_000 };
 
     limiter.assert(rule);
@@ -37,7 +37,7 @@ describe("RequestRateLimiter", () => {
   });
 
   it("returns HTTP 429 after the limit is reached", () => {
-    const limiter = new RequestRateLimiter(() => 1_000);
+    const limiter = RequestRateLimiter.withClock(() => 1_000);
     const rule = { key: "register:opaque-key", limit: 1, windowMs: 60_000 };
     limiter.assert(rule);
 
