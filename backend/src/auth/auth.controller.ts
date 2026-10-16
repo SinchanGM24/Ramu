@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   HttpCode,
@@ -14,7 +15,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
-import { AuthService } from "./auth.service";
+import { AuthService, Role } from "./auth.service";
 import { ensureDefaultTkFramework } from "../assessment/ensure-default-tk-framework";
 
 const registrationSchema = z.object({
@@ -71,7 +72,8 @@ export class AuthController {
       "SELECT 1 FROM users WHERE lower(email) = lower($1)",
       [input.email],
     );
-    if (existing.rowCount) return { message: "Email sudah digunakan" };
+    if (existing.rowCount)
+      throw new ConflictException("Email sudah digunakan sebagai akun sekolah.");
     const passwordHash = await this.auth.hashPassword(input.password);
     const schoolId = crypto.randomUUID();
     const created = await this.db.transaction(async (client) => {
@@ -116,19 +118,25 @@ export class AuthController {
     ) {
       throw new UnauthorizedException("Email atau kata sandi salah");
     }
-    const membership = await this.db.transaction(async (client) => {
+    const memberships = await this.db.transaction(async (client) => {
       await client.query("SELECT set_config('app.user_id', $1, true)", [
         user.id,
       ]);
       return (
-        await client.query<{ school_id: string; role: string }>(
-          "SELECT school_id, role FROM school_memberships WHERE user_id=$1 AND is_active ORDER BY created_at LIMIT 1",
+        await client.query<{ school_id: string; role: Role }>(
+          "SELECT school_id, role FROM school_memberships WHERE user_id=$1 AND is_active",
           [user.id],
         )
-      ).rows[0];
+      ).rows;
     });
-    if (!membership)
+    if (!memberships.length)
       throw new UnauthorizedException("Akun tidak memiliki akses sekolah");
+    if (memberships.length > 1) {
+      throw new ConflictException(
+        "Akun terhubung ke lebih dari satu sekolah. Hubungi Admin Sekolah untuk memperbaiki akses akun.",
+      );
+    }
+    const membership = memberships[0];
     await this.auth.createSession(user.id, membership.school_id, reply);
     return { schoolId: membership.school_id, role: membership.role };
   }

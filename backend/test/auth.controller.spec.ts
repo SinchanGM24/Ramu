@@ -1,4 +1,8 @@
-import { BadRequestException, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { describe, expect, it } from "vitest";
 import { AuthController } from "../src/auth/auth.controller";
 
@@ -28,6 +32,88 @@ describe("AuthController login", () => {
         {} as never,
       ),
     ).rejects.toThrow(UnauthorizedException);
+    expect(createdSession).toBe(false);
+  });
+
+  it("creates a session from the account's sole active school membership", async () => {
+    const queries: string[] = [];
+    const db = {
+      query: async () => ({
+        rows: [{ id: "user-a", password_hash: "stored-password-hash" }],
+      }),
+      transaction: async (
+        callback: (client: { query: (sql: string) => Promise<unknown> }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async (sql: string) => {
+            queries.push(sql);
+            if (sql.startsWith("SELECT school_id")) {
+              return { rows: [{ school_id: "school-a", role: "TEACHER" }] };
+            }
+            return { rows: [] };
+          },
+        }),
+    };
+    const createdSessions: Array<[string, string]> = [];
+    const auth = {
+      verifyPassword: async () => true,
+      createSession: async (userId: string, schoolId: string) => {
+        createdSessions.push([userId, schoolId]);
+      },
+    };
+    const controller = new AuthController(
+      db as never,
+      auth as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.login(
+        { email: "guru.aisyah@ramu.test", password: "kata-sandi" },
+        {} as never,
+      ),
+    ).resolves.toEqual({ schoolId: "school-a", role: "TEACHER" });
+
+    expect(createdSessions).toEqual([["user-a", "school-a"]]);
+    expect(queries.some((sql) => sql.includes("ORDER BY"))).toBe(false);
+  });
+
+  it("rejects ambiguous active school memberships instead of choosing one", async () => {
+    const db = {
+      query: async () => ({
+        rows: [{ id: "user-a", password_hash: "stored-password-hash" }],
+      }),
+      transaction: async (
+        callback: (client: { query: () => Promise<unknown> }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async () => ({
+            rows: [
+              { school_id: "school-a", role: "TEACHER" },
+              { school_id: "school-b", role: "PRINCIPAL" },
+            ],
+          }),
+        }),
+    };
+    let createdSession = false;
+    const auth = {
+      verifyPassword: async () => true,
+      createSession: async () => {
+        createdSession = true;
+      },
+    };
+    const controller = new AuthController(
+      db as never,
+      auth as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.login(
+        { email: "guru.aisyah@ramu.test", password: "kata-sandi" },
+        {} as never,
+      ),
+    ).rejects.toThrow(ConflictException);
     expect(createdSession).toBe(false);
   });
 

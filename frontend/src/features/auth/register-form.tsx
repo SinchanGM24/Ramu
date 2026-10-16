@@ -34,7 +34,7 @@ export function RegisterForm() {
 	return (
 		<AuthShell
 			title="Daftarkan sekolah"
-			description="Buat ruang kerja RAMU untuk sekolah Anda dalam beberapa menit."
+			description="Buat akun Admin Sekolah dan ruang kerja RAMU untuk sekolah Anda. Akun Guru dan Kepala Sekolah dikelola setelah masuk."
 			footer={
 				<>
 					Sudah memiliki akun?{" "}
@@ -46,7 +46,7 @@ export function RegisterForm() {
 		>
 			<form onSubmit={submit} className="space-y-4">
 				<label className="block text-sm font-semibold text-[#314137]">
-					Nama Anda
+					Nama Admin Sekolah
 					<input
 						required
 						name="name"
@@ -90,7 +90,7 @@ export function RegisterForm() {
 					</p>
 				)}
 				<Button className="w-full" disabled={loading}>
-					{loading ? "Membuat ruang kerja…" : "Buat akun sekolah"}
+					{loading ? "Membuat ruang kerja…" : "Buat akun Admin Sekolah"}
 				</Button>
 			</form>
 		</AuthShell>
