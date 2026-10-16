@@ -23,7 +23,7 @@ describe("AuthController login", () => {
     const request = { ip: "203.0.113.4" } as never;
     const body = { email: "guru@contoh.test", password: "kata-sandi" };
 
-    for (let attempt = 0; attempt < 15; attempt += 1) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
       await expect(controller.login(body, {} as never, request)).rejects.toThrow(
         UnauthorizedException,
       );
@@ -31,7 +31,7 @@ describe("AuthController login", () => {
     await expect(
       controller.login(body, {} as never, request),
     ).rejects.toMatchObject({ status: 429 });
-    expect(queryCount).toBe(15);
+    expect(queryCount).toBe(10);
   });
 
   it("returns an unauthorized response for invalid credentials without creating a session", async () => {

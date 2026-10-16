@@ -131,7 +131,7 @@ export class AuthController {
     });
     this.rateLimiter.assert({
       key: `login:identity:${ip}:${email}`,
-      limit: 15,
+      limit: 10,
       windowMs: fifteenMinutes,
     });
     const account = await this.db.query<{ id: string; password_hash: string }>(
