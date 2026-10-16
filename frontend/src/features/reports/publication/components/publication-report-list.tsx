@@ -7,13 +7,19 @@ import { PaginationControls } from "@/components/shared/pagination-controls";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { BatchPublishAction } from "./batch-publish-action";
 import { PublishReportAction } from "./publish-report-action";
-import type { DeliveryStatus, PublicationReport, PublicationStatus } from "../types";
+import type {
+	DeliveryFilter,
+	DeliveryStatus,
+	PublicationReport,
+	PublicationStatus,
+} from "../types";
 
 type PublicationReportListProps = {
 	canPublish: boolean;
 	batchPending: boolean;
 	batchProgress?: { completed: number; total: number } | null;
 	counts: { approved: number; published: number; waitingReview: number };
+	deliveryFilter: DeliveryFilter;
 	loading: boolean;
 	page: number;
 	pending: boolean;
@@ -21,6 +27,7 @@ type PublicationReportListProps = {
 	search: string;
 	total: number;
 	onPageChange: (page: number) => void;
+	onDeliveryFilterChange: (filter: DeliveryFilter) => void;
 	onPublish: (reportId: string) => void;
 	onPublishBatch: () => void;
 	onSearchChange: (value: string) => void;
@@ -66,16 +73,19 @@ const deliveryStatusCopy: Record<
 
 const deliveryLegend = [
 	{
+		filter: "NEEDS_DELIVERY" as const,
 		Icon: Send,
 		label: "Belum dibuka",
 		className: "bg-slate-100 text-slate-500",
 	},
 	{
+		filter: "OPENED" as const,
 		Icon: Check,
 		label: "WhatsApp pernah dibuka",
 		className: "bg-emerald-50 text-emerald-700",
 	},
 	{
+		filter: "FAILED" as const,
 		Icon: RotateCcw,
 		label: "Perlu dicoba lagi",
 		className: "bg-amber-50 text-amber-700",
@@ -87,6 +97,7 @@ export function PublicationReportList({
 	batchPending,
 	batchProgress,
 	counts,
+	deliveryFilter,
 	loading,
 	page,
 	pending,
@@ -94,6 +105,7 @@ export function PublicationReportList({
 	search,
 	total,
 	onPageChange,
+	onDeliveryFilterChange,
 	onPublish,
 	onPublishBatch,
 	onSearchChange,
@@ -125,7 +137,7 @@ export function PublicationReportList({
 				</div>
 			</div>
 			<div className="space-y-3 px-5 py-4 sm:px-6">
-				<DeliveryStatusLegend />
+				<DeliveryStatusLegend filter={deliveryFilter} onFilterChange={onDeliveryFilterChange} />
 				<label className="relative block">
 					<span className="sr-only">Cari nama murid</span>
 					<Search
@@ -250,7 +262,13 @@ export function PublicationReportList({
 	);
 }
 
-function DeliveryStatusLegend() {
+function DeliveryStatusLegend({
+	filter,
+	onFilterChange,
+}: {
+	filter: DeliveryFilter;
+	onFilterChange: (filter: DeliveryFilter) => void;
+}) {
 	return (
 		<div className="rounded-2xl border border-brand-100 bg-[linear-gradient(105deg,#f3f8ef_0%,#fffefa_52%,#f7faf4_100%)] p-3 shadow-[0_4px_16px_rgba(28,64,39,0.05)] sm:p-4">
 			<div className="flex items-start gap-3">
@@ -260,21 +278,33 @@ function DeliveryStatusLegend() {
 				<div className="min-w-0">
 					<p className="text-sm font-bold text-[#1d3524]">Arti ikon pengiriman</p>
 					<p className="mt-0.5 text-xs leading-5 text-[#637065]">
-						Ikon hanya menjadi penanda handoff WhatsApp, bukan bukti pesan telah terkirim.
+						Pilih ikon untuk memfilter. Ikon hanya menandai handoff WhatsApp, bukan bukti pesan
+						terkirim.
 					</p>
 				</div>
 			</div>
-			<div className="mt-3 grid gap-2 sm:grid-cols-3">
-				{deliveryLegend.map(({ Icon, className, label }) => (
-					<div
+			<div className="mt-3 flex flex-wrap gap-2">
+				<button
+					type="button"
+					aria-pressed={filter === "ALL"}
+					className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${filter === "ALL" ? "border-brand-500 bg-brand-600 text-white shadow-sm" : "border-white/80 bg-white/70 text-[#4b594e] hover:border-brand-200 hover:bg-white"}`}
+					onClick={() => onFilterChange("ALL")}
+				>
+					Semua
+				</button>
+				{deliveryLegend.map(({ Icon, className, filter: itemFilter, label }) => (
+					<button
 						key={label}
-						className="flex min-w-0 items-center gap-2 rounded-xl border border-white/80 bg-white/70 px-2.5 py-2 text-xs font-medium text-[#4b594e]"
+						type="button"
+						aria-pressed={filter === itemFilter}
+						className={`flex min-w-0 items-center gap-2 rounded-xl border px-2.5 py-2 text-xs font-medium transition ${filter === itemFilter ? "border-brand-500 bg-white text-[#1d3524] ring-2 ring-brand-100" : "border-white/80 bg-white/70 text-[#4b594e] hover:border-brand-200 hover:bg-white"}`}
+						onClick={() => onFilterChange(itemFilter)}
 					>
 						<span className={`grid size-7 shrink-0 place-items-center rounded-lg ${className}`}>
 							<Icon aria-hidden="true" size={14} strokeWidth={2.3} />
 						</span>
 						<span className="leading-4">{label}</span>
-					</div>
+					</button>
 				))}
 			</div>
 		</div>

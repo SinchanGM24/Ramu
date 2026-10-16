@@ -66,6 +66,7 @@ export function ReportPublicationPage() {
 				batchPending={publication.publish.isPending || publication.publishBatch.isPending}
 				batchProgress={publication.batchProgress}
 				counts={publication.counts}
+				deliveryFilter={publication.deliveryFilter}
 				loading={publication.progress.isLoading}
 				page={publication.page}
 				pending={publication.publish.isPending || publication.publishBatch.isPending}
@@ -73,6 +74,7 @@ export function ReportPublicationPage() {
 				search={publication.search}
 				total={publication.filteredReports.length}
 				onPageChange={publication.setPage}
+				onDeliveryFilterChange={publication.setDeliveryFilter}
 				onPublish={(reportId) => publication.publish.mutate(reportId)}
 				onPublishBatch={() =>
 					publication.publishBatch.mutate(

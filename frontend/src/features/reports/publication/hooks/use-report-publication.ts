@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { authSessionQueryOptions } from "@/features/auth/session";
-import type { PublicationReport, Semester } from "../types";
+import type { DeliveryFilter, PublicationReport, Semester } from "../types";
 
 const pageSize = 10;
 
@@ -11,6 +11,7 @@ export function useReportPublication() {
 	const queryClient = useQueryClient();
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
+	const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>("ALL");
 	const [notice, setNotice] = useState("");
 	const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number } | null>(
 		null,
@@ -95,20 +96,23 @@ export function useReportPublication() {
 	);
 	const filteredReports = useMemo(
 		() =>
-			reports.filter((item) =>
-				item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
-			),
-		[debouncedSearch, reports],
+			reports
+				.filter((item) =>
+					item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
+				)
+				.filter((item) => matchesDeliveryFilter(item, deliveryFilter)),
+		[debouncedSearch, deliveryFilter, reports],
 	);
 
 	useEffect(() => {
 		setPage(1);
-	}, [debouncedSearch, semesterId]);
+	}, [debouncedSearch, deliveryFilter, semesterId]);
 
 	return {
 		canPublish: session.data?.role === "SCHOOL_ADMIN",
 		batchProgress,
 		counts,
+		deliveryFilter,
 		error:
 			publish.error instanceof Error
 				? publish.error.message
@@ -127,6 +131,7 @@ export function useReportPublication() {
 		semesterId,
 		activeSemester,
 		setPage,
+		setDeliveryFilter,
 		setSearch,
 	};
 }
@@ -146,4 +151,21 @@ function latestActivity(report: PublicationReport) {
 	const timestamp = report.report_updated_at || report.submitted_at;
 	const parsed = timestamp ? Date.parse(timestamp) : Number.NaN;
 	return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function matchesDeliveryFilter(report: PublicationReport, filter: DeliveryFilter) {
+	if (filter === "ALL") return true;
+	if (filter === "FAILED") return report.delivery_status === "FAILED";
+	if (filter === "OPENED") {
+		return (
+			Boolean(report.delivery_whatsapp_opened_at) ||
+			["SENT", "DELIVERED", "READ"].includes(report.delivery_status ?? "")
+		);
+	}
+
+	return (
+		report.status === "PUBLISHED" &&
+		!report.delivery_whatsapp_opened_at &&
+		(!report.delivery_status || report.delivery_status === "QUEUED")
+	);
 }

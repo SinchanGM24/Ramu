@@ -1,5 +1,6 @@
 export type PublicationStatus = "SUBMITTED" | "IN_REVIEW" | "APPROVED" | "PUBLISHED";
 export type DeliveryStatus = "QUEUED" | "SENT" | "DELIVERED" | "READ" | "FAILED";
+export type DeliveryFilter = "ALL" | "NEEDS_DELIVERY" | "OPENED" | "FAILED";
 
 export type PublicationReport = {
 	id: string;
