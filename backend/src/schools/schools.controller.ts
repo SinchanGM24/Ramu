@@ -14,6 +14,7 @@ import { z } from "zod";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import { ImageValidationService } from "../files/image-validation.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 
 @Controller("schools/current")
@@ -23,6 +24,7 @@ export class SchoolsController {
     private readonly db: DatabaseService,
     private readonly audit: AuditService,
     private readonly files: ReportPdfService,
+    private readonly images: ImageValidationService,
   ) {}
   @Get() async current(@Req() request: FastifyRequest) {
     const session = this.auth.require(request);
@@ -72,21 +74,24 @@ export class SchoolsController {
   @Post("logo") async uploadLogo(@Req() request: FastifyRequest) {
     const session = this.auth.require(request, ["SCHOOL_ADMIN"]);
     const file = await request.file();
-    if (!file || !["image/jpeg", "image/png"].includes(file.mimetype))
+    if (!file)
       throw new BadRequestException("Pilih logo berformat JPG atau PNG.");
-    const body = await file.toBuffer();
-    if (!body.length || body.length > 2 * 1024 * 1024)
-      throw new BadRequestException("Ukuran logo maksimal 2 MB.");
+    const image = await this.images.validateAndNormalize({
+      body: await file.toBuffer(),
+      declaredContentType: file.mimetype,
+      purpose: "SCHOOL_LOGO",
+    });
     const storageKey = await this.files.storeSchoolLogo({
       schoolId: session.schoolId,
-      contentType: file.mimetype,
-      body,
+      contentType: image.contentType,
+      extension: image.extension,
+      body: image.body,
     });
     return this.db.transaction(async (client) => {
       const saved = (
         await client.query(
           "UPDATE schools SET logo_storage_key=$1,logo_content_type=$2,updated_at=now() WHERE id=$3 RETURNING id,name,slug,address,phone,logo_storage_key IS NOT NULL AS has_logo",
-          [storageKey, file.mimetype, session.schoolId],
+          [storageKey, image.contentType, session.schoolId],
         )
       ).rows[0];
       await this.audit.record(

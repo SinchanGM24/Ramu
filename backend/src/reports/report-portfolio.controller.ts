@@ -11,6 +11,7 @@ import type { FastifyRequest } from "fastify";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import { ImageValidationService } from "../files/image-validation.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 import { assertReportAccess } from "./report-authorization";
 
@@ -23,6 +24,7 @@ export class ReportPortfolioController {
     private readonly db: DatabaseService,
     private readonly audit: AuditService,
     private readonly files: ReportPdfService,
+    private readonly images: ImageValidationService,
   ) {}
 
   @Get(":id/portfolio")
@@ -49,8 +51,11 @@ export class ReportPortfolioController {
     const file = await request.file();
     if (!file || !acceptedImageTypes.has(file.mimetype))
       throw new BadRequestException("Pilih foto JPG, PNG, atau WebP");
-    const buffer = await file.toBuffer();
-    if (!buffer.length) throw new BadRequestException("Foto portfolio kosong");
+    const image = await this.images.validateAndNormalize({
+      body: await file.toBuffer(),
+      declaredContentType: file.mimetype,
+      purpose: "PORTFOLIO",
+    });
     const fields = file.fields as Record<string, { value?: string }>;
     const caption = fields.caption?.value?.trim().slice(0, 500) || null;
     const included = fields.includedInReport?.value !== "false";
@@ -70,8 +75,9 @@ export class ReportPortfolioController {
         schoolId: actor.schoolId,
         reportId: id,
         filename: file.filename,
-        contentType: file.mimetype,
-        body: buffer,
+        contentType: image.contentType,
+        extension: image.extension,
+        body: image.body,
       });
       const saved = (
         await client.query(
@@ -83,8 +89,8 @@ export class ReportPortfolioController {
             report.semester_id,
             storageKey,
             file.filename.slice(0, 255),
-            file.mimetype,
-            buffer.length,
+            image.contentType,
+            image.body.length,
             caption,
             included,
             actor.userId,

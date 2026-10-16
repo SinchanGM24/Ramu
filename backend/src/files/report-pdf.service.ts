@@ -155,9 +155,10 @@ export class ReportPdfService {
   async storeSchoolLogo(input: {
     schoolId: string;
     contentType: string;
+    extension?: string;
     body: Buffer;
   }) {
-    const extension = input.contentType === "image/png" ? "png" : "jpg";
+    const extension = input.extension || "jpg";
     const key = `schools/${input.schoolId}/profile/logo-${crypto.randomUUID()}.${extension}`;
     await this.ensureBucket();
     await this.client.send(
@@ -176,14 +177,10 @@ export class ReportPdfService {
     reportId: string;
     filename: string;
     contentType: string;
+    extension?: string;
     body: Buffer;
   }) {
-    const extension =
-      input.contentType === "image/png"
-        ? "png"
-        : input.contentType === "image/webp"
-          ? "webp"
-          : "jpg";
+    const extension = input.extension || "jpg";
     const key = `schools/${input.schoolId}/reports/${input.reportId}/portfolio/${crypto.randomUUID()}.${extension}`;
     await this.ensureBucket();
     await this.client.send(
