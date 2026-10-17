@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { config } from "dotenv";
 import { Pool, type PoolClient } from "pg";
@@ -14,6 +14,8 @@ type TenantFixture = {
   deliveryId: string;
   guardianId: string;
   lifecycleEventId: string;
+  parentPin: string;
+  parentToken: string;
   reportId: string;
   reportVersionId: string;
   schoolId: string;
@@ -125,9 +127,15 @@ async function insertTenantFixture(
   const reportVersion = await client.query<{ id: string }>(
     `INSERT INTO report_versions(
        school_id, report_id, version_number, snapshot, pdf_storage_key, published_by
-     ) VALUES($1, $2, 1, '{}'::jsonb, $3, $4)
+     ) VALUES($1, $2, 1, $3::jsonb, $4, $5)
      RETURNING id`,
-    [schoolId, reportId, `fixtures/${input.label}.pdf`, userId],
+    [
+      schoolId,
+      reportId,
+      JSON.stringify({ tenant: input.label }),
+      `fixtures/${input.label}.pdf`,
+      userId,
+    ],
   );
   const reportVersionId = reportVersion.rows[0]?.id;
   if (!reportVersionId)
@@ -142,6 +150,20 @@ async function insertTenantFixture(
   );
   const deliveryId = delivery.rows[0]?.id;
   if (!deliveryId) throw new Error("Pengiriman fixture tidak dapat dibuat.");
+
+  const parentToken = `parent-token-${input.label}-${input.suffix}`;
+  const parentPin = "123456";
+  await client.query(
+    `INSERT INTO report_access(
+       school_id, report_version_id, token_hash, pin_hash
+     ) VALUES($1, $2, $3, $4)`,
+    [
+      schoolId,
+      reportVersionId,
+      createHash("sha256").update(parentToken).digest("hex"),
+      createHash("sha256").update(parentPin).digest("hex"),
+    ],
+  );
 
   const operation = await client.query<{ id: string }>(
     `INSERT INTO lifecycle_operations(school_id, operation_type, actor_user_id)
@@ -169,6 +191,8 @@ async function insertTenantFixture(
     deliveryId,
     guardianId,
     lifecycleEventId,
+    parentPin,
+    parentToken,
     reportId,
     reportVersionId,
     schoolId,
@@ -273,6 +297,31 @@ describeIntegration("tenant RLS isolation", () => {
       );
 
       expect(hidden.rowCount).toBe(0);
+
+      const verifiedParent = await client.query<{
+        result: { reportVersionId: string } | null;
+      }>("SELECT public.verify_parent_report($1, $2) AS result", [
+        second.parentToken,
+        second.parentPin,
+      ]);
+      expect(verifiedParent.rows[0]?.result).toEqual({
+        reportVersionId: second.reportVersionId,
+      });
+
+      const parentSessionToken = `parent-session-${suffix}`;
+      await client.query(
+        `INSERT INTO parent_report_sessions(report_version_id, token_hash, expires_at)
+         VALUES($1, $2, now() + interval '1 hour')`,
+        [
+          second.reportVersionId,
+          createHash("sha256").update(parentSessionToken).digest("hex"),
+        ],
+      );
+      const parentReport = await client.query<{ report: { tenant: string } }>(
+        "SELECT public.get_parent_report($1) AS report",
+        [parentSessionToken],
+      );
+      expect(parentReport.rows[0]?.report).toMatchObject({ tenant: "dua" });
     } finally {
       await client.query("RESET ROLE");
     }
