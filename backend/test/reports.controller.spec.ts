@@ -184,6 +184,50 @@ describe("ReportsController", () => {
     expect(queries[0]?.sql).toContain("FOR UPDATE OF r");
   });
 
+  it("rejects a second publication attempt while the first attempt holds the report lock", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    let pdfCalls = 0;
+    const pdf = {
+      storePublishedReport: async () => {
+        pdfCalls += 1;
+      },
+    };
+    const client = {
+      query: async (sql: string, values: unknown[]) => {
+        queries.push({ sql, values });
+        return {
+          rows: [
+            {
+              id: "report-1",
+              status: "APPROVED",
+              publication_lock_token: "lock-first-publication",
+              publication_locked_at: new Date(),
+            },
+          ],
+        };
+      },
+    };
+    const db = {
+      transaction: async (
+        callback: (input: typeof client) => Promise<unknown>,
+      ) => callback(client),
+    };
+    const controller = new ReportsController(
+      new AuthService({} as never),
+      db as never,
+      {} as never,
+      pdf as never,
+    );
+
+    await expect(
+      controller.publishForActor(schoolAdminRequest.auth, "report-1"),
+    ).rejects.toThrow("Raport sedang diproses untuk diterbitkan");
+
+    expect(queries).toHaveLength(1);
+    expect(queries[0]?.sql).toContain("FOR UPDATE OF r");
+    expect(pdfCalls).toBe(0);
+  });
+
   it("casts the report status update and uses boolean transition flags", async () => {
     const queries: Array<{ sql: string; values: unknown[] }> = [];
     const client = {
@@ -277,8 +321,18 @@ describe("report progress pagination", () => {
     const result = paginateProgressRows(
       [
         { id: "student-1", name: "Alya", status: null },
-        { id: "student-2", name: "Bima", report_id: "report-2", status: "DRAFT" },
-        { id: "student-3", name: "Citra", report_id: "report-3", status: "SUBMITTED" },
+        {
+          id: "student-2",
+          name: "Bima",
+          report_id: "report-2",
+          status: "DRAFT",
+        },
+        {
+          id: "student-3",
+          name: "Citra",
+          report_id: "report-3",
+          status: "SUBMITTED",
+        },
       ],
       {
         page: 1,
@@ -289,9 +343,15 @@ describe("report progress pagination", () => {
       },
     );
 
-    expect(result.items).toEqual([{ id: "student-1", name: "Alya", status: null }]);
+    expect(result.items).toEqual([
+      { id: "student-1", name: "Alya", status: null },
+    ]);
     expect(result.total).toBe(2);
-    expect(result.summary).toMatchObject({ notCreated: 1, draft: 1, review: 0 });
+    expect(result.summary).toMatchObject({
+      notCreated: 1,
+      draft: 1,
+      review: 0,
+    });
   });
 
   it("prioritizes published reports that still need WhatsApp handoff", () => {
@@ -322,6 +382,9 @@ describe("report progress pagination", () => {
       },
     );
 
-    expect(result.items.map((item) => item.id)).toEqual(["student-1", "student-2"]);
+    expect(result.items.map((item) => item.id)).toEqual([
+      "student-1",
+      "student-2",
+    ]);
   });
 });
