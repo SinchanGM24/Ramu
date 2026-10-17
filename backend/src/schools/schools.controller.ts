@@ -14,6 +14,10 @@ import { z } from "zod";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import {
+  rateLimitFingerprint,
+  RequestRateLimiter,
+} from "../common/request-rate-limiter";
 import { ImageValidationService } from "../files/image-validation.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 
@@ -25,6 +29,7 @@ export class SchoolsController {
     private readonly audit: AuditService,
     private readonly files: ReportPdfService,
     private readonly images: ImageValidationService,
+    private readonly rateLimiter: RequestRateLimiter = new RequestRateLimiter(),
   ) {}
   @Get() async current(@Req() request: FastifyRequest) {
     const session = this.auth.require(request);
@@ -73,6 +78,11 @@ export class SchoolsController {
   }
   @Post("logo") async uploadLogo(@Req() request: FastifyRequest) {
     const session = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    this.rateLimiter.assert({
+      key: `upload:school-logo:${rateLimitFingerprint(`${session.schoolId}:${session.userId}`)}`,
+      limit: 10,
+      windowMs: 15 * 60_000,
+    });
     const file = await request.file();
     if (!file)
       throw new BadRequestException("Pilih logo berformat JPG atau PNG.");

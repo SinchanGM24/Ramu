@@ -11,6 +11,10 @@ import type { FastifyRequest } from "fastify";
 import { AuditService } from "../audit/audit.service";
 import { AuthService } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
+import {
+  rateLimitFingerprint,
+  RequestRateLimiter,
+} from "../common/request-rate-limiter";
 import { ImageValidationService } from "../files/image-validation.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 import { assertReportAccess } from "./report-authorization";
@@ -25,6 +29,7 @@ export class ReportPortfolioController {
     private readonly audit: AuditService,
     private readonly files: ReportPdfService,
     private readonly images: ImageValidationService,
+    private readonly rateLimiter: RequestRateLimiter = new RequestRateLimiter(),
   ) {}
 
   @Get(":id/portfolio")
@@ -48,6 +53,11 @@ export class ReportPortfolioController {
   @Post(":id/portfolio")
   async upload(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    this.rateLimiter.assert({
+      key: `upload:portfolio:${rateLimitFingerprint(`${actor.schoolId}:${actor.userId}`)}`,
+      limit: 30,
+      windowMs: 15 * 60_000,
+    });
     const file = await request.file();
     if (!file || !acceptedImageTypes.has(file.mimetype))
       throw new BadRequestException("Pilih foto JPG, PNG, atau WebP");
