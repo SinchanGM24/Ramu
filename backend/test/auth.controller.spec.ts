@@ -168,6 +168,8 @@ describe("AuthController login", () => {
       require: () => ({ userId: "user-a", schoolId: "school-a" }),
       verifyPassword: async () => false,
       hashPassword: async () => "new-password-hash",
+      revokeAllUserSessions: async () => undefined,
+      createSessionWithClient: async () => undefined,
     };
     const controller = new AuthController(
       db as never,
@@ -213,10 +215,18 @@ describe("AuthController login", () => {
         auditEvents.push(event);
       },
     };
+    const revokedUsers: string[] = [];
+    const createdSessions: Array<[string, string]> = [];
     const auth = {
       require: () => ({ userId: "user-a", schoolId: "school-a" }),
       verifyPassword: async () => true,
       hashPassword: async () => "new-password-hash",
+      revokeAllUserSessions: async (userId: string) => {
+        revokedUsers.push(userId);
+      },
+      createSessionWithClient: async (userId: string, schoolId: string) => {
+        createdSessions.push([userId, schoolId]);
+      },
     };
     const controller = new AuthController(
       db as never,
@@ -245,5 +255,7 @@ describe("AuthController login", () => {
         entityId: "user-a",
       }),
     ]);
+    expect(revokedUsers).toEqual(["user-a"]);
+    expect(createdSessions).toEqual([["user-a", "school-a"]]);
   });
 });

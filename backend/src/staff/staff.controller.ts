@@ -153,6 +153,7 @@ export class StaffController {
               : null,
           ],
         );
+      if (input.password) await this.auth.revokeAllUserSessions(userId, c);
       await this.audit.record(
         {
           schoolId: actor.schoolId,

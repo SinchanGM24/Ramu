@@ -197,7 +197,11 @@ export class AuthController {
   }
 
   @Patch("profile")
-  async updateProfile(@Req() request: FastifyRequest, @Body() body: unknown) {
+  async updateProfile(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+    @Res({ passthrough: true }) reply: FastifyReply = {} as FastifyReply,
+  ) {
     const actor = this.auth.require(request);
     const input = profileSchema.parse(body);
     return this.db.transaction(async (client) => {
@@ -229,6 +233,13 @@ export class AuthController {
         )
       ).rows[0];
       if (input.password) {
+        await this.auth.revokeAllUserSessions(actor.userId, client);
+        await this.auth.createSessionWithClient(
+          actor.userId,
+          actor.schoolId,
+          reply,
+          client,
+        );
         await this.audit.record(
           {
             schoolId: actor.schoolId,
