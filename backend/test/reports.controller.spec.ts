@@ -68,7 +68,25 @@ describe("ReportsController", () => {
     const client = {
       query: async (sql: string, values?: unknown[]) => {
         queries.push({ sql, values });
-        return { rows: [] };
+        return {
+          rows: [
+            {
+              items: [],
+              total: 0,
+              summary: {
+                total: 0,
+                notCreated: 0,
+                draft: 0,
+                review: 0,
+                publish: 0,
+                published: 0,
+                waitingReview: 0,
+                approved: 0,
+                correction: 0,
+              },
+            },
+          ],
+        };
       },
     };
     const db = {
@@ -94,6 +112,11 @@ describe("ReportsController", () => {
       null,
       expect.any(String),
       "school-1",
+      "ALL",
+      "",
+      "ALL",
+      10,
+      0,
     ]);
   });
 

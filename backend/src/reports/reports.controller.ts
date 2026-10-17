@@ -64,6 +64,18 @@ type ProgressRow = {
   delivery_whatsapp_opened_at?: string | Date | null;
 };
 
+type ProgressSummary = {
+  total: number;
+  notCreated: number;
+  draft: number;
+  review: number;
+  publish: number;
+  published: number;
+  waitingReview: number;
+  approved: number;
+  correction: number;
+};
+
 @Controller("reports")
 export class ReportsController {
   private readonly logger = new Logger(ReportsController.name);
@@ -95,7 +107,7 @@ export class ReportsController {
     });
     return this.db.transaction(async (client) => {
       await assertTeacherActiveSemester(client, actor, semesterId);
-      const rows = (
+      const result = (
         await client.query(
           `WITH framework_totals AS (
               SELECT count(DISTINCT indicator.id)::int AS indicator_count,count(DISTINCT area.id)::int AS narrative_count
@@ -120,8 +132,8 @@ export class ReportsController {
               JOIN assessment_frameworks framework ON framework.id=area.framework_id AND framework.school_id=narrative.school_id
               WHERE narrative.school_id=$4 AND framework.name=$3 AND framework.is_active AND btrim(narrative.content)<>''
               GROUP BY narrative.report_id
-            )
-            SELECT DISTINCT student.id,student.name,report.id AS report_id,report.status,
+            ), progress_rows AS (
+            SELECT student.id,student.name,report.id AS report_id,report.status,
               report.submitted_at,report.updated_at AS report_updated_at,
               (SELECT version.version_number
                FROM report_versions version
@@ -154,19 +166,103 @@ export class ReportsController {
             LEFT JOIN assessment_progress ON assessment_progress.student_id=student.id
             LEFT JOIN narrative_progress ON narrative_progress.report_id=report.id
             LEFT JOIN attendance_summaries attendance ON attendance.student_id=student.id AND attendance.semester_id=$1 AND attendance.school_id=enrollment.school_id
-            LEFT JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.school_id=enrollment.school_id AND assignment.ended_at IS NULL
             CROSS JOIN framework_totals
-            WHERE enrollment.school_id=$4 AND enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) AND student.lifecycle_status='ACTIVE' AND ($2::uuid IS NULL OR assignment.teacher_user_id=$2)
-            ORDER BY student.name`,
+            WHERE enrollment.school_id=$4 AND enrollment.academic_year_id=semester.academic_year_id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) AND student.lifecycle_status='ACTIVE'
+              AND ($2::uuid IS NULL OR EXISTS (
+                SELECT 1
+                FROM teacher_class_assignments assignment
+                WHERE assignment.school_id=enrollment.school_id
+                  AND assignment.class_period_id=enrollment.class_period_id
+                  AND assignment.teacher_user_id=$2
+                  AND assignment.ended_at IS NULL
+              ))
+            ), scoped AS (
+              SELECT * FROM progress_rows
+              WHERE $5::text='ALL'
+                OR ($5::text='EDITOR' AND (status IS NULL OR status IN ('DRAFT','REVISION_REQUIRED')))
+                OR ($5::text='PUBLICATION' AND report_id IS NOT NULL AND (
+                  status IN ('SUBMITTED','IN_REVIEW','APPROVED','PUBLISHED')
+                  OR (latest_published_version_number IS NOT NULL AND status IN ('DRAFT','REVISION_REQUIRED'))
+                ))
+            ), filtered AS (
+              SELECT * FROM scoped
+              WHERE lower(name) LIKE '%' || lower($6::text) || '%'
+                AND (
+                  $7::text='ALL'
+                  OR ($7::text='FAILED' AND delivery_status='FAILED')
+                  OR ($7::text='OPENED' AND (
+                    delivery_whatsapp_opened_at IS NOT NULL
+                    OR delivery_status IN ('SENT','DELIVERED','READ')
+                  ))
+                  OR ($7::text='NEEDS_DELIVERY' AND status='PUBLISHED'
+                    AND delivery_whatsapp_opened_at IS NULL
+                    AND (delivery_status IS NULL OR delivery_status='QUEUED')
+                  )
+                )
+            ), summary AS (
+              SELECT jsonb_build_object(
+                'total',count(*)::int,
+                'notCreated',count(*) FILTER (WHERE status IS NULL)::int,
+                'draft',count(*) FILTER (WHERE status IN ('DRAFT','REVISION_REQUIRED'))::int,
+                'review',count(*) FILTER (WHERE status IN ('SUBMITTED','IN_REVIEW'))::int,
+                'publish',count(*) FILTER (WHERE status='APPROVED')::int,
+                'published',count(*) FILTER (WHERE status='PUBLISHED' OR latest_published_version_number IS NOT NULL)::int,
+                'waitingReview',count(*) FILTER (WHERE status IN ('SUBMITTED','IN_REVIEW'))::int,
+                'approved',count(*) FILTER (WHERE status='APPROVED')::int,
+                'correction',count(*) FILTER (
+                  WHERE latest_published_version_number IS NOT NULL
+                    AND status IN ('DRAFT','REVISION_REQUIRED')
+                )::int
+              ) AS data
+              FROM scoped
+            )
+            SELECT
+              COALESCE((
+                SELECT jsonb_agg(to_jsonb(paged))
+                FROM (
+                  SELECT *
+                  FROM filtered
+                  ORDER BY
+                    CASE
+                      WHEN $5::text='PUBLICATION'
+                        AND status='PUBLISHED'
+                        AND delivery_whatsapp_opened_at IS NULL
+                        AND (delivery_status IS NULL OR delivery_status IN ('QUEUED','FAILED'))
+                        THEN 0
+                      ELSE 1
+                    END,
+                    CASE WHEN $5::text='PUBLICATION' THEN COALESCE(report_updated_at,submitted_at) END DESC NULLS LAST,
+                    name ASC
+                  LIMIT $8 OFFSET $9
+                ) AS paged
+              ),'[]'::jsonb) AS items,
+              (SELECT count(*)::int FROM filtered) AS total,
+              summary.data AS summary
+            FROM summary`,
           [
             semesterId,
             actor.role === "TEACHER" ? actor.userId : null,
             DEFAULT_TK_TEMPLATE_NAME,
             actor.schoolId,
+            input.view,
+            input.search,
+            input.deliveryFilter,
+            input.limit,
+            (input.page - 1) * input.limit,
           ],
         )
-      ).rows as ProgressRow[];
-      return paginateProgressRows(rows, input);
+      ).rows[0] as {
+        items: ProgressRow[] | null;
+        total: number;
+        summary: ProgressSummary;
+      };
+      return {
+        items: result.items ?? [],
+        total: result.total,
+        page: input.page,
+        limit: input.limit,
+        summary: result.summary,
+      };
     }, actor.schoolId);
   }
 
@@ -697,26 +793,7 @@ export function paginateProgressRows(
   input: z.infer<typeof progressQuery>,
 ) {
   const scoped = rows.filter((row) => matchesProgressView(row, input.view));
-  const summary = {
-    total: scoped.length,
-    notCreated: scoped.filter((row) => !row.status).length,
-    draft: scoped.filter((row) => ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""))
-      .length,
-    review: scoped.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
-      .length,
-    publish: scoped.filter((row) => row.status === "APPROVED").length,
-    published: scoped.filter(
-      (row) => row.status === "PUBLISHED" || Boolean(row.latest_published_version_number),
-    ).length,
-    waitingReview: scoped.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
-      .length,
-    approved: scoped.filter((row) => row.status === "APPROVED").length,
-    correction: scoped.filter(
-      (row) =>
-        Boolean(row.latest_published_version_number) &&
-        ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""),
-    ).length,
-  };
+  const summary = createProgressSummary(scoped);
   const term = input.search.toLocaleLowerCase("id-ID");
   const filtered = scoped
     .filter((row) => row.name.toLocaleLowerCase("id-ID").includes(term))
@@ -729,6 +806,29 @@ export function paginateProgressRows(
     page: input.page,
     limit: input.limit,
     summary,
+  };
+}
+
+function createProgressSummary(rows: ProgressRow[]): ProgressSummary {
+  return {
+    total: rows.length,
+    notCreated: rows.filter((row) => !row.status).length,
+    draft: rows.filter((row) => ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""))
+      .length,
+    review: rows.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
+      .length,
+    publish: rows.filter((row) => row.status === "APPROVED").length,
+    published: rows.filter(
+      (row) => row.status === "PUBLISHED" || Boolean(row.latest_published_version_number),
+    ).length,
+    waitingReview: rows.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
+      .length,
+    approved: rows.filter((row) => row.status === "APPROVED").length,
+    correction: rows.filter(
+      (row) =>
+        Boolean(row.latest_published_version_number) &&
+        ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""),
+    ).length,
   };
 }
 
