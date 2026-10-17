@@ -80,6 +80,7 @@ export class ReportPdfService {
         process.env.OBJECT_STORAGE_SECRET_KEY || "ramu_minio_password",
     },
   });
+  private bucketReady: Promise<void> | undefined;
 
   constructor(private readonly db: DatabaseService) {}
 
@@ -134,6 +135,10 @@ export class ReportPdfService {
     );
 
     return key;
+  }
+
+  async assertStorageReady() {
+    await this.ensureBucket();
   }
 
   async readPublishedReport(storageKey: string) {
@@ -195,11 +200,19 @@ export class ReportPdfService {
   }
 
   private async ensureBucket() {
-    try {
-      await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
-    } catch {
-      await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
+    if (!this.bucketReady) {
+      this.bucketReady = (async () => {
+        try {
+          await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+        } catch {
+          await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
+        }
+      })().catch((error) => {
+        this.bucketReady = undefined;
+        throw error;
+      });
     }
+    await this.bucketReady;
   }
 
   private render(snapshot: Snapshot, schoolLogo?: Buffer): Promise<Buffer> {
