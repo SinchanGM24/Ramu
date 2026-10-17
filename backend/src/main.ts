@@ -14,10 +14,15 @@ import multipart from "@fastify/multipart";
 import { AppModule } from "./app.module";
 import { AuthService } from "./auth/auth.service";
 import { ApiExceptionFilter } from "./common/api-exception.filter";
+import {
+  getTrustedOrigins,
+  validateCookieMutationOrigin,
+} from "./common/origin-policy";
 
 dotenv.config({ path: resolve(__dirname, "../.env") });
 
 async function bootstrap() {
+  const trustedOrigins = getTrustedOrigins();
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
@@ -30,7 +35,7 @@ async function bootstrap() {
     limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   });
   await app.register(cors, {
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:3001",
+    origin: trustedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
@@ -54,6 +59,31 @@ async function bootstrap() {
             : randomUUID();
         request.headers["x-correlation-id"] = correlationId;
         reply.header("X-Correlation-Id", correlationId);
+      },
+    );
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook(
+      "onRequest",
+      async (
+        request: import("fastify").FastifyRequest,
+        reply: import("fastify").FastifyReply,
+      ) => {
+        const message = validateCookieMutationOrigin({
+          method: request.method,
+          cookies: request.cookies,
+          origin: request.headers.origin,
+          referer: request.headers.referer,
+          trustedOrigins,
+        });
+        if (!message) return;
+        return reply.status(403).send({
+          statusCode: 403,
+          message,
+          error: "Forbidden",
+          correlationId: request.headers["x-correlation-id"],
+        });
       },
     );
   app
