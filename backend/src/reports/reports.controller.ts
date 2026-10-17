@@ -17,7 +17,7 @@ import {
   Res,
 } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { createHash, randomBytes, randomInt } from "crypto";
+import { createHash, randomBytes, randomInt, randomUUID } from "crypto";
 import { z } from "zod";
 import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
 import { assertTeacherActiveSemester } from "../academic/active-semester";
@@ -512,7 +512,8 @@ export class ReportsController implements OnModuleInit {
   }
 
   async publishForActor(actor: AuthContext, id: string) {
-    return this.db.transaction(async (client) => {
+    const publicationLockToken = randomUUID();
+    const preparation = await this.db.transaction(async (client) => {
       const report = (
         await client.query<any>(
           `SELECT r.*,school.name AS school_name,school.address AS school_address,school.logo_storage_key AS school_logo_storage_key,s.name AS student_name,s.nickname,s.student_number,s.birth_date,s.birth_place,s.gender,s.religion,s.child_order,s.address,grouping.name AS class_name,sem.name AS semester_name,ay.name AS academic_year_name FROM reports r JOIN schools school ON school.id=r.school_id JOIN students s ON s.id=r.student_id LEFT JOIN student_enrollments enrollment ON enrollment.id=r.student_enrollment_id LEFT JOIN class_periods period ON period.id=enrollment.class_period_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id JOIN semesters sem ON sem.id=r.semester_id JOIN academic_years ay ON ay.id=sem.academic_year_id WHERE r.id=$1 AND r.school_id=$2 FOR UPDATE OF r`,
@@ -524,6 +525,17 @@ export class ReportsController implements OnModuleInit {
         throw new ConflictException(
           "Hanya raport yang disetujui dapat diterbitkan",
         );
+      if (
+        report.publication_lock_token &&
+        report.publication_locked_at &&
+        new Date(report.publication_locked_at).getTime() > Date.now() - 15 * 60_000
+      ) {
+        throw new ConflictException("Raport sedang diproses untuk diterbitkan");
+      }
+      await client.query(
+        "UPDATE reports SET publication_lock_token=$1,publication_locked_at=now(),updated_at=now() WHERE id=$2 AND school_id=$3",
+        [publicationLockToken, id, actor.schoolId],
+      );
       const completeness = await getReportCompleteness(client, {
         id: report.id,
         studentId: report.student_id,
@@ -606,31 +618,55 @@ export class ReportsController implements OnModuleInit {
           [id],
         )
       ).rows[0].next;
-      let pdfStorageKey: string;
-      try {
-        pdfStorageKey = await this.pdf.storePublishedReport({
-          schoolId: actor.schoolId,
-          reportId: id,
-          versionNumber,
-          snapshot,
-        });
-      } catch (error) {
-        this.logger.error(
-          `Gagal membuat atau menyimpan PDF untuk raport ${id}`,
-          error instanceof Error ? error.stack : undefined,
-        );
-        throw new InternalServerErrorException(
-          "PDF raport belum dapat dibuat atau disimpan. Coba terbitkan kembali.",
-        );
-      }
+      return { report, snapshot, versionNumber };
+    }, actor.schoolId);
+
+    let pdfStorageKey: string | undefined;
+    try {
+      pdfStorageKey = await this.pdf.storePublishedReport({
+        schoolId: actor.schoolId,
+        reportId: id,
+        versionNumber: preparation.versionNumber,
+        storageSuffix: publicationLockToken,
+        snapshot: preparation.snapshot,
+      });
+    } catch (error) {
+      await this.releasePublicationLock({
+        schoolId: actor.schoolId,
+        reportId: id,
+        publicationLockToken,
+      });
+      this.logger.error(
+        `Gagal membuat atau menyimpan PDF untuk raport ${id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        "PDF raport belum dapat dibuat atau disimpan. Coba terbitkan kembali.",
+      );
+    }
+
+    try {
+      return await this.db.transaction(async (client) => {
+        const lockedReport = (
+          await client.query<{ id: string }>(
+            `SELECT id
+             FROM reports
+             WHERE id=$1 AND school_id=$2 AND status='APPROVED'
+               AND publication_lock_token=$3
+             FOR UPDATE`,
+            [id, actor.schoolId, publicationLockToken],
+          )
+        ).rows[0];
+        if (!lockedReport)
+          throw new ConflictException("Proses penerbitan raport tidak lagi berlaku");
       const version = (
         await client.query(
           "INSERT INTO report_versions(school_id,report_id,version_number,snapshot,pdf_storage_key,published_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
           [
             actor.schoolId,
             id,
-            versionNumber,
-            snapshot,
+            preparation.versionNumber,
+            preparation.snapshot,
             pdfStorageKey,
             actor.userId,
           ],
@@ -649,11 +685,11 @@ export class ReportsController implements OnModuleInit {
       );
       const deliveries = await client.query(
         "INSERT INTO report_deliveries(school_id,report_version_id,guardian_contact_id,recipient_phone) SELECT $1,$2,g.id,g.phone FROM guardian_contacts g WHERE g.school_id=$1 AND g.student_id=$3 AND g.is_active AND g.is_delivery_recipient RETURNING id",
-        [actor.schoolId, version.id, report.student_id],
+        [actor.schoolId, version.id, preparation.report.student_id],
       );
       await client.query(
-        "UPDATE reports SET status='PUBLISHED',updated_at=now() WHERE id=$1",
-        [id],
+        "UPDATE reports SET status='PUBLISHED',publication_lock_token=NULL,publication_locked_at=NULL,updated_at=now() WHERE id=$1 AND school_id=$2",
+        [id, actor.schoolId],
       );
       await this.audit.record(
         {
@@ -671,7 +707,36 @@ export class ReportsController implements OnModuleInit {
         parentAccess: { link: `/r/${token}`, pin },
         deliveryCount: deliveries.rowCount,
       };
-    }, actor.schoolId);
+      }, actor.schoolId);
+    } catch (error) {
+      await this.pdf.deleteStoredObject(pdfStorageKey).catch((cleanupError) =>
+        this.logger.error(
+          `Gagal membersihkan PDF yatim untuk raport ${id}`,
+          cleanupError instanceof Error ? cleanupError.stack : undefined,
+        ),
+      );
+      await this.releasePublicationLock({
+        schoolId: actor.schoolId,
+        reportId: id,
+        publicationLockToken,
+      });
+      throw error;
+    }
+  }
+
+  private async releasePublicationLock(input: {
+    schoolId: string;
+    reportId: string;
+    publicationLockToken: string;
+  }) {
+    await this.db.transaction(async (client) => {
+      await client.query(
+        `UPDATE reports
+         SET publication_lock_token=NULL,publication_locked_at=NULL,updated_at=now()
+         WHERE id=$1 AND school_id=$2 AND publication_lock_token=$3`,
+        [input.reportId, input.schoolId, input.publicationLockToken],
+      );
+    }, input.schoolId);
   }
 
   @Get(":id/published-version")

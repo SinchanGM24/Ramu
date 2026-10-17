@@ -1,5 +1,6 @@
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
@@ -89,9 +90,11 @@ export class ReportPdfService {
     schoolId: string;
     reportId: string;
     versionNumber: number;
+    storageSuffix?: string;
     snapshot: Snapshot;
   }) {
-    const key = `schools/${input.schoolId}/reports/${input.reportId}/versions/${input.versionNumber}.pdf`;
+    const suffix = input.storageSuffix ? `-${input.storageSuffix}` : "";
+    const key = `schools/${input.schoolId}/reports/${input.reportId}/versions/${input.versionNumber}${suffix}.pdf`;
     const extracurricular = await this.db.transaction(
       async (client) =>
         (
@@ -158,6 +161,17 @@ export class ReportPdfService {
     );
     if (!object.Body) throw new Error("File PDF raport tidak tersedia");
     return Buffer.from(await object.Body.transformToByteArray());
+  }
+
+  async deleteStoredObject(storageKey: string) {
+    await this.measure(
+      "object_storage.object_deleted",
+      () =>
+        this.client.send(
+          new DeleteObjectCommand({ Bucket: this.bucket, Key: storageKey }),
+        ),
+      {},
+    );
   }
 
   async readStoredImage(storageKey: string) {
