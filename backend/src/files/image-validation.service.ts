@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import sharp from "sharp";
 
 type ImagePurpose = "SCHOOL_LOGO" | "PORTFOLIO";
@@ -61,11 +61,14 @@ function detectImageType(buffer: Buffer) {
 
 @Injectable()
 export class ImageValidationService {
+  private readonly logger = new Logger(ImageValidationService.name);
+
   async validateAndNormalize(input: {
     body: Buffer;
     declaredContentType: string;
     purpose: ImagePurpose;
   }): Promise<NormalizedImage> {
+    const startedAt = performance.now();
     const limits = limitsByPurpose[input.purpose];
     if (!input.body.length)
       throw new BadRequestException("File gambar tidak boleh kosong.");
@@ -120,11 +123,19 @@ export class ImageValidationService {
         .jpeg({ mozjpeg: true, progressive: true, quality: 88 })
         .toBuffer();
 
-      return {
+      const result = {
         body: normalized,
-        contentType: "image/jpeg",
-        extension: "jpg",
+        contentType: "image/jpeg" as const,
+        extension: "jpg" as const,
       };
+      this.logger.log({
+        event: "image.normalized",
+        purpose: input.purpose,
+        inputBytes: input.body.length,
+        outputBytes: result.body.length,
+        durationMs: Math.round(performance.now() - startedAt),
+      });
+      return result;
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException("File gambar tidak dapat diproses.");

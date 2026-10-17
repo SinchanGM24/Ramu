@@ -5,7 +5,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import PDFDocument from "pdfkit";
 import { DatabaseService } from "../database/database.service";
 
@@ -69,6 +69,7 @@ const scaleDescriptions: Record<string, string> = {
 
 @Injectable()
 export class ReportPdfService {
+  private readonly logger = new Logger(ReportPdfService.name);
   private readonly bucket = process.env.OBJECT_STORAGE_BUCKET || "ramu-private";
   private readonly client = new S3Client({
     region: process.env.OBJECT_STORAGE_REGION || "us-east-1",
@@ -119,19 +120,29 @@ export class ReportPdfService {
     const schoolLogo = input.snapshot.school?.logo_storage_key
       ? await this.readStoredImage(input.snapshot.school.logo_storage_key)
       : undefined;
-    const body = await this.render(
-      { ...input.snapshot, extracurricular, portfolio },
-      schoolLogo,
+    const body = await this.measure(
+      "report_pdf.rendered",
+      () =>
+        this.render(
+          { ...input.snapshot, extracurricular, portfolio },
+          schoolLogo,
+        ),
+      { report: true },
     );
 
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: body,
-        ContentType: "application/pdf",
-        ContentDisposition: `attachment; filename="raport-v${input.versionNumber}.pdf"`,
-      }),
+    await this.measure(
+      "object_storage.report_uploaded",
+      () =>
+        this.client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: body,
+            ContentType: "application/pdf",
+            ContentDisposition: `attachment; filename="raport-v${input.versionNumber}.pdf"`,
+          }),
+        ),
+      { bytes: body.length },
     );
 
     return key;
@@ -166,13 +177,18 @@ export class ReportPdfService {
     const extension = input.extension || "jpg";
     const key = `schools/${input.schoolId}/profile/logo-${crypto.randomUUID()}.${extension}`;
     await this.ensureBucket();
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: input.body,
-        ContentType: input.contentType,
-      }),
+    await this.measure(
+      "object_storage.logo_uploaded",
+      () =>
+        this.client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: input.body,
+            ContentType: input.contentType,
+          }),
+        ),
+      { bytes: input.body.length },
     );
     return key;
   }
@@ -188,13 +204,18 @@ export class ReportPdfService {
     const extension = input.extension || "jpg";
     const key = `schools/${input.schoolId}/reports/${input.reportId}/portfolio/${crypto.randomUUID()}.${extension}`;
     await this.ensureBucket();
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: input.body,
-        ContentType: input.contentType,
-      }),
+    await this.measure(
+      "object_storage.portfolio_uploaded",
+      () =>
+        this.client.send(
+          new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: input.body,
+            ContentType: input.contentType,
+          }),
+        ),
+      { bytes: input.body.length },
     );
     return key;
   }
@@ -203,9 +224,13 @@ export class ReportPdfService {
     if (!this.bucketReady) {
       this.bucketReady = (async () => {
         try {
-          await this.client.send(new HeadBucketCommand({ Bucket: this.bucket }));
+          await this.client.send(
+            new HeadBucketCommand({ Bucket: this.bucket }),
+          );
         } catch {
-          await this.client.send(new CreateBucketCommand({ Bucket: this.bucket }));
+          await this.client.send(
+            new CreateBucketCommand({ Bucket: this.bucket }),
+          );
         }
       })().catch((error) => {
         this.bucketReady = undefined;
@@ -213,6 +238,23 @@ export class ReportPdfService {
       });
     }
     await this.bucketReady;
+  }
+
+  private async measure<T>(
+    event: string,
+    operation: () => Promise<T>,
+    metadata: Record<string, unknown>,
+  ) {
+    const startedAt = performance.now();
+    try {
+      return await operation();
+    } finally {
+      this.logger.log({
+        event,
+        durationMs: Math.round(performance.now() - startedAt),
+        ...metadata,
+      });
+    }
   }
 
   private render(snapshot: Snapshot, schoolLogo?: Buffer): Promise<Buffer> {
