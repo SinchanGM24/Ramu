@@ -24,3 +24,11 @@ export type ProgressCounts = {
 	publish: number;
 	published: number;
 };
+
+export type ProgressPage = {
+	items: ProgressItem[];
+	limit: number;
+	page: number;
+	summary: ProgressCounts;
+	total: number;
+};

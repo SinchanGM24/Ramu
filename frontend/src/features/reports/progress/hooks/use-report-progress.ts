@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
-import type { ProgressItem, Semester } from "../types";
-import { getProgressCounts, pageSize } from "../utils";
+import type { ProgressPage, Semester } from "../types";
+import { pageSize } from "../utils";
 
 export function useReportProgress() {
 	const queryClient = useQueryClient();
@@ -19,24 +19,26 @@ export function useReportProgress() {
 	});
 	const semesterId = activeSemester.data?.id || "";
 	const progress = useQuery({
-		queryKey: ["reports", semesterId],
+		queryKey: ["reports", "progress", semesterId, page, debouncedSearch],
 		enabled: Boolean(semesterId),
-		queryFn: () => api<ProgressItem[]>(`/reports/progress?semesterId=${semesterId}`),
+		queryFn: () =>
+			api<ProgressPage>(
+				`/reports/progress?semesterId=${semesterId}&view=EDITOR&page=${page}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}`,
+			),
 	});
-	const items = useMemo(() => progress.data ?? [], [progress.data]);
-	const counts = useMemo(() => getProgressCounts(items), [items]);
+	const items = progress.data?.items ?? [];
+	const counts = progress.data?.summary ?? {
+		total: 0,
+		notCreated: 0,
+		draft: 0,
+		review: 0,
+		publish: 0,
+		published: 0,
+	};
 
 	useEffect(() => {
 		setPage(1);
 	}, [debouncedSearch, semesterId]);
-
-	const editableItems = items.filter(
-		(item) => !item.status || ["DRAFT", "REVISION_REQUIRED"].includes(item.status),
-	);
-	const filteredItems = editableItems.filter((item) =>
-		item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
-	);
-	const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);
 
 	async function createDraft(studentId: string) {
 		if (!semesterId) return;
@@ -46,7 +48,7 @@ export function useReportProgress() {
 				method: "POST",
 				body: JSON.stringify({ semesterId }),
 			});
-			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
+			await queryClient.invalidateQueries({ queryKey: ["reports"] });
 			router.push(`/app/reports/${report.id}`);
 		} catch (reason) {
 			setError(reason instanceof Error ? reason.message : "Draf raport tidak dapat dibuat.");
@@ -58,10 +60,8 @@ export function useReportProgress() {
 		counts,
 		createDraft,
 		error,
-		filteredItems,
 		items,
 		page,
-		pagedItems,
 		progress,
 		search,
 		semesterId,

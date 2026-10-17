@@ -1,18 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { authSessionQueryOptions } from "@/features/auth/session";
-import type { DeliveryFilter, PublicationReport, PublicationStatus, Semester } from "../types";
-import { isActiveCorrection } from "../utils";
+import type { DeliveryFilter, PublicationPage, Semester } from "../types";
 
 const pageSize = 10;
-type PublicationProgressItem = Partial<PublicationReport> & {
-	id: string;
-	name: string;
-	report_id?: string;
-	status?: PublicationStatus | null;
-};
+const emptyCounts = { waitingReview: 0, approved: 0, published: 0, correction: 0 };
 
 export function useReportPublication() {
 	const queryClient = useQueryClient();
@@ -32,9 +26,12 @@ export function useReportPublication() {
 	const semesterId = activeSemester.data?.id || "";
 
 	const progress = useQuery({
-		queryKey: ["reports", semesterId],
+		queryKey: ["reports", "publication", semesterId, page, debouncedSearch, deliveryFilter],
 		enabled: Boolean(semesterId),
-		queryFn: () => api<PublicationProgressItem[]>(`/reports/progress?semesterId=${semesterId}`),
+		queryFn: () =>
+			api<PublicationPage>(
+				`/reports/progress?semesterId=${semesterId}&view=PUBLICATION&page=${page}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}&deliveryFilter=${deliveryFilter}`,
+			),
 	});
 	const publish = useMutation({
 		mutationFn: (reportId: string) => api(`/reports/${reportId}/publish`, { method: "POST" }),
@@ -45,7 +42,8 @@ export function useReportPublication() {
 		},
 	});
 	const publishBatch = useMutation({
-		mutationFn: async (reportIds: string[]) => {
+		mutationFn: async () => {
+			const reportIds = await api<string[]>(`/reports/publishable-ids?semesterId=${semesterId}`);
 			const failures: string[] = [];
 			setBatchProgress({ completed: 0, total: reportIds.length });
 			for (const [index, reportId] of reportIds.entries()) {
@@ -70,51 +68,8 @@ export function useReportPublication() {
 		onSettled: () => setBatchProgress(null),
 	});
 
-	const reports = useMemo<PublicationReport[]>(
-		() =>
-			(progress.data ?? [])
-				.filter(
-					(item): item is PublicationReport =>
-						Boolean(item.report_id) &&
-						(["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(item.status ?? "") ||
-							(Boolean(item.latest_published_version_number) &&
-								["DRAFT", "REVISION_REQUIRED"].includes(item.status ?? ""))),
-				)
-				.sort((left, right) => {
-					const priorityDifference = deliveryPriority(left) - deliveryPriority(right);
-					if (priorityDifference) return priorityDifference;
-
-					const activityDifference = latestActivity(right) - latestActivity(left);
-					if (activityDifference) return activityDifference;
-
-					// Pertahankan urutan respons API saat prioritas dan waktu sama.
-					// Jangan gunakan abjad sebagai fallback agar filter "Semua"
-					// tetap mengikuti urutan kerja dan waktu.
-					return 0;
-				}),
-		[progress.data],
-	);
-	const counts = useMemo(
-		() => ({
-			waitingReview: reports.filter((item) => ["SUBMITTED", "IN_REVIEW"].includes(item.status))
-				.length,
-			approved: reports.filter((item) => item.status === "APPROVED").length,
-			published: reports.filter(
-				(item) => item.status === "PUBLISHED" || Boolean(item.latest_published_version_number),
-			).length,
-			correction: reports.filter((item) => isActiveCorrection(item)).length,
-		}),
-		[reports],
-	);
-	const filteredReports = useMemo(
-		() =>
-			reports
-				.filter((item) =>
-					item.name.toLocaleLowerCase("id-ID").includes(debouncedSearch.toLocaleLowerCase("id-ID")),
-				)
-				.filter((item) => matchesDeliveryFilter(item, deliveryFilter)),
-		[debouncedSearch, deliveryFilter, reports],
-	);
+	const reports = progress.data?.items ?? [];
+	const counts = progress.data?.summary ?? emptyCounts;
 
 	useEffect(() => {
 		setPage(1);
@@ -131,10 +86,8 @@ export function useReportPublication() {
 				: publish.error
 					? "Raport belum dapat diterbitkan. Coba lagi."
 					: "",
-		filteredReports,
 		notice,
 		page,
-		pagedReports: filteredReports.slice((page - 1) * pageSize, page * pageSize),
 		progress,
 		publish,
 		publishBatch,
@@ -149,35 +102,3 @@ export function useReportPublication() {
 }
 
 export { pageSize };
-
-function deliveryPriority(report: PublicationReport) {
-	const needsDelivery =
-		report.status === "PUBLISHED" &&
-		!report.delivery_whatsapp_opened_at &&
-		(!report.delivery_status || ["QUEUED", "FAILED"].includes(report.delivery_status));
-
-	return needsDelivery ? 0 : 1;
-}
-
-function latestActivity(report: PublicationReport) {
-	const timestamp = report.report_updated_at || report.submitted_at;
-	const parsed = timestamp ? Date.parse(timestamp) : Number.NaN;
-	return Number.isNaN(parsed) ? 0 : parsed;
-}
-
-function matchesDeliveryFilter(report: PublicationReport, filter: DeliveryFilter) {
-	if (filter === "ALL") return true;
-	if (filter === "FAILED") return report.delivery_status === "FAILED";
-	if (filter === "OPENED") {
-		return (
-			Boolean(report.delivery_whatsapp_opened_at) ||
-			["SENT", "DELIVERED", "READ"].includes(report.delivery_status ?? "")
-		);
-	}
-
-	return (
-		report.status === "PUBLISHED" &&
-		!report.delivery_whatsapp_opened_at &&
-		(!report.delivery_status || report.delivery_status === "QUEUED")
-	);
-}

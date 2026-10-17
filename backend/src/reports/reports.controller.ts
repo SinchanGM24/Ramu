@@ -42,6 +42,27 @@ const transition = z
     message: "Alasan revisi wajib diisi",
   });
 const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
+const progressQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().trim().max(120).default(""),
+  view: z.enum(["ALL", "EDITOR", "PUBLICATION"]).default("ALL"),
+  deliveryFilter: z
+    .enum(["ALL", "NEEDS_DELIVERY", "OPENED", "FAILED"])
+    .default("ALL"),
+});
+
+type ProgressRow = {
+  id: string;
+  name: string;
+  report_id?: string | null;
+  status?: string | null;
+  submitted_at?: string | Date | null;
+  report_updated_at?: string | Date | null;
+  latest_published_version_number?: number | null;
+  delivery_status?: string | null;
+  delivery_whatsapp_opened_at?: string | Date | null;
+};
 
 @Controller("reports")
 export class ReportsController {
@@ -58,11 +79,23 @@ export class ReportsController {
   async progress(
     @Req() request: FastifyRequest,
     @Query("semesterId") semesterId: string,
+    @Query("page") page = "1",
+    @Query("limit") limit = "10",
+    @Query("search") search = "",
+    @Query("view") view = "ALL",
+    @Query("deliveryFilter") deliveryFilter = "ALL",
   ) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
+    const input = progressQuery.parse({
+      page,
+      limit,
+      search,
+      view,
+      deliveryFilter,
+    });
     return this.db.transaction(async (client) => {
       await assertTeacherActiveSemester(client, actor, semesterId);
-      return (
+      const rows = (
         await client.query(
           `WITH framework_totals AS (
               SELECT count(DISTINCT indicator.id)::int AS indicator_count,count(DISTINCT area.id)::int AS narrative_count
@@ -132,7 +165,8 @@ export class ReportsController {
             actor.schoolId,
           ],
         )
-      ).rows;
+      ).rows as ProgressRow[];
+      return paginateProgressRows(rows, input);
     }, actor.schoolId);
   }
 
@@ -149,6 +183,24 @@ export class ReportsController {
         ).rows,
       actor.schoolId,
     );
+  }
+
+  @Get("publishable-ids")
+  async publishableIds(
+    @Req() request: FastifyRequest,
+    @Query("semesterId") semesterId: string,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = z.object({ semesterId: z.string().uuid() }).parse({ semesterId });
+    return this.db.transaction(async (client) => {
+      await assertTeacherActiveSemester(client, actor, input.semesterId);
+      return (
+        await client.query<{ id: string }>(
+          "SELECT id FROM reports WHERE school_id=$1 AND semester_id=$2 AND status='APPROVED' ORDER BY updated_at DESC,id",
+          [actor.schoolId, input.semesterId],
+        )
+      ).rows.map((row) => row.id);
+    }, actor.schoolId);
   }
 
   @Post("students/:studentId/draft")
@@ -638,4 +690,98 @@ export class ReportsController {
       return saved;
     }, actor.schoolId);
   }
+}
+
+export function paginateProgressRows(
+  rows: ProgressRow[],
+  input: z.infer<typeof progressQuery>,
+) {
+  const scoped = rows.filter((row) => matchesProgressView(row, input.view));
+  const summary = {
+    total: scoped.length,
+    notCreated: scoped.filter((row) => !row.status).length,
+    draft: scoped.filter((row) => ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""))
+      .length,
+    review: scoped.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
+      .length,
+    publish: scoped.filter((row) => row.status === "APPROVED").length,
+    published: scoped.filter(
+      (row) => row.status === "PUBLISHED" || Boolean(row.latest_published_version_number),
+    ).length,
+    waitingReview: scoped.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
+      .length,
+    approved: scoped.filter((row) => row.status === "APPROVED").length,
+    correction: scoped.filter(
+      (row) =>
+        Boolean(row.latest_published_version_number) &&
+        ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""),
+    ).length,
+  };
+  const term = input.search.toLocaleLowerCase("id-ID");
+  const filtered = scoped
+    .filter((row) => row.name.toLocaleLowerCase("id-ID").includes(term))
+    .filter((row) => matchesDeliveryFilter(row, input.deliveryFilter))
+    .sort((left, right) => compareProgressRows(left, right, input.view));
+
+  return {
+    items: filtered.slice((input.page - 1) * input.limit, input.page * input.limit),
+    total: filtered.length,
+    page: input.page,
+    limit: input.limit,
+    summary,
+  };
+}
+
+function matchesProgressView(
+  row: ProgressRow,
+  view: z.infer<typeof progressQuery>["view"],
+) {
+  if (view === "ALL") return true;
+  if (view === "EDITOR") {
+    return !row.status || ["DRAFT", "REVISION_REQUIRED"].includes(row.status);
+  }
+  return Boolean(row.report_id) &&
+    (["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(row.status ?? "") ||
+      (Boolean(row.latest_published_version_number) &&
+        ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? "")));
+}
+
+function matchesDeliveryFilter(
+  row: ProgressRow,
+  filter: z.infer<typeof progressQuery>["deliveryFilter"],
+) {
+  if (filter === "ALL") return true;
+  if (filter === "FAILED") return row.delivery_status === "FAILED";
+  if (filter === "OPENED") {
+    return (
+      Boolean(row.delivery_whatsapp_opened_at) ||
+      ["SENT", "DELIVERED", "READ"].includes(row.delivery_status ?? "")
+    );
+  }
+  return (
+    row.status === "PUBLISHED" &&
+    !row.delivery_whatsapp_opened_at &&
+    (!row.delivery_status || row.delivery_status === "QUEUED")
+  );
+}
+
+function compareProgressRows(left: ProgressRow, right: ProgressRow, view: string) {
+  if (view === "PUBLICATION") {
+    const deliveryPriority = (row: ProgressRow) =>
+      row.status === "PUBLISHED" &&
+      !row.delivery_whatsapp_opened_at &&
+      (!row.delivery_status || ["QUEUED", "FAILED"].includes(row.delivery_status))
+        ? 0
+        : 1;
+    const priorityDifference = deliveryPriority(left) - deliveryPriority(right);
+    if (priorityDifference) return priorityDifference;
+    const newest = (row: ProgressRow) => {
+      const value = row.report_updated_at ?? row.submitted_at;
+      const timestamp = value ? Date.parse(String(value)) : Number.NaN;
+      return Number.isNaN(timestamp) ? 0 : timestamp;
+    };
+    const activityDifference = newest(right) - newest(left);
+    if (activityDifference) return activityDifference;
+  }
+  return left.name.localeCompare(right.name, "id-ID");
 }

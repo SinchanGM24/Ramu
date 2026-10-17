@@ -70,19 +70,13 @@ export function ReportPublicationPage() {
 				loading={publication.progress.isLoading}
 				page={publication.page}
 				pending={publication.publish.isPending || publication.publishBatch.isPending}
-				reports={publication.pagedReports}
+				reports={publication.reports}
 				search={publication.search}
-				total={publication.filteredReports.length}
+				total={publication.progress.data?.total ?? 0}
 				onPageChange={publication.setPage}
 				onDeliveryFilterChange={publication.setDeliveryFilter}
 				onPublish={(reportId) => publication.publish.mutate(reportId)}
-				onPublishBatch={() =>
-					publication.publishBatch.mutate(
-						publication.reports
-							.filter((report) => report.status === "APPROVED")
-							.map((report) => report.report_id),
-					)
-				}
+				onPublishBatch={() => publication.publishBatch.mutate()}
 				onSearchChange={publication.setSearch}
 			/>
 		</>

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { AuthService } from "../src/auth/auth.service";
-import { ReportsController } from "../src/reports/reports.controller";
+import {
+  paginateProgressRows,
+  ReportsController,
+} from "../src/reports/reports.controller";
 
 const request = {
   auth: {
@@ -82,7 +85,7 @@ describe("ReportsController", () => {
 
     await expect(
       controller.progress(schoolAdminRequest, "semester-1"),
-    ).resolves.toEqual([]);
+    ).resolves.toMatchObject({ items: [], total: 0, page: 1, limit: 10 });
 
     expect(queries[0].sql).toContain("latest_published_version_number");
     expect(queries[0].sql).toContain("latest_published_at");
@@ -243,5 +246,59 @@ describe("ReportsController", () => {
     });
     expect(queries[0]?.sql).toContain("WHERE r.id=$1 AND r.school_id=$2");
     expect(queries[0]?.values).toEqual(["report-1", "school-1"]);
+  });
+});
+
+describe("report progress pagination", () => {
+  it("filters the editor list before paginating it", () => {
+    const result = paginateProgressRows(
+      [
+        { id: "student-1", name: "Alya", status: null },
+        { id: "student-2", name: "Bima", report_id: "report-2", status: "DRAFT" },
+        { id: "student-3", name: "Citra", report_id: "report-3", status: "SUBMITTED" },
+      ],
+      {
+        page: 1,
+        limit: 1,
+        search: "",
+        view: "EDITOR",
+        deliveryFilter: "ALL",
+      },
+    );
+
+    expect(result.items).toEqual([{ id: "student-1", name: "Alya", status: null }]);
+    expect(result.total).toBe(2);
+    expect(result.summary).toMatchObject({ notCreated: 1, draft: 1, review: 0 });
+  });
+
+  it("prioritizes published reports that still need WhatsApp handoff", () => {
+    const result = paginateProgressRows(
+      [
+        {
+          id: "student-1",
+          name: "Alya",
+          report_id: "report-1",
+          status: "PUBLISHED",
+          delivery_status: "QUEUED",
+          report_updated_at: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "student-2",
+          name: "Bima",
+          report_id: "report-2",
+          status: "APPROVED",
+          report_updated_at: "2026-02-01T00:00:00.000Z",
+        },
+      ],
+      {
+        page: 1,
+        limit: 10,
+        search: "",
+        view: "PUBLICATION",
+        deliveryFilter: "ALL",
+      },
+    );
+
+    expect(result.items.map((item) => item.id)).toEqual(["student-1", "student-2"]);
   });
 });

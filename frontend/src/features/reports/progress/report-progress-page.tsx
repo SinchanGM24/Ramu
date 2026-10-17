@@ -40,11 +40,11 @@ export function ReportProgressPage() {
 			<ReportProgressSummary counts={progress.counts} />
 			<ReportProgressList
 				counts={progress.counts}
-				items={progress.pagedItems}
+				items={progress.items}
 				loading={progress.progress.isLoading}
 				page={progress.page}
 				search={progress.search}
-				total={progress.filteredItems.length}
+				total={progress.progress.data?.total ?? 0}
 				onCreateDraft={(id) => void progress.createDraft(id)}
 				onPageChange={progress.setPage}
 				onSearchChange={progress.setSearch}

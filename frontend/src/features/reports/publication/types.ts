@@ -21,6 +21,21 @@ export type PublicationReport = {
 	delivery_whatsapp_opened_at?: string | null;
 };
 
+export type PublicationSummary = {
+	approved: number;
+	correction: number;
+	published: number;
+	waitingReview: number;
+};
+
+export type PublicationPage = {
+	items: PublicationReport[];
+	limit: number;
+	page: number;
+	summary: PublicationSummary;
+	total: number;
+};
+
 export type Semester = {
 	id: string;
 	name: string;
