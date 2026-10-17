@@ -18,4 +18,15 @@ describe("report publication jobs migration", () => {
     expect(migration).toContain("REVOKE ALL ON FUNCTION claim_next_report_publication_job() FROM PUBLIC");
     expect(migration).toContain("GRANT EXECUTE ON FUNCTION claim_next_report_publication_job() TO ramu_app");
   });
+
+  it("claims only jobs with an item ready after retry backoff", async () => {
+    const migration = await readFile(
+      resolve(process.cwd(), "src/database/migrations/043_publication_job_retry_claim.sql"),
+      "utf8",
+    );
+
+    expect(migration).toContain("item.next_attempt_at <= now()");
+    expect(migration).toContain("item.locked_until < now()");
+    expect(migration).toContain("FOR UPDATE SKIP LOCKED");
+  });
 });
