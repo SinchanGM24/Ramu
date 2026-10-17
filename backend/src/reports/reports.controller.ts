@@ -6,6 +6,7 @@ import {
   ForbiddenException,
   Get,
   InternalServerErrorException,
+  OnModuleInit,
   Logger,
   NotFoundException,
   Param,
@@ -20,10 +21,11 @@ import { createHash, randomBytes, randomInt } from "crypto";
 import { z } from "zod";
 import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
 import { assertTeacherActiveSemester } from "../academic/active-semester";
-import { AuthService } from "../auth/auth.service";
+import { AuthService, type AuthContext } from "../auth/auth.service";
 import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { ReportPdfService } from "../files/report-pdf.service";
+import { ReportPublicationJobsService } from "./report-publication-jobs.service";
 import { assertReportAccess } from "./report-authorization";
 import {
   completenessError,
@@ -42,6 +44,10 @@ const transition = z
     message: "Alasan revisi wajib diisi",
   });
 const reportAssessment = z.object({ scaleOptionId: z.string().uuid() });
+const publicationJobInput = z.object({
+  reportIds: z.array(z.string().uuid()).min(1).max(100),
+  semesterId: z.string().uuid().optional(),
+});
 const progressQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
@@ -77,7 +83,7 @@ type ProgressSummary = {
 };
 
 @Controller("reports")
-export class ReportsController {
+export class ReportsController implements OnModuleInit {
   private readonly logger = new Logger(ReportsController.name);
 
   constructor(
@@ -85,7 +91,23 @@ export class ReportsController {
     private readonly db: DatabaseService,
     private readonly audit: AuditService,
     private readonly pdf: ReportPdfService,
+    private readonly publicationJobs?: ReportPublicationJobsService,
   ) {}
+
+  onModuleInit() {
+    this.publicationJobs?.registerPublisher(({ schoolId, actorUserId, reportId }) =>
+      this.publishForActor(
+        {
+          userId: actorUserId,
+          schoolId,
+          role: "SCHOOL_ADMIN",
+          email: "",
+          sessionId: "publication-worker",
+        },
+        reportId,
+      ),
+    );
+  }
 
   @Get("progress")
   async progress(
@@ -458,9 +480,38 @@ export class ReportsController {
     }, actor.schoolId);
   }
 
+  @Post("publication-jobs")
+  async enqueuePublicationJob(@Req() request: FastifyRequest, @Body() body: unknown) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = publicationJobInput.parse(body);
+    if (!this.publicationJobs) throw new InternalServerErrorException("Antrean publikasi belum siap");
+    return this.publicationJobs.enqueue({
+      schoolId: actor.schoolId,
+      actorUserId: actor.userId,
+      reportIds: input.reportIds,
+      semesterId: input.semesterId,
+    });
+  }
+
+  @Get("publication-jobs/:jobId")
+  async publicationJob(@Req() request: FastifyRequest, @Param("jobId") jobId: string) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    if (!this.publicationJobs) throw new InternalServerErrorException("Antrean publikasi belum siap");
+    const job = await this.publicationJobs.getJob({
+      schoolId: actor.schoolId,
+      jobId,
+    });
+    if (!job) throw new NotFoundException("Proses publikasi tidak ditemukan");
+    return job;
+  }
+
   @Post(":id/publish")
   async publish(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    return this.publishForActor(actor, id);
+  }
+
+  async publishForActor(actor: AuthContext, id: string) {
     return this.db.transaction(async (client) => {
       const report = (
         await client.query<any>(

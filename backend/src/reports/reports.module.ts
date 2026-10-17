@@ -11,8 +11,10 @@ import { ReportPortfolioController } from "./report-portfolio.controller";
 import { ReportWorkflowController } from "./report-workflow.controller";
 import { ReportWorkspaceController } from "./report-workspace.controller";
 import { ParentController } from "../parent/parent.controller";
+import { ReportPublicationJobsService } from "./report-publication-jobs.service";
 @Module({
   imports: [AuthModule, AuditModule, FilesModule],
+  providers: [ReportPublicationJobsService],
   controllers: [
     ReportsController,
     SemesterDataController,

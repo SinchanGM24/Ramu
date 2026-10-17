@@ -63,13 +63,13 @@ export function ReportPublicationPage() {
 			</div>
 			<PublicationReportList
 				canPublish={publication.canPublish}
-				batchPending={publication.publish.isPending || publication.publishBatch.isPending}
+				batchPending={publication.publish.isPending || publication.batchPending}
 				batchProgress={publication.batchProgress}
 				counts={publication.counts}
 				deliveryFilter={publication.deliveryFilter}
 				loading={publication.progress.isLoading}
 				page={publication.page}
-				pending={publication.publish.isPending || publication.publishBatch.isPending}
+				pending={publication.publish.isPending || publication.batchPending}
 				reports={publication.reports}
 				search={publication.search}
 				total={publication.progress.data?.total ?? 0}

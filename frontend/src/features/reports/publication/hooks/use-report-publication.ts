@@ -7,6 +7,13 @@ import type { DeliveryFilter, PublicationPage, Semester } from "../types";
 
 const pageSize = 10;
 const emptyCounts = { waitingReview: 0, approved: 0, published: 0, correction: 0 };
+type PublicationJob = {
+	id: string;
+	status: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED";
+	total_count: number;
+	completed_count: number;
+	failed_count: number;
+};
 
 export function useReportPublication() {
 	const queryClient = useQueryClient();
@@ -17,6 +24,7 @@ export function useReportPublication() {
 	const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number } | null>(
 		null,
 	);
+	const [publicationJobId, setPublicationJobId] = useState<string | null>(null);
 	const debouncedSearch = useDebouncedValue(search);
 	const session = useQuery(authSessionQueryOptions);
 	const activeSemester = useQuery({
@@ -42,35 +50,54 @@ export function useReportPublication() {
 			await queryClient.invalidateQueries({ queryKey: ["reports"] });
 		},
 	});
+	const publicationJob = useQuery({
+		queryKey: ["reports", "publication-job", publicationJobId],
+		enabled: Boolean(publicationJobId),
+		queryFn: ({ signal }) =>
+			api<PublicationJob>(`/reports/publication-jobs/${publicationJobId}`, { signal }),
+		refetchInterval: (query) => {
+			const status = query.state.data?.status;
+			return status === "QUEUED" || status === "PROCESSING" ? 1_000 : false;
+		},
+	});
 	const publishBatch = useMutation({
 		mutationFn: async () => {
 			const reportIds = await api<string[]>(`/reports/publishable-ids?semesterId=${semesterId}`);
-			const failures: string[] = [];
-			setBatchProgress({ completed: 0, total: reportIds.length });
-			for (const [index, reportId] of reportIds.entries()) {
-				try {
-					await api(`/reports/${reportId}/publish`, { method: "POST" });
-				} catch {
-					failures.push(reportId);
-				}
-				setBatchProgress({ completed: index + 1, total: reportIds.length });
-			}
-			return { failures, published: reportIds.length - failures.length };
+			return api<PublicationJob>("/reports/publication-jobs", {
+				method: "POST",
+				body: JSON.stringify({ reportIds, semesterId }),
+			});
 		},
-		onSuccess: async ({ failures, published }) => {
-			setNotice(
-				failures.length
-					? `${published} raport berhasil diterbitkan. ${failures.length} raport belum dapat diterbitkan.`
-					: `${published} raport berhasil diterbitkan dan siap dikirim kepada wali.`,
-			);
-			await queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
-			await queryClient.invalidateQueries({ queryKey: ["reports"] });
+		onSuccess: (job) => {
+			setPublicationJobId(job.id);
+			setBatchProgress({ completed: 0, total: job.total_count });
+			setNotice("Publikasi batch sedang diproses di latar belakang.");
 		},
-		onSettled: () => setBatchProgress(null),
 	});
+
+	useEffect(() => {
+		if (!publicationJob.data) return;
+		setBatchProgress({
+			completed: publicationJob.data.completed_count + publicationJob.data.failed_count,
+			total: publicationJob.data.total_count,
+		});
+		if (!["COMPLETED", "FAILED"].includes(publicationJob.data.status)) return;
+		setNotice(
+			publicationJob.data.failed_count
+				? `${publicationJob.data.completed_count} raport berhasil diterbitkan. ${publicationJob.data.failed_count} raport belum dapat diterbitkan.`
+				: "Seluruh raport batch berhasil diterbitkan dan siap dikirim kepada wali.",
+		);
+		void queryClient.invalidateQueries({ queryKey: ["reports", semesterId] });
+		void queryClient.invalidateQueries({ queryKey: ["reports"] });
+		setPublicationJobId(null);
+	}, [publicationJob.data, queryClient, semesterId]);
 
 	const reports = progress.data?.items ?? [];
 	const counts = progress.data?.summary ?? emptyCounts;
+	const batchPending =
+		publishBatch.isPending ||
+		publicationJob.data?.status === "QUEUED" ||
+		publicationJob.data?.status === "PROCESSING";
 
 	useEffect(() => {
 		setPage(1);
@@ -79,6 +106,7 @@ export function useReportPublication() {
 	return {
 		canPublish: session.data?.role === "SCHOOL_ADMIN",
 		batchProgress,
+		batchPending,
 		counts,
 		deliveryFilter,
 		error:
