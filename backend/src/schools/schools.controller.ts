@@ -18,6 +18,7 @@ import {
   rateLimitFingerprint,
   RequestRateLimiter,
 } from "../common/request-rate-limiter";
+import { UploadConcurrencyLimiter } from "../common/upload-concurrency-limiter";
 import { ImageValidationService } from "../files/image-validation.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 
@@ -30,6 +31,7 @@ export class SchoolsController {
     private readonly files: ReportPdfService,
     private readonly images: ImageValidationService,
     private readonly rateLimiter: RequestRateLimiter = new RequestRateLimiter(),
+    private readonly uploadLimiter: UploadConcurrencyLimiter = new UploadConcurrencyLimiter(),
   ) {}
   @Get() async current(@Req() request: FastifyRequest) {
     const session = this.auth.require(request);
@@ -83,39 +85,41 @@ export class SchoolsController {
       limit: 10,
       windowMs: 15 * 60_000,
     });
-    const file = await request.file();
-    if (!file)
-      throw new BadRequestException("Pilih logo berformat JPG atau PNG.");
-    const image = await this.images.validateAndNormalize({
-      body: await file.toBuffer(),
-      declaredContentType: file.mimetype,
-      purpose: "SCHOOL_LOGO",
+    return this.uploadLimiter.run(session.schoolId, async () => {
+      const file = await request.file();
+      if (!file)
+        throw new BadRequestException("Pilih logo berformat JPG atau PNG.");
+      const image = await this.images.validateAndNormalize({
+        body: await file.toBuffer(),
+        declaredContentType: file.mimetype,
+        purpose: "SCHOOL_LOGO",
+      });
+      const storageKey = await this.files.storeSchoolLogo({
+        schoolId: session.schoolId,
+        contentType: image.contentType,
+        extension: image.extension,
+        body: image.body,
+      });
+      return this.db.transaction(async (client) => {
+        const saved = (
+          await client.query(
+            "UPDATE schools SET logo_storage_key=$1,logo_content_type=$2,updated_at=now() WHERE id=$3 RETURNING id,name,slug,address,phone,logo_storage_key IS NOT NULL AS has_logo",
+            [storageKey, image.contentType, session.schoolId],
+          )
+        ).rows[0];
+        await this.audit.record(
+          {
+            schoolId: session.schoolId,
+            actorUserId: session.userId,
+            action: "school.logo_uploaded",
+            entityType: "school",
+            entityId: session.schoolId,
+          },
+          client,
+        );
+        return saved;
+      }, session.schoolId);
     });
-    const storageKey = await this.files.storeSchoolLogo({
-      schoolId: session.schoolId,
-      contentType: image.contentType,
-      extension: image.extension,
-      body: image.body,
-    });
-    return this.db.transaction(async (client) => {
-      const saved = (
-        await client.query(
-          "UPDATE schools SET logo_storage_key=$1,logo_content_type=$2,updated_at=now() WHERE id=$3 RETURNING id,name,slug,address,phone,logo_storage_key IS NOT NULL AS has_logo",
-          [storageKey, image.contentType, session.schoolId],
-        )
-      ).rows[0];
-      await this.audit.record(
-        {
-          schoolId: session.schoolId,
-          actorUserId: session.userId,
-          action: "school.logo_uploaded",
-          entityType: "school",
-          entityId: session.schoolId,
-        },
-        client,
-      );
-      return saved;
-    }, session.schoolId);
   }
   @Get("logo") async logo(
     @Req() request: FastifyRequest,

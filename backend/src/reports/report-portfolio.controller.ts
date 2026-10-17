@@ -15,6 +15,7 @@ import {
   rateLimitFingerprint,
   RequestRateLimiter,
 } from "../common/request-rate-limiter";
+import { UploadConcurrencyLimiter } from "../common/upload-concurrency-limiter";
 import { ImageValidationService } from "../files/image-validation.service";
 import { ReportPdfService } from "../files/report-pdf.service";
 import { assertReportAccess } from "./report-authorization";
@@ -30,6 +31,7 @@ export class ReportPortfolioController {
     private readonly files: ReportPdfService,
     private readonly images: ImageValidationService,
     private readonly rateLimiter: RequestRateLimiter = new RequestRateLimiter(),
+    private readonly uploadLimiter: UploadConcurrencyLimiter = new UploadConcurrencyLimiter(),
   ) {}
 
   @Get(":id/portfolio")
@@ -58,66 +60,68 @@ export class ReportPortfolioController {
       limit: 30,
       windowMs: 15 * 60_000,
     });
-    const file = await request.file();
-    if (!file || !acceptedImageTypes.has(file.mimetype))
-      throw new BadRequestException("Pilih foto JPG, PNG, atau WebP");
-    const image = await this.images.validateAndNormalize({
-      body: await file.toBuffer(),
-      declaredContentType: file.mimetype,
-      purpose: "PORTFOLIO",
-    });
-    const fields = file.fields as Record<string, { value?: string }>;
-    const caption = fields.caption?.value?.trim().slice(0, 500) || null;
-    const included = fields.includedInReport?.value !== "false";
-    return this.db.transaction(async (client) => {
-      const report = (
-        await client.query<{ student_id: string; semester_id: string }>(
-          "SELECT student_id,semester_id FROM reports WHERE id=$1 AND school_id=$2 AND status<>'PUBLISHED'",
-          [id, actor.schoolId],
-        )
-      ).rows[0];
-      if (!report)
-        throw new ConflictException(
-          "Raport tidak ditemukan atau sudah diterbitkan",
-        );
-      await assertReportAccess(client, actor, id);
-      const storageKey = await this.files.storePortfolioImage({
-        schoolId: actor.schoolId,
-        reportId: id,
-        filename: file.filename,
-        contentType: image.contentType,
-        extension: image.extension,
-        body: image.body,
+    return this.uploadLimiter.run(actor.schoolId, async () => {
+      const file = await request.file();
+      if (!file || !acceptedImageTypes.has(file.mimetype))
+        throw new BadRequestException("Pilih foto JPG, PNG, atau WebP");
+      const image = await this.images.validateAndNormalize({
+        body: await file.toBuffer(),
+        declaredContentType: file.mimetype,
+        purpose: "PORTFOLIO",
       });
-      const saved = (
-        await client.query(
-          "INSERT INTO portfolio_items(school_id,report_id,student_id,semester_id,storage_key,original_filename,content_type,byte_size,caption,included_in_report,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id,original_filename,content_type,byte_size,caption,included_in_report,created_at",
-          [
-            actor.schoolId,
-            id,
-            report.student_id,
-            report.semester_id,
-            storageKey,
-            file.filename.slice(0, 255),
-            image.contentType,
-            image.body.length,
-            caption,
-            included,
-            actor.userId,
-          ],
-        )
-      ).rows[0];
-      await this.audit.record(
-        {
+      const fields = file.fields as Record<string, { value?: string }>;
+      const caption = fields.caption?.value?.trim().slice(0, 500) || null;
+      const included = fields.includedInReport?.value !== "false";
+      return this.db.transaction(async (client) => {
+        const report = (
+          await client.query<{ student_id: string; semester_id: string }>(
+            "SELECT student_id,semester_id FROM reports WHERE id=$1 AND school_id=$2 AND status<>'PUBLISHED'",
+            [id, actor.schoolId],
+          )
+        ).rows[0];
+        if (!report)
+          throw new ConflictException(
+            "Raport tidak ditemukan atau sudah diterbitkan",
+          );
+        await assertReportAccess(client, actor, id);
+        const storageKey = await this.files.storePortfolioImage({
           schoolId: actor.schoolId,
-          actorUserId: actor.userId,
-          action: "report_portfolio.uploaded",
-          entityType: "portfolio_item",
-          entityId: saved.id,
-        },
-        client,
-      );
-      return saved;
-    }, actor.schoolId);
+          reportId: id,
+          filename: file.filename,
+          contentType: image.contentType,
+          extension: image.extension,
+          body: image.body,
+        });
+        const saved = (
+          await client.query(
+            "INSERT INTO portfolio_items(school_id,report_id,student_id,semester_id,storage_key,original_filename,content_type,byte_size,caption,included_in_report,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id,original_filename,content_type,byte_size,caption,included_in_report,created_at",
+            [
+              actor.schoolId,
+              id,
+              report.student_id,
+              report.semester_id,
+              storageKey,
+              file.filename.slice(0, 255),
+              image.contentType,
+              image.body.length,
+              caption,
+              included,
+              actor.userId,
+            ],
+          )
+        ).rows[0];
+        await this.audit.record(
+          {
+            schoolId: actor.schoolId,
+            actorUserId: actor.userId,
+            action: "report_portfolio.uploaded",
+            entityType: "portfolio_item",
+            entityId: saved.id,
+          },
+          client,
+        );
+        return saved;
+      }, actor.schoolId);
+    });
   }
 }
