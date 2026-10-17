@@ -15,6 +15,7 @@ export function useReportWorkspace(reportId: string) {
 		void queryClient.invalidateQueries({ queryKey: ["report-completeness", reportId] });
 	};
 	const assessment = useMutation({
+		scope: { id: `report-assessments:${reportId}` },
 		mutationFn: ({ indicatorId, scaleOptionId }: { indicatorId: string; scaleOptionId: string }) =>
 			api(`/reports/${reportId}/assessments/${indicatorId}`, {
 				method: "PUT",

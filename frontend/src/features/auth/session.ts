@@ -16,6 +16,7 @@ export function getAuthSession() {
 export const authSessionQueryOptions = {
 	queryKey: authSessionQueryKey,
 	queryFn: getAuthSession,
-	staleTime: 0,
+	staleTime: 5 * 60_000,
+	refetchOnWindowFocus: false,
 	retry: false,
 };
