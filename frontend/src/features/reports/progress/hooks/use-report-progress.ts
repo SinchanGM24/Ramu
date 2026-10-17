@@ -21,9 +21,10 @@ export function useReportProgress() {
 	const progress = useQuery({
 		queryKey: ["reports", "progress", semesterId, page, debouncedSearch],
 		enabled: Boolean(semesterId),
-		queryFn: () =>
+		queryFn: ({ signal }) =>
 			api<ProgressPage>(
 				`/reports/progress?semesterId=${semesterId}&view=EDITOR&page=${page}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}`,
+				{ signal },
 			),
 	});
 	const items = progress.data?.items ?? [];

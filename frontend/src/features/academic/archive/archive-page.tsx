@@ -37,18 +37,20 @@ export function ArchivePage() {
 	const debouncedSearch = useDebouncedValue(search);
 	const students = useQuery({
 		queryKey: ["students", "archive", studentPage, debouncedSearch],
-		queryFn: () =>
+		queryFn: ({ signal }) =>
 			api<Paginated<Student>>(
 				`/students?page=${studentPage}&limit=${pageSize}&lifecycleStatus=GRADUATED&search=${encodeURIComponent(debouncedSearch)}`,
+				{ signal },
 			),
 	});
 	const session = useQuery(authSessionQueryOptions);
 	const canReverseGraduation = session.data?.role === "SCHOOL_ADMIN";
 	const history = useQuery({
 		queryKey: ["lifecycle", "history", historyPage, debouncedSearch],
-		queryFn: () =>
+		queryFn: ({ signal }) =>
 			api<Paginated<History>>(
 				`/lifecycle/history?page=${historyPage}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}&actions=GRADUATED,GRADUATION_REVERSED`,
+				{ signal },
 			),
 	});
 	const archived = students.data?.items ?? [];

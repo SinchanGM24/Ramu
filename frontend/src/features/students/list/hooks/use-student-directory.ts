@@ -19,9 +19,10 @@ export function useStudentDirectory() {
 	});
 	const students = useQuery({
 		queryKey: ["students", page, debouncedSearch, classGroupId],
-		queryFn: () =>
+		queryFn: ({ signal }) =>
 			api<StudentList>(
 				`/students?page=${page}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}${classGroupId ? `&classGroupId=${classGroupId}` : ""}`,
+				{ signal },
 			),
 	});
 	return {

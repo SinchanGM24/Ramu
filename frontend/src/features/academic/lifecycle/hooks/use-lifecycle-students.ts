@@ -15,9 +15,10 @@ export function useLifecycleStudents() {
 	const debouncedSearch = useDebouncedValue(search);
 	const students = useQuery({
 		queryKey: ["lifecycle-students", page, debouncedSearch, classGroupId],
-		queryFn: () =>
+		queryFn: ({ signal }) =>
 			api<LifecycleStudentPage>(
 				`/students?page=${page}&limit=${pageSize}&lifecycleStatus=ACTIVE&search=${encodeURIComponent(debouncedSearch)}${classGroupId ? `&classGroupId=${classGroupId}` : ""}`,
+				{ signal },
 			),
 	});
 	const classGroups = useQuery({

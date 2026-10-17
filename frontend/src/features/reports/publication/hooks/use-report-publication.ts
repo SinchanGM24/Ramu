@@ -28,9 +28,10 @@ export function useReportPublication() {
 	const progress = useQuery({
 		queryKey: ["reports", "publication", semesterId, page, debouncedSearch, deliveryFilter],
 		enabled: Boolean(semesterId),
-		queryFn: () =>
+		queryFn: ({ signal }) =>
 			api<PublicationPage>(
 				`/reports/progress?semesterId=${semesterId}&view=PUBLICATION&page=${page}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}&deliveryFilter=${deliveryFilter}`,
+				{ signal },
 			),
 	});
 	const publish = useMutation({

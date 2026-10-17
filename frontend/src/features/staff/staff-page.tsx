@@ -27,9 +27,10 @@ export function StaffPage() {
 	}, [debouncedSearch]);
 	const staff = useQuery({
 		queryKey: ["staff", page, debouncedSearch],
-		queryFn: () =>
+		queryFn: ({ signal }) =>
 			api<StaffResponse>(
 				`/staff?page=${page}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}`,
+				{ signal },
 			),
 	});
 	async function create(event: FormEvent<HTMLFormElement>) {
