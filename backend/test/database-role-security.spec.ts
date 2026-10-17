@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { assertSafeRuntimeDatabaseRole } from "../src/database/database.service";
+import {
+  assertSafeRuntimeDatabaseRole,
+  getDatabaseRuntimeConfig,
+} from "../src/database/database.service";
 
 describe("runtime database role security", () => {
   it("accepts a normal application role", () => {
@@ -30,5 +33,32 @@ describe("runtime database role security", () => {
         bypassesRls: true,
       }),
     ).toThrow("BYPASSRLS");
+  });
+});
+
+describe("database runtime configuration", () => {
+  it("uses bounded defaults that protect the connection pool", () => {
+    expect(getDatabaseRuntimeConfig({})).toMatchObject({
+      maxConnections: 12,
+      idleTimeoutMs: 30_000,
+      connectionTimeoutMs: 5_000,
+      statementTimeoutMs: 15_000,
+      lockTimeoutMs: 3_000,
+      slowTransactionMs: 1_000,
+    });
+  });
+
+  it("clamps unsafe environment values instead of creating an unbounded pool", () => {
+    expect(
+      getDatabaseRuntimeConfig({
+        DATABASE_POOL_MAX: "999",
+        DATABASE_IDLE_TIMEOUT_MS: "not-a-number",
+        DATABASE_LOCK_TIMEOUT_MS: "1",
+      }),
+    ).toMatchObject({
+      maxConnections: 100,
+      idleTimeoutMs: 30_000,
+      lockTimeoutMs: 250,
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { Pool, PoolClient, QueryResultRow } from "pg";
 
 export type DatabaseRoleSecurity = {
@@ -6,6 +6,69 @@ export type DatabaseRoleSecurity = {
   isSuperuser: boolean;
   bypassesRls: boolean;
 };
+
+export type DatabaseRuntimeConfig = {
+  connectionTimeoutMs: number;
+  idleTimeoutMs: number;
+  lockTimeoutMs: number;
+  maxConnections: number;
+  slowTransactionMs: number;
+  statementTimeoutMs: number;
+};
+
+function boundedEnvironmentNumber(
+  value: string | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.trunc(parsed), minimum), maximum);
+}
+
+export function getDatabaseRuntimeConfig(
+  environment: NodeJS.ProcessEnv = process.env,
+): DatabaseRuntimeConfig {
+  return {
+    maxConnections: boundedEnvironmentNumber(
+      environment.DATABASE_POOL_MAX,
+      12,
+      1,
+      100,
+    ),
+    idleTimeoutMs: boundedEnvironmentNumber(
+      environment.DATABASE_IDLE_TIMEOUT_MS,
+      30_000,
+      1_000,
+      300_000,
+    ),
+    connectionTimeoutMs: boundedEnvironmentNumber(
+      environment.DATABASE_CONNECTION_TIMEOUT_MS,
+      5_000,
+      1_000,
+      60_000,
+    ),
+    statementTimeoutMs: boundedEnvironmentNumber(
+      environment.DATABASE_STATEMENT_TIMEOUT_MS,
+      15_000,
+      1_000,
+      120_000,
+    ),
+    lockTimeoutMs: boundedEnvironmentNumber(
+      environment.DATABASE_LOCK_TIMEOUT_MS,
+      3_000,
+      250,
+      60_000,
+    ),
+    slowTransactionMs: boundedEnvironmentNumber(
+      environment.DATABASE_SLOW_TRANSACTION_MS,
+      1_000,
+      100,
+      120_000,
+    ),
+  };
+}
 
 export function assertSafeRuntimeDatabaseRole(role: DatabaseRoleSecurity) {
   if (role.isSuperuser || role.bypassesRls) {
@@ -17,7 +80,14 @@ export function assertSafeRuntimeDatabaseRole(role: DatabaseRoleSecurity) {
 
 @Injectable()
 export class DatabaseService implements OnModuleDestroy, OnModuleInit {
-  readonly pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  private readonly logger = new Logger(DatabaseService.name);
+  private readonly runtimeConfig = getDatabaseRuntimeConfig();
+  readonly pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: this.runtimeConfig.maxConnections,
+    idleTimeoutMillis: this.runtimeConfig.idleTimeoutMs,
+    connectionTimeoutMillis: this.runtimeConfig.connectionTimeoutMs,
+  });
 
   async onModuleInit() {
     if (process.env.NODE_ENV !== "production") return;
@@ -48,11 +118,16 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     await this.pool.end();
   }
 
-  query<T extends QueryResultRow = QueryResultRow>(
+  async query<T extends QueryResultRow = QueryResultRow>(
     text: string,
     values: unknown[] = [],
   ) {
-    return this.pool.query<T>(text, values);
+    const startedAt = performance.now();
+    try {
+      return await this.pool.query<T>(text, values);
+    } finally {
+      this.logSlowOperation("query", startedAt);
+    }
   }
 
   async transaction<T>(
@@ -60,8 +135,15 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
     schoolId?: string,
   ): Promise<T> {
     const client = await this.pool.connect();
+    const startedAt = performance.now();
     try {
       await client.query("BEGIN");
+      await client.query("SELECT set_config('statement_timeout', $1, true)", [
+        `${this.runtimeConfig.statementTimeoutMs}ms`,
+      ]);
+      await client.query("SELECT set_config('lock_timeout', $1, true)", [
+        `${this.runtimeConfig.lockTimeoutMs}ms`,
+      ]);
       if (schoolId)
         await client.query("SELECT set_config('app.school_id', $1, true)", [
           schoolId,
@@ -74,6 +156,22 @@ export class DatabaseService implements OnModuleDestroy, OnModuleInit {
       throw error;
     } finally {
       client.release();
+      this.logSlowOperation("transaction", startedAt, Boolean(schoolId));
     }
+  }
+
+  private logSlowOperation(
+    operation: "query" | "transaction",
+    startedAt: number,
+    tenantScoped = false,
+  ) {
+    const durationMs = Math.round(performance.now() - startedAt);
+    if (durationMs < this.runtimeConfig.slowTransactionMs) return;
+    this.logger.warn({
+      event: "database.slow_operation",
+      operation,
+      durationMs,
+      tenantScoped,
+    });
   }
 }
