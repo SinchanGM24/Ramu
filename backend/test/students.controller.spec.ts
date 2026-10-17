@@ -42,13 +42,13 @@ describe("StudentsController list", () => {
 
     await expect(
       controller.list(request("SCHOOL_ADMIN"), "1", "10", "", undefined),
-    ).resolves.toEqual({ items: [], total: 0, page: 1 });
+    ).resolves.toEqual({ items: [], total: 0, page: 1, limit: 10 });
     expect(queries).toHaveLength(2);
     expect(queries[0].sql).toContain("$5::uuid IS NULL");
-    expect(queries[0].values).toHaveLength(7);
+    expect(queries[0].values).toHaveLength(8);
     expect(queries[0].values[4]).toBeNull();
     expect(queries[1].sql).toContain("$5::uuid IS NULL");
-    expect(queries[1].values).toHaveLength(5);
+    expect(queries[1].values).toHaveLength(6);
     expect(queries[1].values[4]).toBeNull();
   });
 

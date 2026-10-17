@@ -6,6 +6,12 @@ export type LifecycleStudent = {
 	lifecycle_status: "ACTIVE" | "GRADUATED";
 };
 export type LifecycleClassGroup = { id: string; name: string };
+export type LifecycleStudentPage = {
+	items: LifecycleStudent[];
+	total: number;
+	page: number;
+	limit: number;
+};
 export type LifecycleMode = "transfer" | "graduation";
 
 export type LifecycleProposalStudent = {

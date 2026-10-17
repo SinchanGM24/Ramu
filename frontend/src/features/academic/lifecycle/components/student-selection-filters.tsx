@@ -1,14 +1,15 @@
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import type { LifecycleClassGroup } from "../types";
 export function StudentSelectionFilters({
 	classes,
-	classFilter,
+	classGroupId,
 	search,
 	onClassFilterChange,
 	onSearchChange,
 }: {
-	classes: string[];
-	classFilter: string;
+	classes: LifecycleClassGroup[];
+	classGroupId: string;
 	search: string;
 	onClassFilterChange: (value: string) => void;
 	onSearchChange: (value: string) => void;
@@ -28,13 +29,15 @@ export function StudentSelectionFilters({
 				<label>
 					<span className="sr-only">Filter kelas</span>
 					<select
-						value={classFilter}
+						value={classGroupId}
 						onChange={(event) => onClassFilterChange(event.target.value)}
 						className="w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
 					>
 						<option value="">Semua kelas</option>
 						{classes.map((item) => (
-							<option key={item}>{item}</option>
+							<option key={item.id} value={item.id}>
+								{item.name}
+							</option>
 						))}
 					</select>
 				</label>

@@ -4,14 +4,14 @@ import type { LifecycleMode, LifecycleStudent } from "../types";
 export function StudentSelectionTable({
 	students,
 	selectedIds,
-	allSelected,
+	allPageSelected,
 	mode,
 	onToggle,
 	onToggleAll,
 }: {
 	students: LifecycleStudent[];
 	selectedIds: string[];
-	allSelected: boolean;
+	allPageSelected: boolean;
 	mode: LifecycleMode;
 	onToggle: (id: string) => void;
 	onToggleAll: () => void;
@@ -43,9 +43,9 @@ export function StudentSelectionTable({
 									<th className="w-14 px-4 py-3">
 										<input
 											type="checkbox"
-											checked={allSelected}
+											checked={allPageSelected}
 											onChange={onToggleAll}
-											aria-label="Pilih semua hasil filter"
+											aria-label="Pilih semua murid di halaman ini"
 										/>
 									</th>
 									<th className="px-4 py-3">Murid</th>

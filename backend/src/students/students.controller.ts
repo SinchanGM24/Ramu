@@ -47,6 +47,13 @@ const admissionDecisionSchema = z
   .refine((value) => value.decision === "APPROVED" || Boolean(value.note), {
     message: "Alasan penolakan wajib diisi.",
   });
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().max(120).default(""),
+  classGroupId: z.string().uuid().optional(),
+  lifecycleStatus: z.enum(["ACTIVE", "GRADUATED"]).optional(),
+});
 
 @Controller("students")
 export class StudentsController {
@@ -63,29 +70,41 @@ export class StudentsController {
     @Query("limit") limit = "10",
     @Query("search") search = "",
     @Query("classGroupId") classGroupId?: string,
+    @Query("lifecycleStatus") lifecycleStatus?: string,
   ) {
     const actor = this.auth.require(request);
-    const safePage = Math.max(Number(page), 1);
-    const safeLimit = Math.min(Math.max(Number(limit), 1), 100);
-    const term = `%${search.trim()}%`;
+    const input = listQuerySchema.parse({
+      page,
+      limit,
+      search,
+      classGroupId,
+      lifecycleStatus,
+    });
+    const term = `%${input.search.trim()}%`;
     return this.db.transaction(async (client) => {
       const base = `FROM students s LEFT JOIN student_enrollments enrollment ON enrollment.student_id=s.id AND enrollment.school_id=s.school_id AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) LEFT JOIN class_periods period ON period.id=enrollment.class_period_id AND period.school_id=s.school_id LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id AND grouping.school_id=s.school_id WHERE s.school_id=$1 AND ($2='' OR s.name ILIKE $3 OR COALESCE(s.student_number,'') ILIKE $3) AND ($4::uuid IS NULL OR grouping.id=$4) AND ($5::uuid IS NULL OR EXISTS (SELECT 1 FROM teacher_class_assignments assignment WHERE assignment.school_id=s.school_id AND assignment.class_period_id=enrollment.class_period_id AND assignment.teacher_user_id=$5 AND assignment.ended_at IS NULL))`;
       const filterValues = [
         actor.schoolId,
-        search.trim(),
+        input.search.trim(),
         term,
-        classGroupId ?? null,
+        input.classGroupId ?? null,
         actor.role === "TEACHER" ? actor.userId : null,
+        input.lifecycleStatus ?? null,
       ];
       const items = await client.query(
-        `SELECT s.*,grouping.name AS class_name,enrollment.class_period_id,grouping.id AS class_group_id ${base} ORDER BY s.created_at DESC LIMIT $6 OFFSET $7`,
-        [...filterValues, safeLimit, (safePage - 1) * safeLimit],
+        `SELECT s.*,grouping.name AS class_name,enrollment.class_period_id,grouping.id AS class_group_id ${base} AND ($6::text IS NULL OR s.lifecycle_status=$6) ORDER BY s.created_at DESC LIMIT $7 OFFSET $8`,
+        [...filterValues, input.limit, (input.page - 1) * input.limit],
       );
       const total = await client.query<{ total: number }>(
-        `SELECT count(DISTINCT s.id)::int AS total ${base}`,
+        `SELECT count(DISTINCT s.id)::int AS total ${base} AND ($6::text IS NULL OR s.lifecycle_status=$6)`,
         filterValues,
       );
-      return { items: items.rows, total: total.rows[0].total, page: safePage };
+      return {
+        items: items.rows,
+        total: total.rows[0].total,
+        page: input.page,
+        limit: input.limit,
+      };
     }, actor.schoolId);
   }
 

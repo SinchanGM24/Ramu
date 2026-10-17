@@ -1,5 +1,6 @@
 "use client";
 
+import { PaginationControls } from "@/components/shared/pagination-controls";
 import { GraduationDialog } from "./components/graduation-dialog";
 import { LifecycleFeedback } from "./components/lifecycle-feedback";
 import { LifecycleHeader } from "./components/lifecycle-header";
@@ -37,19 +38,25 @@ export function LifecyclePage() {
 			) : null}
 			<LifecycleTabs mode={page.mode} onChange={page.switchMode} />
 			<StudentSelectionFilters
-				classes={page.directory.classes}
-				classFilter={page.directory.classFilter}
+				classes={page.directory.classGroups}
+				classGroupId={page.directory.classGroupId}
 				search={page.directory.search}
-				onClassFilterChange={page.directory.setClassFilter}
+				onClassFilterChange={page.directory.setClassGroupId}
 				onSearchChange={page.directory.setSearch}
 			/>
 			<StudentSelectionTable
 				students={page.directory.active}
 				selectedIds={page.directory.chosen}
-				allSelected={page.directory.allFiltered}
+				allPageSelected={page.directory.allPageSelected}
 				mode={page.mode}
 				onToggle={page.directory.toggle}
 				onToggleAll={page.directory.toggleAll}
+			/>
+			<PaginationControls
+				page={page.directory.page}
+				pageSize={10}
+				total={page.directory.total}
+				onPageChange={page.directory.setPage}
 			/>
 			<SelectedStudentsActionBar
 				count={page.directory.selected.length}

@@ -1,10 +1,12 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { History, Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
+import { PaginationControls } from "@/components/shared/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { authSessionQueryOptions } from "@/features/auth/session";
 type Student = {
@@ -21,29 +23,40 @@ type History = {
 	effective_on: string;
 	reason?: string | null;
 };
+type Paginated<T> = { items: T[]; total: number; page: number; limit: number };
+
+const pageSize = 10;
+
 export function ArchivePage() {
 	const qc = useQueryClient(),
 		[search, setSearch] = useState(""),
+		[studentPage, setStudentPage] = useState(1),
+		[historyPage, setHistoryPage] = useState(1),
 		[notice, setNotice] = useState(""),
 		[error, setError] = useState("");
+	const debouncedSearch = useDebouncedValue(search);
 	const students = useQuery({
-		queryKey: ["students"],
-		queryFn: () => api<{ items: Student[] }>("/students?limit=100"),
+		queryKey: ["students", "archive", studentPage, debouncedSearch],
+		queryFn: () =>
+			api<Paginated<Student>>(
+				`/students?page=${studentPage}&limit=${pageSize}&lifecycleStatus=GRADUATED&search=${encodeURIComponent(debouncedSearch)}`,
+			),
 	});
 	const session = useQuery(authSessionQueryOptions);
 	const canReverseGraduation = session.data?.role === "SCHOOL_ADMIN";
 	const history = useQuery({
-		queryKey: ["lifecycle", "history"],
-		queryFn: () => api<History[]>("/lifecycle/history"),
+		queryKey: ["lifecycle", "history", historyPage, debouncedSearch],
+		queryFn: () =>
+			api<Paginated<History>>(
+				`/lifecycle/history?page=${historyPage}&limit=${pageSize}&search=${encodeURIComponent(debouncedSearch)}&actions=GRADUATED,GRADUATION_REVERSED`,
+			),
 	});
-	const archived = useMemo(
-		() =>
-			students.data?.items.filter(
-				(x) =>
-					x.lifecycle_status === "GRADUATED" && x.name.toLowerCase().includes(search.toLowerCase()),
-			) ?? [],
-		[students.data, search],
-	);
+	const archived = students.data?.items ?? [];
+
+	useEffect(() => {
+		setStudentPage(1);
+		setHistoryPage(1);
+	}, [debouncedSearch]);
 	async function reverse(studentId: string) {
 		const reason = window.prompt("Tuliskan alasan pembatalan kelulusan.");
 		if (!reason?.trim()) return;
@@ -92,7 +105,7 @@ export function ArchivePage() {
 						</p>
 					</div>
 					<p className="rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700">
-						{archived.length} murid
+						{students.data?.total ?? 0} murid
 					</p>
 				</div>
 				<label className="relative mt-4 block">
@@ -132,6 +145,12 @@ export function ArchivePage() {
 						<p className="py-8 text-center text-sm text-[#637065]">Belum ada murid dalam Arsip.</p>
 					)}
 				</div>
+				<PaginationControls
+					page={studentPage}
+					pageSize={pageSize}
+					total={students.data?.total ?? 0}
+					onPageChange={setStudentPage}
+				/>
 			</Card>
 			<Card className="mt-5">
 				<div className="flex items-center gap-3">
@@ -144,22 +163,23 @@ export function ArchivePage() {
 					</div>
 				</div>
 				<div className="mt-3 space-y-2">
-					{history.data
-						?.filter((x) => ["GRADUATED", "GRADUATION_REVERSED"].includes(x.action))
-						.map((x) => (
-							<div
-								key={x.id}
-								className="rounded-xl border border-[#e7e7dc] bg-[#f7f7f1] p-3 text-sm"
-							>
-								<b className="text-brand-950">{x.student_name}</b>
-								<span className="ml-2 text-[#637065]">
-									{x.action === "GRADUATED" ? "Dinyatakan lulus" : "Kelulusan dibatalkan"} ·{" "}
-									{x.effective_on}
-								</span>
-								{x.reason && <p className="mt-1 text-[#4e5c50]">{x.reason}</p>}
-							</div>
-						))}
+					{history.data?.items.map((x) => (
+						<div key={x.id} className="rounded-xl border border-[#e7e7dc] bg-[#f7f7f1] p-3 text-sm">
+							<b className="text-brand-950">{x.student_name}</b>
+							<span className="ml-2 text-[#637065]">
+								{x.action === "GRADUATED" ? "Dinyatakan lulus" : "Kelulusan dibatalkan"} ·{" "}
+								{x.effective_on}
+							</span>
+							{x.reason && <p className="mt-1 text-[#4e5c50]">{x.reason}</p>}
+						</div>
+					))}
 				</div>
+				<PaginationControls
+					page={historyPage}
+					pageSize={pageSize}
+					total={history.data?.total ?? 0}
+					onPageChange={setHistoryPage}
+				/>
 			</Card>
 		</>
 	);

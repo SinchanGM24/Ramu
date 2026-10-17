@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   Req,
 } from "@nestjs/common";
 import type { FastifyRequest } from "fastify";
@@ -55,22 +56,50 @@ export class LifecycleController {
     private readonly audit: AuditService,
   ) {}
 
-  @Get("history") history(@Req() request: FastifyRequest) {
+  @Get("history") history(
+    @Req() request: FastifyRequest,
+    @Query("page") page = "1",
+    @Query("limit") limit = "10",
+    @Query("search") search = "",
+    @Query("actions") actions?: string,
+  ) {
     const actor = this.auth.require(request, [
       "SCHOOL_ADMIN",
       "TEACHER",
       "PRINCIPAL",
     ]);
-    return this.db.transaction(
-      async (c) =>
-        (
-          await c.query(
-            `SELECT event.*,student.name AS student_name,operation.operation_type,operation.actor_user_id FROM student_lifecycle_events event JOIN students student ON student.id=event.student_id AND student.school_id=event.school_id JOIN lifecycle_operations operation ON operation.id=event.operation_id AND operation.school_id=event.school_id WHERE event.school_id=$1 ORDER BY event.effective_on DESC,event.created_at DESC`,
-            [actor.schoolId],
-          )
-        ).rows,
-      actor.schoolId,
-    );
+    const safePage = Math.max(Number(page) || 1, 1);
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    const actionFilter = actions
+      ?.split(",")
+      .map((action) => action.trim())
+      .filter(Boolean);
+    const term = `%${search.trim()}%`;
+    return this.db.transaction(async (c) => {
+      const base = `FROM student_lifecycle_events event JOIN students student ON student.id=event.student_id AND student.school_id=event.school_id JOIN lifecycle_operations operation ON operation.id=event.operation_id AND operation.school_id=event.school_id WHERE event.school_id=$1 AND ($2='' OR student.name ILIKE $3) AND ($4::text[] IS NULL OR event.action=ANY($4::text[]))`;
+      const values = [
+        actor.schoolId,
+        search.trim(),
+        term,
+        actionFilter?.length ? actionFilter : null,
+      ];
+      const [items, total] = await Promise.all([
+        c.query(
+          `SELECT event.*,student.name AS student_name,operation.operation_type,operation.actor_user_id ${base} ORDER BY event.effective_on DESC,event.created_at DESC LIMIT $5 OFFSET $6`,
+          [...values, safeLimit, (safePage - 1) * safeLimit],
+        ),
+        c.query<{ total: number }>(
+          `SELECT count(*)::int AS total ${base}`,
+          values,
+        ),
+      ]);
+      return {
+        items: items.rows,
+        total: total.rows[0]?.total ?? 0,
+        page: safePage,
+        limit: safeLimit,
+      };
+    }, actor.schoolId);
   }
   @Get("proposals") proposals(@Req() request: FastifyRequest) {
     const actor = this.auth.require(request, ["TEACHER", "PRINCIPAL"]);

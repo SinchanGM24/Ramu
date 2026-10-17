@@ -1,48 +1,85 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
-import type { LifecycleStudent } from "../types";
+import type { LifecycleClassGroup, LifecycleStudent, LifecycleStudentPage } from "../types";
+
+const pageSize = 10;
 
 export function useLifecycleStudents() {
 	const [chosen, setChosen] = useState<string[]>([]);
-	const [classFilter, setClassFilter] = useState("");
+	const [selectedStudents, setSelectedStudents] = useState<Record<string, LifecycleStudent>>({});
+	const [classGroupId, setClassGroupId] = useState("");
 	const [search, setSearch] = useState("");
+	const [page, setPage] = useState(1);
+	const debouncedSearch = useDebouncedValue(search);
 	const students = useQuery({
-		queryKey: ["students"],
-		queryFn: () => api<{ items: LifecycleStudent[] }>("/students?limit=100"),
+		queryKey: ["lifecycle-students", page, debouncedSearch, classGroupId],
+		queryFn: () =>
+			api<LifecycleStudentPage>(
+				`/students?page=${page}&limit=${pageSize}&lifecycleStatus=ACTIVE&search=${encodeURIComponent(debouncedSearch)}${classGroupId ? `&classGroupId=${classGroupId}` : ""}`,
+			),
 	});
-	const active = useMemo(
-		() =>
-			students.data?.items.filter(
-				(student) =>
-					student.lifecycle_status === "ACTIVE" &&
-					(!classFilter || student.class_name === classFilter) &&
-					student.name.toLowerCase().includes(search.toLowerCase()),
-			) ?? [],
-		[students.data, classFilter, search],
+	const classGroups = useQuery({
+		queryKey: ["academic", "class-groups", "lifecycle"],
+		queryFn: () => api<LifecycleClassGroup[]>("/academic/class-groups?activeOnly=true"),
+	});
+	const active = useMemo(() => students.data?.items ?? [], [students.data?.items]);
+
+	useEffect(() => {
+		setPage(1);
+	}, [debouncedSearch, classGroupId]);
+	useEffect(() => {
+		setSelectedStudents((current) => {
+			const next = { ...current };
+			active.forEach((student) => {
+				next[student.id] = student;
+			});
+			return next;
+		});
+	}, [active]);
+
+	const selected = useMemo(
+		() => chosen.map((id) => selectedStudents[id]).filter(Boolean),
+		[chosen, selectedStudents],
 	);
-	const selected = active.filter((student) => chosen.includes(student.id));
-	const allFiltered = active.length > 0 && active.every((student) => chosen.includes(student.id));
-	const classes = [
-		...new Set((students.data?.items ?? []).map((student) => student.class_name).filter(Boolean)),
-	] as string[];
+	const allPageSelected =
+		active.length > 0 && active.every((student) => chosen.includes(student.id));
 	const toggle = (id: string) =>
 		setChosen((current) =>
 			current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
 		);
-	const toggleAll = () => setChosen(allFiltered ? [] : active.map((student) => student.id));
+	const toggleAll = () =>
+		setChosen((current) => {
+			if (allPageSelected)
+				return current.filter((id) => !active.some((student) => student.id === id));
+			return [...new Set([...current, ...active.map((student) => student.id)])];
+		});
+	const selectStudents = (studentsToSelect: LifecycleStudent[]) => {
+		setSelectedStudents((current) => ({
+			...current,
+			...Object.fromEntries(studentsToSelect.map((student) => [student.id, student])),
+		}));
+		setChosen(studentsToSelect.map((student) => student.id));
+	};
+
 	return {
 		active,
 		selected,
 		chosen,
-		classFilter,
+		classGroupId,
 		search,
-		classes,
-		allFiltered,
+		classGroups: classGroups.data ?? [],
+		allPageSelected,
+		page,
+		total: students.data?.total ?? 0,
+		loading: students.isLoading,
 		setChosen,
-		setClassFilter,
+		setClassGroupId,
 		setSearch,
+		setPage,
 		toggle,
 		toggleAll,
+		selectStudents,
 	};
 }

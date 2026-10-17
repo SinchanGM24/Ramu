@@ -28,15 +28,17 @@ export function useLifecyclePage() {
 		setError("");
 	}
 	function startResubmission(proposal: LifecycleProposal) {
-		const requestedIds = proposal.students.map((student) => student.studentId);
-		const availableIds = new Set(directory.active.map((student) => student.id));
-		if (!requestedIds.length || requestedIds.some((studentId) => !availableIds.has(studentId))) {
-			setError(
-				"Pengajuan ini tidak dapat diajukan ulang karena ada murid yang tidak lagi berada pada kelas penugasan Anda.",
-			);
+		const requestedStudents = proposal.students.map((student) => ({
+			id: student.studentId,
+			name: student.studentName,
+			class_name: student.className,
+			lifecycle_status: "ACTIVE" as const,
+		}));
+		if (!requestedStudents.length) {
+			setError("Pengajuan ini tidak memiliki murid yang dapat diajukan ulang.");
 			return;
 		}
-		directory.setChosen(requestedIds);
+		directory.selectStudents(requestedStudents);
 		setMode(proposal.operation_type === "TRANSFER" ? "transfer" : "graduation");
 		setResubmission(proposal);
 		setError("");
