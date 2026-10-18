@@ -3,6 +3,7 @@ import Image from "next/image";
 import { CheckCircle2, Leaf, ShieldCheck } from "lucide-react";
 import { ReactNode } from "react";
 import { BrandMark } from "@/components/shared/brand-mark";
+import { publicAsset } from "@/lib/public-asset";
 
 export function AuthShell({
 	title,
@@ -49,7 +50,7 @@ export function AuthShell({
 					</ul>
 				</div>
 				<Image
-					src="/brand/ramu-learning-auth.png"
+					src={publicAsset("/brand/ramu-learning-auth.png")}
 					alt="Ilustrasi buku, pensil, dan sekolah"
 					width={1024}
 					height={1536}

@@ -142,7 +142,7 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 			is_active: true,
 		};
 	if (path === "/academic/years") return [{ id: "demo-year", name: "2026", is_active: true }];
-	if (path === "/academic/class-groups")
+	if (path.startsWith("/academic/class-groups"))
 		return [{ id: "demo-group", name: "Kelas Apel", is_active: true }];
 	if (path.startsWith("/academic/class-periods"))
 		return [
