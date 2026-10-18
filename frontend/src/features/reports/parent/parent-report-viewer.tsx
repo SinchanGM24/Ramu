@@ -20,8 +20,8 @@ export function ParentReportViewer({ token }: { token: string }) {
 	}
 
 	useEffect(() => {
-		void load().catch(() => undefined);
-	}, []);
+		if (!demo) void load().catch(() => undefined);
+	}, [demo]);
 
 	async function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
