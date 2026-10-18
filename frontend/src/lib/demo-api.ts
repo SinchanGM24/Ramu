@@ -3,6 +3,30 @@ const studentId = "demo-student";
 const semesterId = "demo-semester";
 let reviewStatus: "SUBMITTED" | "IN_REVIEW" | "APPROVED" = "SUBMITTED";
 
+const demoSession = {
+	userId: "demo-admin",
+	schoolId: "demo-school",
+	role: "SCHOOL_ADMIN" as const,
+	email: "admin@tkcontohceria.id",
+};
+
+const progressItems = [
+	{
+		id: studentId,
+		name: "Alya Putri",
+		report_id: reportId,
+		status: "DRAFT",
+		completion_percent: 82,
+	},
+	{
+		id: "demo-student-2",
+		name: "Bima Pratama",
+		report_id: null,
+		status: null,
+		completion_percent: 0,
+	},
+];
+
 const editor = {
 	report: {
 		student_name: "Alya Putri",
@@ -30,6 +54,46 @@ const editor = {
 };
 
 export function demoResponse(path: string, options: RequestInit): unknown {
+	if (path === "/auth/login" && options.method === "POST") return demoSession;
+	if (path === "/auth/session") return demoSession;
+	if (path === "/auth/profile")
+		return {
+			id: demoSession.userId,
+			name: "Admin Sekolah",
+			email: demoSession.email,
+			phone: "0812-0000-0000",
+			role: demoSession.role,
+		};
+	if (path === "/dashboard/summary")
+		return {
+			role: demoSession.role,
+			schoolName: "TK Contoh Ceria",
+			academicYearName: "2026",
+			semesterName: "Semester I",
+			stats: [
+				{
+					id: "students",
+					label: "Murid aktif",
+					value: 60,
+					description: "Terdaftar pada semester aktif",
+					href: "/app/academic/students",
+				},
+				{
+					id: "reports",
+					label: "Raport berjalan",
+					value: 42,
+					description: "Sedang diisi atau ditinjau",
+					href: "/app/reports/progress",
+				},
+				{
+					id: "classes",
+					label: "Kelas aktif",
+					value: 3,
+					description: "Kelas pada tahun ajaran ini",
+					href: "/app/academic",
+				},
+			],
+		};
 	if (path === "/schools/current/logo" && options.method === "POST")
 		return {
 			id: "demo-school",
@@ -78,7 +142,7 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 			is_active: true,
 		};
 	if (path === "/academic/years") return [{ id: "demo-year", name: "2026", is_active: true }];
-	if (path === "/academic/class-groups")
+	if (path.startsWith("/academic/class-groups"))
 		return [{ id: "demo-group", name: "Kelas Apel", is_active: true }];
 	if (path.startsWith("/academic/class-periods"))
 		return [
@@ -93,39 +157,57 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 		];
 	if (path.startsWith("/academic/enrollments"))
 		return [{ id: "demo-enrollment", student_name: "Alya Putri", class_name: "Kelas Apel" }];
-	if (path === "/staff")
-		return [
-			{
-				id: "demo-teacher",
-				name: "Guru Aisyah",
-				email: "guru.aisyah@ramu.test",
-				role: "TEACHER",
-				is_active: true,
-			},
-			{
-				id: "demo-principal",
-				name: "Kepala Sekolah",
-				email: "kepsek@ramu.test",
-				role: "PRINCIPAL",
-				is_active: true,
-			},
-		];
-	if (path === "/students")
+	if (path.startsWith("/staff"))
+		return {
+			items: [
+				{
+					id: "demo-teacher",
+					name: "Guru Aisyah",
+					email: "guru.aisyah@ramu.test",
+					phone: "0812-0000-0001",
+					role: "TEACHER",
+					is_active: true,
+				},
+				{
+					id: "demo-principal",
+					name: "Kepala Sekolah",
+					email: "kepsek@ramu.test",
+					phone: "0812-0000-0002",
+					role: "PRINCIPAL",
+					is_active: true,
+				},
+			],
+			total: 2,
+			page: 1,
+		};
+	if (path.startsWith("/students"))
 		return {
 			items: [
 				{
 					id: studentId,
 					name: "Alya Putri",
 					student_number: "TK-2026-014",
-					class_name: "Kelompok A",
+					class_name: "Kelas Apel",
 				},
 			],
+			total: 1,
+			page: 1,
 		};
 	if (path.startsWith("/reports/progress"))
-		return [
-			{ id: studentId, name: "Alya Putri", report_id: reportId, status: "DRAFT" },
-			{ id: "demo-student-2", name: "Bima Pratama", report_id: null, status: null },
-		];
+		return {
+			items: progressItems,
+			total: progressItems.length,
+			page: 1,
+			limit: 10,
+			summary: {
+				total: progressItems.length,
+				notCreated: 1,
+				draft: 1,
+				review: 0,
+				publish: 0,
+				published: 0,
+			},
+		};
 	if (path === "/reports/review-queue")
 		return [
 			{

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/shared/brand-mark";
 import { Button } from "@/components/ui/button";
+import { publicAsset } from "@/lib/public-asset";
 
 const assurances = [
 	"Penilaian individual untuk setiap murid",
@@ -121,7 +122,7 @@ export function LandingPage() {
 						<Leaf className="size-20 rotate-[26deg]" strokeWidth={1} />
 					</div>
 					<Image
-						src="/brand/ramu-landing-campus.png"
+						src={publicAsset("/brand/ramu-landing-campus.png")}
 						alt="Ilustrasi sekolah PAUD, buku, dan lembar perkembangan murid"
 						width={1536}
 						height={1024}
@@ -164,7 +165,7 @@ export function LandingPage() {
 					<div className="bg-[#f6f3e9]">
 						<div className="border-b border-brand-950/10 px-7 pt-6 sm:px-10 sm:pt-8">
 							<Image
-								src="/brand/ramu-report-journey.png"
+								src={publicAsset("/brand/ramu-report-journey.png")}
 								alt="Ilustrasi catatan guru, raport yang ditinjau, dan raport dibuka melalui telepon"
 								width={2048}
 								height={768}

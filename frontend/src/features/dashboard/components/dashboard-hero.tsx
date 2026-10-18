@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Leaf } from "lucide-react";
+import { publicAsset } from "@/lib/public-asset";
 
 export function DashboardHero({
 	schoolName,
@@ -11,7 +12,7 @@ export function DashboardHero({
 	return (
 		<section className="relative mb-8 overflow-hidden rounded-[2rem] border border-white/80 bg-[#fffdf8] px-6 py-8 shadow-soft sm:px-8 lg:px-10">
 			<Image
-				src="/images/dashboard-school-hero.png"
+				src={publicAsset("/images/dashboard-school-hero.png")}
 				alt="Ilustrasi bangunan sekolah"
 				width={1536}
 				height={1024}
