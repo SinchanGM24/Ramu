@@ -71,7 +71,7 @@ const workspace = {
 	areas: [
 		{
 			id: "area-moral",
-			name: "Nilai Agama dan Moral",
+			name: "Nilai-Nilai Agama dan Moral",
 			narrative: "Alya mengikuti kegiatan doa bersama dengan tertib dan mandiri.",
 			subAreas: [
 				{
@@ -81,6 +81,43 @@ const workspace = {
 						{
 							id: "indicator-moral",
 							description: "Mengikuti kegiatan doa bersama",
+							scaleOptionId: "scale-bsh",
+						},
+					],
+				},
+			],
+		},
+		{
+			id: "area-fisik-motorik",
+			name: "Fisik Motorik",
+			narrative: "Alya bergerak lincah saat kegiatan luar ruang dan teliti saat berkarya.",
+			subAreas: [
+				{
+					id: "sub-area-fisik-motorik",
+					name: "Motorik Kasar dan Halus",
+					indicators: [
+						{
+							id: "indicator-fisik-motorik",
+							description: "Mengkoordinasikan gerakan tubuh saat bermain",
+							scaleOptionId: "scale-bsh",
+						},
+					],
+				},
+			],
+		},
+		{
+			id: "area-kognitif",
+			name: "Kognitif",
+			narrative:
+				"Alya mampu membandingkan benda dan mencoba beberapa cara saat memecahkan masalah.",
+			subAreas: [
+				{
+					id: "sub-area-kognitif",
+					name: "Berpikir Logis",
+					indicators: [
+						{
+							id: "indicator-kognitif",
+							description: "Mengelompokkan benda berdasarkan warna dan bentuk",
 							scaleOptionId: "scale-bsh",
 						},
 					],
@@ -105,6 +142,44 @@ const workspace = {
 				},
 			],
 		},
+		{
+			id: "area-sosem",
+			name: "Sosial Emosional",
+			narrative:
+				"Alya mampu menunggu giliran dan menunjukkan kepedulian kepada teman saat bermain bersama.",
+			subAreas: [
+				{
+					id: "sub-area-sosem",
+					name: "Perilaku Prososial",
+					indicators: [
+						{
+							id: "indicator-sosem",
+							description: "Mau berbagi dan bekerja sama dengan teman",
+							scaleOptionId: "scale-bsb",
+						},
+					],
+				},
+			],
+		},
+		{
+			id: "area-seni",
+			name: "Seni",
+			narrative:
+				"Alya menikmati kegiatan musik dan mampu mengekspresikan gagasan melalui karya sederhana.",
+			subAreas: [
+				{
+					id: "sub-area-seni",
+					name: "Ekspresi dan Karya Seni",
+					indicators: [
+						{
+							id: "indicator-seni",
+							description: "Membuat karya seni dengan berbagai bahan",
+							scaleOptionId: "scale-bsb",
+						},
+					],
+				},
+			],
+		},
 	],
 	growth: { weight_kg: 18.5, height_cm: 108, head_circumference_cm: null },
 	attendance: { sick_days: 1, permission_days: 0, unexcused_days: 0 },
@@ -117,20 +192,16 @@ const preview = {
 		semester_name: "Semester I",
 	},
 	areas: workspace.areas.map(({ id, name, narrative }) => ({ id, name, narrative })),
-	assessments: [
-		{
-			area_id: "area-moral",
-			sub_area_name: "Pembiasaan",
-			description: "Mengikuti kegiatan doa bersama",
-			scale_code: "BSH",
-		},
-		{
-			area_id: "area-bahasa",
-			sub_area_name: "Komunikasi",
-			description: "Menceritakan kembali kegiatan yang dialami",
-			scale_code: "BSB",
-		},
-	],
+	assessments: workspace.areas.flatMap((area) =>
+		area.subAreas.flatMap((subArea) =>
+			subArea.indicators.map((indicator) => ({
+				area_id: area.id,
+				sub_area_name: subArea.name,
+				description: indicator.description,
+				scale_code: scales.find((scale) => scale.id === indicator.scaleOptionId)?.code ?? null,
+			})),
+		),
+	),
 };
 
 const publishedVersion = {
@@ -143,7 +214,7 @@ const publishedVersion = {
 		student: { name: "Alya Putri", student_number: "TK-2026-014", class_name: "Kelas Apel" },
 		semester: { name: "Semester I", academic_year_name: "2026" },
 		assessments: preview.assessments.map((item) => ({
-			area_name: item.area_id === "area-moral" ? "Nilai Agama dan Moral" : "Bahasa",
+			area_name: workspace.areas.find((area) => area.id === item.area_id)?.name ?? "-",
 			sub_area_name: item.sub_area_name,
 			description: item.description,
 			code: item.scale_code,
