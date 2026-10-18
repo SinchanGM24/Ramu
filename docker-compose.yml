@@ -6,7 +6,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ramu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ramu_local_password}
     ports:
-      - "5432:5432"
+      # 5432/5433 sering dipakai oleh PostgreSQL lokal. Port host RAMU dibuat
+      # eksplisit agar API development selalu terhubung ke container ini.
+      - "15432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/src/database/init/001_app_role.sql:/docker-entrypoint-initdb.d/001_app_role.sql:ro
@@ -19,7 +21,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -29,14 +31,15 @@ services:
       retries: 20
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
+    image: soldevelo/minio:2025.7.23
+    user: "0:0"
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ramu_minio}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-ramu_minio_password}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9010:9000"
+      - "9011:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -52,17 +55,18 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4000
-      FRONTEND_ORIGIN: http://localhost:3000
+      FRONTEND_ORIGIN: http://localhost:3001
       DATABASE_URL: postgresql://ramu_app:${POSTGRES_APP_PASSWORD:-ramu_app_local_password}@postgres:5432/${POSTGRES_DB:-ramu}
       SESSION_COOKIE_NAME: ramu_session
       SESSION_TTL_DAYS: 7
+      RATE_LIMIT_REDIS_URL: redis://redis:6379
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
       OBJECT_STORAGE_REGION: us-east-1
       OBJECT_STORAGE_BUCKET: ramu-private
       OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-ramu_minio}
       OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-ramu_minio_password}
     ports:
-      - "4000:4000"
+      - "4001:4000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,9 +78,9 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4001
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - api
 

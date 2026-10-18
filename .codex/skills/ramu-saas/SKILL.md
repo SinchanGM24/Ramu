@@ -16,10 +16,21 @@ Use this skill for product, architecture, or implementation work in this reposit
 - Publishing makes a version immutable. A correction is a new version, PDF, token, and delivery scope.
 - Analytics aggregate scale results only and never rank students.
 - AI drafts/flags only. A human teacher or authorized staff member keeps all academic and publication decisions.
+- A reusable class is `class_groups`. It is the only class concept exposed in ordinary forms. `class_periods` is an internal historical placement record; never render duplicate reusable classes merely because they appear in multiple academic years.
+- Do not reintroduce education levels, next-level progression, promotion/repetition, homeroom/primary-teacher flags, or automatic class advancement. Administrative movement is an explicit transfer or graduation only.
+- Keep requests separate from applied operations: a teacher request is not a student placement, graduation, enrollment, or other applied lifecycle event until its authorized approval transaction succeeds.
+- Every school receives the same default PAUD assessment framework and `BB`/`MB`/`BSH`/`BSB` scale automatically. Do not restore a user-managed framework or assessment-settings workflow in the MVP.
 
 ## Language boundary
 
 Use English for code, database/API contracts, and internal state values. All user-facing UI and generated customer content must be Bahasa Indonesia. Translate status codes at the presentation boundary; never display raw codes such as `not-started`, `partial`, `complete`, `DRAFT`, or `PUBLISHED`.
+
+## Frontend implementation shape
+
+- Keep Next.js route files in `frontend/src/app` thin: resolve route parameters and render a feature-page component only.
+- Build substantial screens in `frontend/src/features/<domain>/` as a composition of named components. A `*-page.tsx` file coordinates shared state/data and should not contain entire tables, dialogs, forms, or several large local components.
+- Place meaningful page sections in `components/`, shared/complex state in `hooks/`, contracts in `types.ts`, and pure mappings/helpers in `utils.ts`. Do not over-split trivial one-off markup.
+- Reuse `components/shared` primitives for common dialogs, page headers, pagination, and status displays. Keep all TS/TSX formatted with the repository Prettier configuration.
 
 ## Delivery routing
 

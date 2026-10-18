@@ -1,0 +1,265 @@
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from "@nestjs/common";
+import type { FastifyRequest } from "fastify";
+import { z } from "zod";
+import { AuditService } from "../audit/audit.service";
+import { AuthService } from "../auth/auth.service";
+import { DatabaseService } from "../database/database.service";
+
+const staffSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().email(),
+  role: z.enum(["TEACHER", "PRINCIPAL"]),
+  phone: z.string().trim().max(40).optional(),
+  password: z.string().min(8).max(128),
+});
+const updateSchema = z
+  .object({
+    name: z.string().trim().min(2).max(120).optional(),
+    role: z.enum(["TEACHER", "PRINCIPAL"]).optional(),
+    phone: z.string().trim().max(40).optional(),
+    isActive: z.boolean().optional(),
+    password: z.string().min(8).max(128).optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.role !== undefined ||
+      value.phone !== undefined ||
+      value.isActive !== undefined ||
+      value.password !== undefined,
+  );
+const assignmentSchema = z.object({ teacherUserId: z.string().uuid() });
+
+@Controller("staff")
+export class StaffController {
+  constructor(
+    private readonly auth: AuthService,
+    private readonly db: DatabaseService,
+    private readonly audit: AuditService,
+  ) {}
+  @Get() list(
+    @Req() request: FastifyRequest,
+    @Query("page") page = "1",
+    @Query("limit") limit = "5",
+    @Query("search") search = "",
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]),
+      safePage = Math.max(Number(page), 1),
+      safeLimit = Math.min(Math.max(Number(limit), 1), 100),
+      term = `%${search.trim()}%`;
+    return this.db.transaction(async (c) => {
+      const items = await c.query(
+        "SELECT user_account.id,user_account.name,user_account.email,user_account.phone,membership.role,membership.is_active,membership.deactivated_at FROM school_memberships membership JOIN users user_account ON user_account.id=membership.user_id WHERE membership.school_id=$1 AND membership.role <> 'SCHOOL_ADMIN' AND ($2='' OR user_account.name ILIKE $3 OR user_account.email ILIKE $3 OR COALESCE(user_account.phone,'') ILIKE $3) ORDER BY membership.role,user_account.name LIMIT $4 OFFSET $5",
+        [
+          actor.schoolId,
+          search.trim(),
+          term,
+          safeLimit,
+          (safePage - 1) * safeLimit,
+        ],
+      );
+      const total = await c.query<{ total: number }>(
+        "SELECT count(*)::int AS total FROM school_memberships membership JOIN users user_account ON user_account.id=membership.user_id WHERE membership.school_id=$1 AND membership.role <> 'SCHOOL_ADMIN' AND ($2='' OR user_account.name ILIKE $3 OR user_account.email ILIKE $3 OR COALESCE(user_account.phone,'') ILIKE $3)",
+        [actor.schoolId, search.trim(), term],
+      );
+      return { items: items.rows, total: total.rows[0].total, page: safePage };
+    }, actor.schoolId);
+  }
+  @Post() async create(@Req() request: FastifyRequest, @Body() body: unknown) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = staffSchema.parse(body);
+    return this.db.transaction(async (c) => {
+      const exists = await c.query(
+        "SELECT 1 FROM users WHERE lower(email)=lower($1)",
+        [input.email],
+      );
+      if (exists.rowCount)
+        throw new ConflictException("Email tersebut sudah digunakan.");
+      const user = (
+        await c.query(
+          "INSERT INTO users(name,email,phone,password_hash) VALUES($1,lower($2),$3,$4) RETURNING id,name,email,phone",
+          [
+            input.name,
+            input.email,
+            input.phone || null,
+            await this.auth.hashPassword(input.password),
+          ],
+        )
+      ).rows[0];
+      await c.query(
+        "INSERT INTO school_memberships(user_id,school_id,role) VALUES($1,$2,$3)",
+        [user.id, actor.schoolId, input.role],
+      );
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "staff.created",
+          entityType: "user",
+          entityId: user.id,
+          metadata: { role: input.role },
+        },
+        c,
+      );
+      return { ...user, role: input.role, is_active: true };
+    }, actor.schoolId);
+  }
+  @Patch(":userId") async update(
+    @Req() request: FastifyRequest,
+    @Param("userId") userId: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = updateSchema.parse(body);
+    return this.db.transaction(async (c) => {
+      const member = (
+        await c.query(
+          "SELECT user_id,role FROM school_memberships WHERE user_id=$1 AND school_id=$2",
+          [userId, actor.schoolId],
+        )
+      ).rows[0];
+      if (!member || member.role === "SCHOOL_ADMIN")
+        throw new NotFoundException("Akun staf tidak ditemukan.");
+      if (input.isActive !== undefined)
+        await c.query(
+          "UPDATE school_memberships SET is_active=$3,deactivated_at=CASE WHEN $3 THEN NULL ELSE now() END WHERE user_id=$1 AND school_id=$2",
+          [userId, actor.schoolId, input.isActive],
+        );
+      if (input.role)
+        await c.query(
+          "UPDATE school_memberships SET role=$3 WHERE user_id=$1 AND school_id=$2 AND role <> 'SCHOOL_ADMIN'",
+          [userId, actor.schoolId, input.role],
+        );
+      if (input.name || input.password || input.phone !== undefined)
+        await c.query(
+          "UPDATE users SET name=COALESCE($2,name),phone=COALESCE($3,phone),password_hash=COALESCE($4,password_hash),updated_at=now() WHERE id=$1",
+          [
+            userId,
+            input.name ?? null,
+            input.phone ?? null,
+            input.password
+              ? await this.auth.hashPassword(input.password)
+              : null,
+          ],
+        );
+      if (input.password) await this.auth.revokeAllUserSessions(userId, c);
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "staff.updated",
+          entityType: "user",
+          entityId: userId,
+          metadata: {
+            nameChanged: Boolean(input.name),
+            roleChanged: Boolean(input.role),
+            phoneChanged: input.phone !== undefined,
+            isActive: input.isActive,
+            passwordReset: Boolean(input.password),
+          },
+        },
+        c,
+      );
+      return { ok: true };
+    }, actor.schoolId);
+  }
+  @Get("class-periods/:classPeriodId/assignments") assignments(
+    @Req() request: FastifyRequest,
+    @Param("classPeriodId") classPeriodId: string,
+  ) {
+    const actor = this.auth.require(request);
+    return this.db.transaction(
+      async (c) =>
+        (
+          await c.query(
+            "SELECT assignment.*,teacher.name AS teacher_name,teacher.email AS teacher_email FROM teacher_class_assignments assignment JOIN users teacher ON teacher.id=assignment.teacher_user_id WHERE assignment.class_period_id=$1 AND assignment.school_id=$2 ORDER BY assignment.ended_at NULLS FIRST,teacher.name",
+            [classPeriodId, actor.schoolId],
+          )
+        ).rows,
+      actor.schoolId,
+    );
+  }
+  @Post("class-periods/:classPeriodId/assignments") async assign(
+    @Req() request: FastifyRequest,
+    @Param("classPeriodId") classPeriodId: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = assignmentSchema.parse(body);
+    return this.db.transaction(async (c) => {
+      const period = (
+        await c.query(
+          "SELECT id FROM class_periods WHERE id=$1 AND school_id=$2",
+          [classPeriodId, actor.schoolId],
+        )
+      ).rows[0];
+      if (!period) throw new NotFoundException("Kelas tidak ditemukan.");
+      const teacher = (
+        await c.query(
+          "SELECT 1 FROM school_memberships WHERE user_id=$1 AND school_id=$2 AND role='TEACHER' AND is_active",
+          [input.teacherUserId, actor.schoolId],
+        )
+      ).rowCount;
+      if (!teacher)
+        throw new NotFoundException("Akun guru aktif tidak ditemukan.");
+      const assignment = (
+        await c.query(
+          "INSERT INTO teacher_class_assignments(school_id,class_period_id,teacher_user_id) VALUES($1,$2,$3) ON CONFLICT (class_period_id,teacher_user_id) WHERE ended_at IS NULL DO UPDATE SET ended_at=NULL RETURNING *",
+          [actor.schoolId, classPeriodId, input.teacherUserId],
+        )
+      ).rows[0];
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "teacher_class_assignment.created",
+          entityType: "teacher_class_assignment",
+          entityId: assignment.id,
+          metadata: { teacherUserId: input.teacherUserId },
+        },
+        c,
+      );
+      return assignment;
+    }, actor.schoolId);
+  }
+  @Post("class-periods/:classPeriodId/assignments/:assignmentId/end")
+  async endAssignment(
+    @Req() request: FastifyRequest,
+    @Param("classPeriodId") classPeriodId: string,
+    @Param("assignmentId") assignmentId: string,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    return this.db.transaction(async (c) => {
+      const assignment = (
+        await c.query(
+          "UPDATE teacher_class_assignments SET ended_at=now() WHERE id=$1 AND class_period_id=$2 AND school_id=$3 AND ended_at IS NULL RETURNING *",
+          [assignmentId, classPeriodId, actor.schoolId],
+        )
+      ).rows[0];
+      if (!assignment)
+        throw new NotFoundException("Penugasan aktif tidak ditemukan.");
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "teacher_class_assignment.ended",
+          entityType: "teacher_class_assignment",
+          entityId: assignment.id,
+        },
+        c,
+      );
+      return assignment;
+    }, actor.schoolId);
+  }
+}

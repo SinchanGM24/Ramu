@@ -2,18 +2,18 @@
 
 ## 1. Purpose
 
-RAMU (*Raport Murid*) is a multi-tenant SaaS for TK/PAUD schools. It enables a school to configure academic data, let teachers assess individual students, route reports through review and approval, publish an immutable PDF report, and share it to guardians through a secure WhatsApp link and PIN.
+RAMU (_Raport Murid_) is a multi-tenant SaaS for TK/PAUD schools. It enables a school to configure academic data, let teachers assess individual students, route reports through review and approval, publish an immutable PDF report, and share it to guardians through a secure WhatsApp link and PIN.
 
 **Product outcome:** fewer manual report-production steps while preserving teacher and school control over every academic decision.
 
 ## 2. Users and access
 
-| Role | Main capabilities |
-| --- | --- |
-| `SUPER_ADMIN` | Operates the shared SaaS and tenants. |
-| `SCHOOL_ADMIN` | Configures the school, academic data, users, report publishing, and delivery. |
-| `TEACHER` | Assesses students in assigned classes, writes narratives, and submits reports. |
-| `PRINCIPAL` | Reviews, approves, or requests revisions. |
+| Role            | Main capabilities                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| `SUPER_ADMIN`   | Operates the shared SaaS and tenants.                                                             |
+| `SCHOOL_ADMIN`  | Configures the school, academic data, users, report publishing, and delivery.                     |
+| `TEACHER`       | Assesses students in assigned classes, writes narratives, and submits reports.                    |
+| `PRINCIPAL`     | Reviews, approves, or requests revisions.                                                         |
 | `PARENT_VIEWER` | Not an app account. Uses a secure link plus PIN to view, download, or print one published report. |
 
 Tenant equals `school`. Application users obtain roles through `school_memberships(user_id, school_id, role)`; do not use `users.school_id`.
@@ -25,13 +25,20 @@ Tenant equals `school`. Application users obtain roles through `school_membershi
 - Public landing, features, pricing, FAQ, login, and school registration.
 - Account, school, plan, tenant creation, and onboarding.
 - School profile, academic years, semesters, classes, teachers, students, and guardian contacts.
-- Tenant-configurable assessment framework and scale.
+- Framework dan skala penilaian PAUD standar yang dibuat otomatis untuk setiap sekolah.
 - Individual student assessment, narratives, growth, attendance summary, extracurricular records, and portfolio.
 - Review, approval, preview, versioned publication, PDF storage, secure parent access, WhatsApp distribution, aggregate analytics, and audit log.
 
 ### Explicitly out of scope
 
 LMS, SPP/accounting, payroll, chat, daily attendance, student rankings, parent account systems, and native mobile apps.
+
+### Academic data rules
+
+- A class is a reusable school-owned name such as **Apel** or **Melati**. Users select that class once; they do not select duplicate copies by academic year.
+- Historical placement and reporting internally connect a student, class, academic year, and semester. This internal record must not make duplicate class choices appear in ordinary forms.
+- There are no levels, next-level rules, promotion/repetition states, homeroom teachers, primary teachers, or automatic advancement. Transfer and graduation are explicit administrative actions.
+- A teacher request is pending work, not an applied enrollment or lifecycle operation. It is stored separately from applied lifecycle operations. Approval creates the applied record and links it to the request in one transaction; rejection changes no student placement.
 
 ## 4. Primary journeys
 
@@ -42,6 +49,8 @@ LMS, SPP/accounting, payroll, chat, daily attendance, student rankings, parent a
 ### Report creation and delivery
 
 `Academic setup → Teacher individual assessment → Submit → Review → Approve → Publish → Generate PDF + secure token + six-digit PIN → Queue WhatsApp → Parent read-only view`
+
+Antarmuka aplikasi memisahkan tiga ruang kerja raport: **Pengisian raport** untuk membuat atau melengkapi draf, **Tinjauan raport** untuk meminta revisi atau menyetujui, serta **Publikasi & kirim** untuk menerbitkan raport yang disetujui dan mengirimkannya kepada wali. Jangan mencampur tindakan antar-tahap pada satu daftar kerja.
 
 ### Parent access
 
@@ -61,11 +70,11 @@ The parent must not edit, comment, upload, chat, access analytics, or see other 
 
 `/app/academic/{years,classes,teachers,students}`
 
-`/app/reports/{progress,review,publish}`
+`/app/reports/{progress,review,publication}`
 
 `/app/analytics`, `/app/communication/whatsapp`
 
-`/app/settings/{school,assessment,template,users,subscription}`
+`/app/settings/{school,template,users,subscription}`
 
 ### Teacher workspace
 
@@ -75,11 +84,11 @@ The parent must not edit, comment, upload, chat, access analytics, or see other 
 
 Framework hierarchy: `DevelopmentArea → SubArea → Indicator → Assessment`.
 
-Default scale is `BB`, `MB`, `BSH`, `BSB`, but each tenant can configure its own scale/options. Initial development areas are Nilai Agama dan Moral, Fisik Motorik, Kognitif, Bahasa, Sosial Emosional, and Seni.
+Setiap sekolah otomatis menerima framework PAUD standar dan skala `BB`, `MB`, `BSH`, `BSB`. Framework penilaian tidak dapat dikonfigurasi pada MVP. Area perkembangan awal adalah Nilai Agama dan Moral, Fisik Motorik, Kognitif, Bahasa, Sosial Emosional, dan Seni.
 
 The student workspace shows identity, semester, completion progress, each development area, semester data, and report preview. Area state is visually `complete`, `partial`, or `not-started`. For each indicator the teacher chooses one scale option in one click; the result autosaves. Assessment is strictly one student at a time.
 
-Semester data contains growth (weight, height, optional head circumference), attendance (sick, permission, absent), extracurricular activity/grade, and portfolio photo/caption/report inclusion.
+Semester data contains optional growth measurements (weight, height, and head circumference), attendance (sick, permission, absent), extracurricular activity/grade, and portfolio photo/caption/report inclusion.
 
 ## 7. Report lifecycle
 
@@ -105,14 +114,14 @@ Publication creates a PDF, secure access token, six-digit PIN, and delivery reco
 
 ## 10. Core data model
 
-| Domain | Entities |
-| --- | --- |
-| Identity and tenancy | `users`, `schools`, `school_memberships`, `subscriptions` |
-| Academic | `academic_years`, `semesters`, `classes`, `students`, `guardian_contacts` |
-| Assessment configuration | `assessment_frameworks`, `development_areas`, `sub_areas`, `indicators`, `assessment_scales`, `assessment_scale_options` |
-| Assessment evidence | `student_assessments`, `report_narratives`, `growth_records`, `attendance_summaries`, `extracurricular_records`, `portfolio_items` |
-| Reports and access | `reports`, `report_versions`, `report_approvals`, `report_access`, `report_deliveries` |
-| Governance | `audit_logs` |
+| Domain                   | Entities                                                                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Identity and tenancy     | `users`, `schools`, `school_memberships`, `subscriptions`                                                                          |
+| Academic                 | `academic_years`, `semesters`, `classes`, `students`, `guardian_contacts`                                                          |
+| Assessment configuration | `assessment_frameworks`, `development_areas`, `sub_areas`, `indicators`, `assessment_scales`, `assessment_scale_options`           |
+| Assessment evidence      | `student_assessments`, `report_narratives`, `growth_records`, `attendance_summaries`, `extracurricular_records`, `portfolio_items` |
+| Reports and access       | `reports`, `report_versions`, `report_approvals`, `report_access`, `report_deliveries`                                             |
+| Governance               | `audit_logs`                                                                                                                       |
 
 ## 11. Technical direction
 
@@ -127,11 +136,13 @@ Implementation order: multi-tenant foundation; auth/RBAC; onboarding; master aca
 
 ## 12. Optional AI assistance
 
-| Agent | Permitted output |
-| --- | --- |
-| Narrative | Draft narrative from indicators, teacher notes, and development area; teacher must review/edit. |
-| Completeness | Missing assessments, narratives, or semester data. |
-| Consistency | Potential mismatch between assessments and narrative. |
+Deterministic report narrative rules are defined in [SmartNarrativeEngine.md](SmartNarrativeEngine.md). This engine is not an AI assessor and remains subject to the human-review requirements below.
+
+| Agent        | Permitted output                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| Narrative    | Draft narrative from indicators, teacher notes, and development area; teacher must review/edit. |
+| Completeness | Missing assessments, narratives, or semester data.                                              |
+| Consistency  | Potential mismatch between assessments and narrative.                                           |
 
 AI cannot assign scores, approve/publish a report, rank students, or diagnose children.
 

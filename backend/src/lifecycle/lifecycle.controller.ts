@@ -1,0 +1,655 @@
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+  Req,
+} from "@nestjs/common";
+import type { FastifyRequest } from "fastify";
+import { z } from "zod";
+import { AuditService } from "../audit/audit.service";
+import { AuthService, type AuthContext } from "../auth/auth.service";
+import { DatabaseService } from "../database/database.service";
+
+const date = z.string().date();
+const transferItem = z.object({
+  studentId: z.string().uuid(),
+  targetClassGroupId: z.string().uuid(),
+  effectiveOn: date,
+  reason: z.string().trim().max(1000).optional(),
+});
+const transferSchema = z.object({
+  items: z.array(transferItem).min(1).max(200),
+  reason: z.string().trim().max(1000).optional(),
+  resubmittedFromRequestId: z.string().uuid().optional(),
+});
+const graduationSchema = z.object({
+  studentIds: z.array(z.string().uuid()).min(1).max(200),
+  effectiveOn: date,
+  reason: z.string().trim().max(1000).optional(),
+  resubmittedFromRequestId: z.string().uuid().optional(),
+});
+const reversalSchema = z.object({
+  studentId: z.string().uuid(),
+  effectiveOn: date,
+  reason: z.string().trim().min(1).max(1000),
+});
+const decisionSchema = z
+  .object({
+    decision: z.enum(["APPROVED", "REJECTED"]),
+    note: z.string().trim().max(1000).optional(),
+  })
+  .refine((value) => value.decision === "APPROVED" || Boolean(value.note), {
+    message: "Alasan penolakan wajib diisi.",
+  });
+
+@Controller("lifecycle")
+export class LifecycleController {
+  constructor(
+    private readonly auth: AuthService,
+    private readonly db: DatabaseService,
+    private readonly audit: AuditService,
+  ) {}
+
+  @Get("history") history(
+    @Req() request: FastifyRequest,
+    @Query("page") page = "1",
+    @Query("limit") limit = "10",
+    @Query("search") search = "",
+    @Query("actions") actions?: string,
+  ) {
+    const actor = this.auth.require(request, [
+      "SCHOOL_ADMIN",
+      "TEACHER",
+      "PRINCIPAL",
+    ]);
+    const safePage = Math.max(Number(page) || 1, 1);
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    const actionFilter = actions
+      ?.split(",")
+      .map((action) => action.trim())
+      .filter(Boolean);
+    const term = `%${search.trim()}%`;
+    return this.db.transaction(async (c) => {
+      const base = `FROM student_lifecycle_events event JOIN students student ON student.id=event.student_id AND student.school_id=event.school_id JOIN lifecycle_operations operation ON operation.id=event.operation_id AND operation.school_id=event.school_id WHERE event.school_id=$1 AND ($2='' OR student.name ILIKE $3) AND ($4::text[] IS NULL OR event.action=ANY($4::text[]))`;
+      const values = [
+        actor.schoolId,
+        search.trim(),
+        term,
+        actionFilter?.length ? actionFilter : null,
+      ];
+      const [items, total] = await Promise.all([
+        c.query(
+          `SELECT event.*,student.name AS student_name,operation.operation_type,operation.actor_user_id ${base} ORDER BY event.effective_on DESC,event.created_at DESC LIMIT $5 OFFSET $6`,
+          [...values, safeLimit, (safePage - 1) * safeLimit],
+        ),
+        c.query<{ total: number }>(
+          `SELECT count(*)::int AS total ${base}`,
+          values,
+        ),
+      ]);
+      return {
+        items: items.rows,
+        total: total.rows[0]?.total ?? 0,
+        page: safePage,
+        limit: safeLimit,
+      };
+    }, actor.schoolId);
+  }
+  @Get("proposals") proposals(@Req() request: FastifyRequest) {
+    const actor = this.auth.require(request, ["TEACHER", "PRINCIPAL"]);
+    return this.db.transaction(
+      async (c) =>
+        (
+          await c.query(
+            `SELECT request.id,request.request_type AS operation_type,request.reason,request.payload,request.status,request.created_at,request.updated_at,request.reviewed_at,request.review_note,request.resubmitted_from_request_id,requester.name AS requester_name,
+              CASE
+                WHEN request.request_type IN ('TRANSFER','CONTINUATION') THEN (
+                  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                    'studentId',student.id,'studentName',student.name,
+                    'className',current_class.name,'targetClassName',target_class.name,
+                    'targetClassGroupId',item->>'targetClassGroupId',
+                    'effectiveOn',item->>'effectiveOn','reason',item->>'reason'
+                  ) ORDER BY student.name),'[]'::jsonb)
+                  FROM jsonb_array_elements(request.payload->'items') item
+                  JOIN students student ON student.id=(item->>'studentId')::uuid AND student.school_id=request.school_id
+                  LEFT JOIN LATERAL (
+                    SELECT grouping.name FROM student_enrollments enrollment
+                    LEFT JOIN class_periods period ON period.id=enrollment.class_period_id AND period.school_id=enrollment.school_id
+                    LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id AND grouping.school_id=period.school_id
+                    WHERE enrollment.student_id=student.id AND enrollment.school_id=request.school_id
+                      AND enrollment.effective_start_on<=CURRENT_DATE
+                      AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE)
+                    ORDER BY enrollment.effective_start_on DESC LIMIT 1
+                  ) current_class ON true
+                  LEFT JOIN class_groups target_class ON target_class.id=(item->>'targetClassGroupId')::uuid AND target_class.school_id=request.school_id
+                )
+                ELSE (
+                  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                    'studentId',student.id,'studentName',student.name,
+                    'className',current_class.name,'effectiveOn',request.payload->>'effectiveOn'
+                  ) ORDER BY student.name),'[]'::jsonb)
+                  FROM jsonb_array_elements_text(request.payload->'studentIds') item(student_id)
+                  JOIN students student ON student.id=item.student_id::uuid AND student.school_id=request.school_id
+                  LEFT JOIN LATERAL (
+                    SELECT grouping.name FROM student_enrollments enrollment
+                    LEFT JOIN class_periods period ON period.id=enrollment.class_period_id AND period.school_id=enrollment.school_id
+                    LEFT JOIN class_groups grouping ON grouping.id=period.class_group_id AND grouping.school_id=period.school_id
+                    WHERE enrollment.student_id=student.id AND enrollment.school_id=request.school_id
+                      AND enrollment.effective_start_on<=CURRENT_DATE
+                      AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE)
+                    ORDER BY enrollment.effective_start_on DESC LIMIT 1
+                  ) current_class ON true
+                )
+              END AS students
+             FROM lifecycle_requests request
+             JOIN users requester ON requester.id=request.requested_by
+             WHERE request.school_id=$1
+               AND (request.status='PENDING' OR ($2::uuid IS NOT NULL AND request.status='REJECTED'))
+               AND ($2::uuid IS NULL OR request.requested_by=$2)
+             ORDER BY CASE WHEN request.status='PENDING' THEN 0 ELSE 1 END,request.updated_at DESC`,
+            [actor.schoolId, actor.role === "TEACHER" ? actor.userId : null],
+          )
+        ).rows,
+      actor.schoolId,
+    );
+  }
+
+  @Post("proposals/transfers") async proposeTransfer(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["TEACHER"]);
+    const input = transferSchema.parse(body);
+    return this.createRequest(
+      actor,
+      "TRANSFER",
+      input,
+      input.reason,
+      input.items.map((item) => item.studentId),
+      input.resubmittedFromRequestId,
+    );
+  }
+  @Post("proposals/graduations") async proposeGraduation(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["TEACHER"]);
+    const input = graduationSchema.parse(body);
+    return this.createRequest(
+      actor,
+      "GRADUATION",
+      input,
+      input.reason,
+      input.studentIds,
+      input.resubmittedFromRequestId,
+    );
+  }
+
+  @Post("proposals/:id/decision") async decide(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["PRINCIPAL"]);
+    const input = decisionSchema.parse(body);
+    return this.db.transaction(async (c) => {
+      const proposal = (
+        await c.query<any>(
+          "SELECT * FROM lifecycle_requests WHERE id=$1 AND school_id=$2 AND status='PENDING' FOR UPDATE",
+          [id, actor.schoolId],
+        )
+      ).rows[0];
+      if (!proposal)
+        throw new NotFoundException(
+          "Pengajuan menunggu persetujuan tidak ditemukan.",
+        );
+      if (input.decision === "REJECTED") {
+        await c.query(
+          "UPDATE lifecycle_requests SET status='REJECTED',reviewed_by=$2,reviewed_at=now(),review_note=$3,updated_at=now() WHERE id=$1",
+          [id, actor.userId, input.note],
+        );
+        await this.audit.record(
+          {
+            schoolId: actor.schoolId,
+            actorUserId: actor.userId,
+            action: "lifecycle.request_rejected",
+            entityType: "lifecycle_request",
+            entityId: id,
+            metadata: { note: input.note },
+          },
+          c,
+        );
+        return { id, status: "REJECTED" };
+      }
+      const operation = await this.createOperation(
+        c,
+        actor,
+        proposal.request_type,
+        proposal.reason,
+      );
+      if (
+        proposal.request_type === "TRANSFER" ||
+        proposal.request_type === "CONTINUATION"
+      ) {
+        const payload = transferSchema.parse(proposal.payload);
+        for (const item of payload.items)
+          await this.place(
+            c,
+            actor,
+            operation.id,
+            item,
+            proposal.request_type,
+            payload.reason,
+          );
+      } else if (proposal.request_type === "GRADUATION") {
+        const payload = graduationSchema.parse(proposal.payload);
+        for (const studentId of payload.studentIds)
+          await this.graduateStudent(
+            c,
+            actor,
+            operation.id,
+            studentId,
+            payload.effectiveOn,
+            payload.reason,
+          );
+      } else throw new BadRequestException("Jenis pengajuan tidak didukung.");
+      await c.query(
+        "UPDATE lifecycle_requests SET status='APPROVED',reviewed_by=$2,reviewed_at=now(),review_note=$3,applied_operation_id=$4,updated_at=now() WHERE id=$1",
+        [id, actor.userId, input.note ?? null, operation.id],
+      );
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "lifecycle.request_approved",
+          entityType: "lifecycle_request",
+          entityId: id,
+          metadata: { operationId: operation.id },
+        },
+        c,
+      );
+      return { id, status: "APPROVED", operationId: operation.id };
+    }, actor.schoolId);
+  }
+
+  @Post("transfers") async transfer(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    return this.executeTransfer(actor, "TRANSFER", transferSchema.parse(body));
+  }
+  @Post("continuations") async continuation(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    return this.executeTransfer(
+      actor,
+      "CONTINUATION",
+      transferSchema.parse(body),
+    );
+  }
+  @Post("graduations") async graduate(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = graduationSchema.parse(body);
+    return this.db.transaction(async (c) => {
+      const operation = await this.createOperation(
+        c,
+        actor,
+        "GRADUATION",
+        input.reason,
+      );
+      for (const studentId of input.studentIds)
+        await this.graduateStudent(
+          c,
+          actor,
+          operation.id,
+          studentId,
+          input.effectiveOn,
+          input.reason,
+        );
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: "student.graduation.processed",
+          entityType: "lifecycle_operation",
+          entityId: operation.id,
+          metadata: { count: input.studentIds.length },
+        },
+        c,
+      );
+      return { operationId: operation.id, processed: input.studentIds.length };
+    }, actor.schoolId);
+  }
+  @Post("graduations/reverse") async reverse(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
+    const input = reversalSchema.parse(body);
+    return this.db.transaction(async (c) => {
+      const student = (
+        await c.query<any>(
+          "SELECT id,lifecycle_status FROM students WHERE id=$1 AND school_id=$2 FOR UPDATE",
+          [input.studentId, actor.schoolId],
+        )
+      ).rows[0];
+      if (!student) throw new NotFoundException("Murid tidak ditemukan.");
+      if (student.lifecycle_status !== "GRADUATED")
+        throw new BadRequestException("Murid bukan murid arsip.");
+      const operation = await this.createOperation(
+        c,
+        actor,
+        "GRADUATION_REVERSAL",
+        input.reason,
+      );
+      await c.query(
+        "UPDATE students SET lifecycle_status='ACTIVE',updated_at=now() WHERE id=$1 AND school_id=$2",
+        [student.id, actor.schoolId],
+      );
+      await this.event(
+        c,
+        actor.schoolId,
+        student.id,
+        operation.id,
+        "GRADUATION_REVERSED",
+        input.effectiveOn,
+        { lifecycleStatus: "GRADUATED" },
+        { lifecycleStatus: "ACTIVE" },
+        input.reason,
+      );
+      return { operationId: operation.id, studentId: student.id };
+    }, actor.schoolId);
+  }
+
+  private async createRequest(
+    actor: AuthContext,
+    requestType: "TRANSFER" | "GRADUATION",
+    payload: unknown,
+    reason: string | undefined,
+    studentIds: string[],
+    resubmittedFromRequestId?: string,
+  ) {
+    return this.db.transaction(async (c) => {
+      await this.assertTeacherStudents(c, actor, studentIds);
+      if (resubmittedFromRequestId) {
+        const previous = (
+          await c.query(
+            "SELECT id FROM lifecycle_requests WHERE id=$1 AND school_id=$2 AND requested_by=$3 AND request_type=$4 AND status='REJECTED'",
+            [resubmittedFromRequestId, actor.schoolId, actor.userId, requestType],
+          )
+        ).rows[0];
+        if (!previous)
+          throw new BadRequestException(
+            "Pengajuan yang akan diperbaiki tidak ditemukan atau tidak dapat diajukan ulang.",
+          );
+      }
+      const request = (
+        await c.query(
+          "INSERT INTO lifecycle_requests(school_id,request_type,requested_by,reason,payload,resubmitted_from_request_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,status",
+          [
+            actor.schoolId,
+            requestType,
+            actor.userId,
+            reason ?? null,
+            JSON.stringify(payload),
+            resubmittedFromRequestId ?? null,
+          ],
+        )
+      ).rows[0];
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: resubmittedFromRequestId
+            ? "lifecycle.request_resubmitted"
+            : "lifecycle.request_created",
+          entityType: "lifecycle_request",
+          entityId: request.id,
+          metadata: { requestType, count: studentIds.length, resubmittedFromRequestId },
+        },
+        c,
+      );
+      return {
+        requestId: request.id,
+        status: request.status,
+        submitted: studentIds.length,
+      };
+    }, actor.schoolId);
+  }
+  private async createOperation(
+    c: any,
+    actor: AuthContext,
+    type: "TRANSFER" | "CONTINUATION" | "GRADUATION" | "GRADUATION_REVERSAL",
+    reason?: string,
+  ) {
+    return (
+      await c.query(
+        "INSERT INTO lifecycle_operations(school_id,operation_type,actor_user_id,reason) VALUES($1,$2,$3,$4) RETURNING id",
+        [actor.schoolId, type, actor.userId, reason ?? null],
+      )
+    ).rows[0];
+  }
+  private async executeTransfer(
+    actor: AuthContext,
+    type: "TRANSFER" | "CONTINUATION",
+    input: z.infer<typeof transferSchema>,
+  ) {
+    return this.db.transaction(async (c) => {
+      const operation = await this.createOperation(
+        c,
+        actor,
+        type,
+        input.reason,
+      );
+      for (const item of input.items)
+        await this.place(c, actor, operation.id, item, type, input.reason);
+      await this.audit.record(
+        {
+          schoolId: actor.schoolId,
+          actorUserId: actor.userId,
+          action: `student.${type.toLowerCase()}.processed`,
+          entityType: "lifecycle_operation",
+          entityId: operation.id,
+          metadata: { count: input.items.length },
+        },
+        c,
+      );
+      return { operationId: operation.id, processed: input.items.length };
+    }, actor.schoolId);
+  }
+  private async assertTeacherStudents(
+    c: any,
+    actor: AuthContext,
+    studentIds: string[],
+  ) {
+    const allowed = await c.query(
+      `SELECT DISTINCT enrollment.student_id FROM student_enrollments enrollment JOIN teacher_class_assignments assignment ON assignment.class_period_id=enrollment.class_period_id AND assignment.school_id=enrollment.school_id AND assignment.ended_at IS NULL WHERE enrollment.school_id=$1 AND enrollment.student_id=ANY($2::uuid[]) AND enrollment.effective_start_on<=CURRENT_DATE AND (enrollment.effective_end_on IS NULL OR enrollment.effective_end_on>CURRENT_DATE) AND assignment.teacher_user_id=$3`,
+      [actor.schoolId, studentIds, actor.userId],
+    );
+    if (allowed.rowCount !== studentIds.length)
+      throw new ForbiddenException(
+        "Anda hanya dapat mengajukan tindakan untuk murid pada kelas penugasan Anda.",
+      );
+  }
+  private async graduateStudent(
+    c: any,
+    actor: AuthContext,
+    operationId: string,
+    studentId: string,
+    effectiveOn: string,
+    reason?: string,
+  ) {
+    const student = (
+      await c.query(
+        "SELECT id,lifecycle_status FROM students WHERE id=$1 AND school_id=$2 FOR UPDATE",
+        [studentId, actor.schoolId],
+      )
+    ).rows[0];
+    if (!student || student.lifecycle_status !== "ACTIVE")
+      throw new BadRequestException("Murid aktif tidak ditemukan.");
+    await c.query(
+      "UPDATE students SET lifecycle_status='GRADUATED',updated_at=now() WHERE id=$1 AND school_id=$2",
+      [studentId, actor.schoolId],
+    );
+    await c.query(
+      "UPDATE student_enrollments SET status='GRADUATED',effective_end_on=LEAST(COALESCE(effective_end_on,$2::date),GREATEST($2::date,effective_start_on + 1)),ended_at=now() WHERE student_id=$1 AND school_id=$3 AND effective_start_on <= $2 AND (effective_end_on IS NULL OR effective_end_on > $2)",
+      [studentId, effectiveOn, actor.schoolId],
+    );
+    await this.event(
+      c,
+      actor.schoolId,
+      studentId,
+      operationId,
+      "GRADUATED",
+      effectiveOn,
+      { lifecycleStatus: student.lifecycle_status },
+      { lifecycleStatus: "GRADUATED" },
+      reason,
+    );
+  }
+  private async place(
+    c: any,
+    actor: AuthContext,
+    operationId: string,
+    item: z.infer<typeof transferItem>,
+    action: string,
+    reason?: string,
+  ) {
+    const group = (
+      await c.query(
+        "SELECT id FROM class_groups WHERE id=$1 AND school_id=$2 AND is_active",
+        [item.targetClassGroupId, actor.schoolId],
+      )
+    ).rows[0];
+    if (!group)
+      throw new NotFoundException(
+        "Kelas tujuan tidak aktif atau tidak ditemukan.",
+      );
+    const year = (
+      await c.query(
+        "SELECT id FROM academic_years WHERE school_id=$1 AND starts_on <= $2::date AND ends_on >= $2::date",
+        [actor.schoolId, item.effectiveOn],
+      )
+    ).rows[0];
+    if (!year)
+      throw new BadRequestException(
+        "Siapkan tahun ajaran yang mencakup tanggal efektif perpindahan.",
+      );
+    const target = (
+      await c.query(
+        "INSERT INTO class_periods(school_id,class_group_id,academic_year_id) VALUES($1,$2,$3) ON CONFLICT (class_group_id,academic_year_id) DO UPDATE SET class_group_id=EXCLUDED.class_group_id RETURNING id,academic_year_id",
+        [actor.schoolId, item.targetClassGroupId, year.id],
+      )
+    ).rows[0];
+    const student = (
+      await c.query(
+        "SELECT id,lifecycle_status FROM students WHERE id=$1 AND school_id=$2 FOR UPDATE",
+        [item.studentId, actor.schoolId],
+      )
+    ).rows[0];
+    if (!student || student.lifecycle_status !== "ACTIVE")
+      throw new BadRequestException("Murid aktif tidak ditemukan.");
+    const source =
+      (
+        await c.query(
+          `SELECT * FROM student_enrollments WHERE student_id=$1 AND school_id=$2 AND academic_year_id=$3 AND effective_start_on <= $4 AND (effective_end_on IS NULL OR effective_end_on > $4) FOR UPDATE`,
+          [
+            item.studentId,
+            actor.schoolId,
+            target.academic_year_id,
+            item.effectiveOn,
+          ],
+        )
+      ).rows[0] ?? null;
+    if (source?.class_period_id === target.id)
+      throw new BadRequestException("Murid sudah berada pada kelas tujuan.");
+    if (source)
+      await c.query(
+        "UPDATE student_enrollments SET effective_end_on=$2,status='TRANSFERRED',ended_at=CASE WHEN $2<=CURRENT_DATE THEN now() ELSE ended_at END WHERE id=$1 AND school_id=$3",
+        [source.id, item.effectiveOn, actor.schoolId],
+      );
+    const status =
+      item.effectiveOn > new Date().toISOString().slice(0, 10)
+        ? "SCHEDULED"
+        : "ACTIVE";
+    const enrollment = (
+      await c.query(
+        "INSERT INTO student_enrollments(school_id,student_id,academic_year_id,class_period_id,status,started_at,effective_start_on) VALUES($1,$2,$3,$4,$5,now(),$6) RETURNING *",
+        [
+          actor.schoolId,
+          item.studentId,
+          target.academic_year_id,
+          target.id,
+          status,
+          item.effectiveOn,
+        ],
+      )
+    ).rows[0];
+    if (status === "ACTIVE")
+      await c.query(
+        "UPDATE reports SET student_enrollment_id=$1,updated_at=now() WHERE student_id=$2 AND school_id=$4 AND status IN ('DRAFT','REVISION_REQUIRED') AND semester_id IN (SELECT id FROM semesters WHERE academic_year_id=$3 AND school_id=$4)",
+        [
+          enrollment.id,
+          item.studentId,
+          target.academic_year_id,
+          actor.schoolId,
+        ],
+      );
+    await this.event(
+      c,
+      actor.schoolId,
+      item.studentId,
+      operationId,
+      action,
+      item.effectiveOn,
+      {
+        enrollmentId: source?.id ?? null,
+        classGroupId: source?.class_period_id ?? null,
+      },
+      {
+        enrollmentId: enrollment.id,
+        classGroupId: item.targetClassGroupId,
+        status,
+      },
+      item.reason ?? reason,
+    );
+    return enrollment;
+  }
+  private async event(
+    c: any,
+    schoolId: string,
+    studentId: string,
+    operationId: string,
+    action: string,
+    effectiveOn: string,
+    previous: object,
+    next: object,
+    reason?: string,
+  ) {
+    await c.query(
+      "INSERT INTO student_lifecycle_events(school_id,student_id,operation_id,action,effective_on,previous_state,new_state,reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+      [
+        schoolId,
+        studentId,
+        operationId,
+        action,
+        effectiveOn,
+        JSON.stringify(previous),
+        JSON.stringify(next),
+        reason ?? null,
+      ],
+    );
+  }
+}

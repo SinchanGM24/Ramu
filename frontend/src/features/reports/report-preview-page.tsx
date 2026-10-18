@@ -1,7 +1,151 @@
 "use client";
-import Link from "next/link"; import { useQuery } from "@tanstack/react-query"; import { Card } from "@/components/ui/card"; import { PageHeader } from "@/components/shared/page-header"; import { api } from "@/lib/api";
-type Data={report:{student_name:string;student_number?:string|null;semester_name:string};areas:{id:string;name:string;narrative?:string|null}[];assessments:{area_id:string;sub_area_name:string;description:string;scale_code?:string|null}[]};
-export const scales=["BB","MB","BSH","BSB"];export const scaleCopy:Record<string,string>={BB:"Belum Berkembang",MB:"Mulai Berkembang",BSH:"Berkembang Sesuai Harapan",BSB:"Berkembang Sangat Baik"};
-export function ScaleLegend(){return <div className="mt-4 grid gap-2 border border-slate-400 p-3 text-xs sm:grid-cols-4">{scales.map((scale)=><span key={scale}><b>{scale}</b> — {scaleCopy[scale]}</span>)}</div>}
-export function FormalTable({items}:{items:{sub_area_name?:string;description:string;scale_code?:string|null;code?:string|null}[]}){return <div className="overflow-x-auto"><table className="min-w-full border-collapse text-left text-xs"><thead><tr className="bg-slate-200"><th className="border border-slate-500 p-2">No</th><th className="border border-slate-500 p-2">Aspek perkembangan</th>{scales.map((scale)=><th key={scale} className="border border-slate-500 p-2 text-center">{scale}</th>)}</tr></thead><tbody>{items.map((item,index)=><tr key={`${item.description}-${index}`}><td className="border border-slate-400 p-2 text-center">{index+1}</td><td className="border border-slate-400 p-2"><small className="block text-slate-500">{item.sub_area_name||"Indikator"}</small>{item.description}</td>{scales.map((scale)=><td key={scale} className="border border-slate-400 p-2 text-center text-base">{(item.scale_code||item.code)===scale?"✓":""}</td>)}</tr>)}</tbody></table></div>}
-export function ReportPreviewPage({id}:{id:string}){const query=useQuery({queryKey:["report-preview",id],queryFn:()=>api<Data|null>(`/reports/${id}/editor`)});if(!query.data)return <Card>Memuat pratinjau rapor…</Card>;const data=query.data;return <><div className="print:hidden"><PageHeader eyebrow="Pratinjau rapor" title="Laporan Perkembangan Anak Didik" description="Dokumen baca-saja dengan tabel penilaian formal." action={<div className="flex gap-2"><Link href={`/app/reports/${id}`} className="rounded-xl border px-4 py-2 text-sm font-semibold">Kembali</Link><button onClick={()=>window.print()} className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white">Cetak</button></div>}/></div><article className="mx-auto max-w-5xl bg-white p-5 shadow-soft print:max-w-none print:p-0 print:shadow-none sm:p-8"><header className="border-b-2 border-slate-700 pb-4 text-center"><h1 className="text-xl font-bold uppercase">Laporan Perkembangan Anak Didik</h1><p className="mt-2 text-sm">Nama: <b>{data.report.student_name}</b> · Nomor induk: {data.report.student_number||"-"} · {data.report.semester_name}</p></header><ScaleLegend/>{data.areas.map((area,index)=><section key={area.id} className="mt-7"><h2 className="border border-slate-500 bg-slate-100 px-3 py-2 font-bold uppercase">{["I","II","III","IV","V","VI"][index]}. {area.name}</h2><FormalTable items={data.assessments.filter((item)=>item.area_id===area.id)}/><div className="border border-t-0 border-slate-500 p-3 text-sm"><b>Narasi perkembangan</b><p className="mt-2 whitespace-pre-wrap">{area.narrative||"-"}</p></div></section>)}</article></>}
+
+import Link from "next/link";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingState } from "@/components/shared/loading-state";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shared/page-header";
+import { api, ApiError } from "@/lib/api";
+import { FormalAssessmentTable } from "./presentation/formal-assessment-table";
+import { ReportScaleLegend } from "./presentation/report-scale-legend";
+import { PublishedReportPage } from "./published-report-page";
+import { getReportReturnTarget } from "./utils/report-navigation";
+
+type Data = {
+	report: { student_name: string; student_number?: string | null; semester_name: string };
+	areas: { id: string; name: string; narrative?: string | null }[];
+	assessments: {
+		area_id: string;
+		sub_area_name: string;
+		description: string;
+		scale_code?: string | null;
+	}[];
+};
+
+type PublishedVersionState = { current_status: string };
+
+export function ReportPreviewPage({ id }: { id: string }) {
+	return (
+		<Suspense fallback={<LoadingState label="Menyiapkan pratinjau raport..." />}>
+			<ReportPreviewContent id={id} />
+		</Suspense>
+	);
+}
+
+function ReportPreviewContent({ id }: { id: string }) {
+	const searchParams = useSearchParams();
+	const returnTarget = getReportReturnTarget({
+		from: searchParams.get("from"),
+		reportId: id,
+		returnTo: searchParams.get("returnTo"),
+		studentId: searchParams.get("studentId"),
+	});
+	const published = useQuery({
+		queryKey: ["published-report", id],
+		queryFn: () => api<PublishedVersionState | null>(`/reports/${id}/published-version`),
+	});
+	const query = useQuery({
+		queryKey: ["report-preview", id],
+		queryFn: () => api<Data | null>(`/reports/${id}/editor`),
+		enabled: published.isSuccess && published.data?.current_status !== "PUBLISHED",
+	});
+	if (published.isLoading) return <LoadingState label="Menyiapkan pratinjau raport..." />;
+	if (published.isError) {
+		const message =
+			published.error instanceof ApiError
+				? published.error.message
+				: "Pratinjau raport tidak dapat dimuat. Coba lagi beberapa saat lagi.";
+
+		return <PreviewError message={message} onRetry={() => void published.refetch()} />;
+	}
+	if (published.data?.current_status === "PUBLISHED") {
+		return <PublishedReportPage id={id} returnTarget={returnTarget} />;
+	}
+	if (query.isLoading || !published.isSuccess) {
+		return <LoadingState label="Menyiapkan pratinjau raport..." />;
+	}
+	if (query.isError) {
+		const message =
+			query.error instanceof ApiError
+				? query.error.message
+				: "Pratinjau raport tidak dapat dimuat. Coba lagi beberapa saat lagi.";
+
+		return <PreviewError message={message} onRetry={() => void query.refetch()} />;
+	}
+	if (!query.data) {
+		return (
+			<EmptyState
+				title="Data raport tidak ditemukan"
+				description="Raport mungkin telah dihapus atau Anda tidak memiliki akses ke data ini."
+			/>
+		);
+	}
+	const data = query.data;
+	return (
+		<>
+			<div className="print:hidden">
+				<PageHeader
+					eyebrow="Pratinjau raport"
+					title="Laporan Perkembangan Anak Didik"
+					description="Dokumen baca-saja dengan tabel penilaian formal."
+					action={
+						<div className="flex gap-2">
+							<Link
+								href={returnTarget.href}
+								className="rounded-xl border px-4 py-2 text-sm font-semibold"
+							>
+								{returnTarget.label}
+							</Link>
+							<button
+								onClick={() => window.print()}
+								className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
+							>
+								Cetak
+							</button>
+						</div>
+					}
+				/>
+			</div>
+			<article className="mx-auto max-w-5xl bg-white p-5 shadow-soft print:max-w-none print:p-0 print:shadow-none sm:p-8">
+				<header className="border-b-2 border-slate-700 pb-4 text-center">
+					<h1 className="text-xl font-bold uppercase">Laporan Perkembangan Anak Didik</h1>
+					<p className="mt-2 text-sm">
+						Nama: <b>{data.report.student_name}</b> · Nomor induk:{" "}
+						{data.report.student_number || "-"} · {data.report.semester_name}
+					</p>
+				</header>
+				<ReportScaleLegend />
+				{data.areas.map((area, index) => (
+					<section key={area.id} className="mt-7">
+						<h2 className="border border-slate-500 bg-slate-100 px-3 py-2 font-bold uppercase">
+							{["I", "II", "III", "IV", "V", "VI"][index]}. {area.name}
+						</h2>
+						<FormalAssessmentTable
+							items={data.assessments.filter((item) => item.area_id === area.id)}
+						/>
+						<div className="border border-t-0 border-slate-500 p-3 text-sm">
+							<b>Narasi perkembangan</b>
+							<p className="mt-2 whitespace-pre-wrap">{area.narrative || "-"}</p>
+						</div>
+					</section>
+				))}
+			</article>
+		</>
+	);
+}
+
+function PreviewError({ message, onRetry }: { message: string; onRetry: () => void }) {
+	return (
+		<Card className="max-w-xl border-red-200 bg-red-50 text-sm text-red-800">
+			<p className="font-semibold">Pratinjau raport tidak tersedia</p>
+			<p className="mt-1 leading-6">{message}</p>
+			<Button className="mt-4" variant="secondary" onClick={onRetry}>
+				Coba lagi
+			</Button>
+		</Card>
+	);
+}

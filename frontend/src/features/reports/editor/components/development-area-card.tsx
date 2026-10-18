@@ -1,0 +1,78 @@
+import { CheckCircle2, Circle, CircleDot } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { NarrativeEditor } from "./narrative-editor";
+import { ReportAssessmentTable } from "./report-assessment-table";
+import type { ReportArea, ReportScale } from "../types";
+import { getAreaProgress } from "../utils";
+
+type DevelopmentAreaCardProps = {
+	area: ReportArea;
+	editable: boolean;
+	number: number;
+	onChoose: (indicatorId: string, scaleOptionId: string) => void;
+	pendingScaleOptionIds: Record<string, string>;
+	reportId: string;
+	refresh: () => void;
+	savingIndicatorId?: string;
+	scales: ReportScale[];
+};
+
+export function DevelopmentAreaCard({
+	area,
+	editable,
+	number,
+	onChoose,
+	pendingScaleOptionIds,
+	reportId,
+	refresh,
+	savingIndicatorId,
+	scales,
+}: DevelopmentAreaCardProps) {
+	const progress = getAreaProgress(area);
+	const complete = progress.assessed === progress.total;
+
+	return (
+		<Card className="border-[#e5e7dc] bg-[#fffefa]">
+			<div className="flex justify-between gap-3">
+				<div>
+					<p className="text-xs font-bold tracking-[0.08em] text-brand-700">
+						{number}. ASPEK PERKEMBANGAN
+					</p>
+					<h2 className="mt-1 text-lg font-bold text-[#17251b]">{area.name}</h2>
+					<p className="mt-1 text-sm text-[#637065]">
+						{progress.assessed}/{progress.total} indikator dinilai
+					</p>
+				</div>
+				{complete && area.narrative ? (
+					<CheckCircle2 className="text-emerald-600" />
+				) : progress.assessed ? (
+					<CircleDot className="text-amber-600" />
+				) : (
+					<Circle className="text-slate-400" />
+				)}
+			</div>
+			{area.subAreas.map((subArea) => (
+				<div
+					key={subArea.id}
+					className="mt-4 overflow-hidden rounded-xl border border-[#e4e7de] bg-[#fffdf8]"
+				>
+					<ReportAssessmentTable
+						subArea={subArea}
+						scales={scales}
+						editable={editable}
+						savingIndicatorId={savingIndicatorId}
+						pendingScaleOptionIds={pendingScaleOptionIds}
+						onChoose={onChoose}
+					/>
+				</div>
+			))}
+			<NarrativeEditor
+				reportId={reportId}
+				area={area}
+				editable={editable}
+				complete={complete}
+				refresh={refresh}
+			/>
+		</Card>
+	);
+}

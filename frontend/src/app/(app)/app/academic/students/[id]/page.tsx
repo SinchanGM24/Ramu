@@ -1,8 +1,10 @@
-import { StudentProfilePage } from "@/features/students/student-profile-page";
+import { StudentProfilePage } from "@/features/students/profile/student-profile-page";
 
-export function generateStaticParams() { return [{ id: "demo-student" }]; }
+export function generateStaticParams() {
+	return [{ id: "demo-student" }];
+}
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  return <StudentProfilePage id={id} />;
+	const { id } = await params;
+	return <StudentProfilePage id={id} />;
 }
