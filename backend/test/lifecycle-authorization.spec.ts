@@ -53,9 +53,7 @@ describe("LifecycleController authorization", () => {
     const db = {
       transaction: async (
         callback: (client: {
-          query: (
-            statement: string,
-          ) => Promise<{
+          query: (statement: string) => Promise<{
             rowCount: number;
             rows: Array<{ id?: string; status?: string }>;
           }>;
@@ -111,7 +109,10 @@ describe("LifecycleController authorization", () => {
         callback: (client: {
           query: (
             statement: string,
-          ) => Promise<{ rowCount: number; rows: Array<{ request_type?: string }> }>;
+          ) => Promise<{
+            rowCount: number;
+            rows: Array<{ request_type?: string }>;
+          }>;
         }) => unknown,
       ) =>
         callback({
@@ -136,8 +137,15 @@ describe("LifecycleController authorization", () => {
         note: "Kelas tujuan perlu diperbaiki.",
       }),
     ).resolves.toEqual({ id: "request-1", status: "REJECTED" });
-    expect(sql.some((statement) => statement.includes("status='REJECTED'"))).toBe(true);
-    expect(sql.some((statement) => statement.includes("INSERT INTO lifecycle_operations"))).toBe(false);
+    expect(sql[0]).toContain("status='PENDING' FOR UPDATE");
+    expect(
+      sql.some((statement) => statement.includes("status='REJECTED'")),
+    ).toBe(true);
+    expect(
+      sql.some((statement) =>
+        statement.includes("INSERT INTO lifecycle_operations"),
+      ),
+    ).toBe(false);
   });
 
   it("links a corrected teacher proposal to its rejected request", async () => {
@@ -146,9 +154,7 @@ describe("LifecycleController authorization", () => {
     const db = {
       transaction: async (
         callback: (client: {
-          query: (
-            statement: string,
-          ) => Promise<{
+          query: (statement: string) => Promise<{
             rowCount: number;
             rows: Array<{ id?: string; status?: string }>;
           }>;
@@ -163,7 +169,10 @@ describe("LifecycleController authorization", () => {
             if (statement.startsWith("SELECT id FROM lifecycle_requests")) {
               return { rowCount: 1, rows: [{ id: "previous-request" }] };
             }
-            return { rowCount: 1, rows: [{ id: "request-2", status: "PENDING" }] };
+            return {
+              rowCount: 1,
+              rows: [{ id: "request-2", status: "PENDING" }],
+            };
           },
         }),
     } as never;
@@ -190,7 +199,13 @@ describe("LifecycleController authorization", () => {
         resubmittedFromRequestId: "00000000-0000-4000-8000-000000000003",
       }),
     ).resolves.toMatchObject({ requestId: "request-2", status: "PENDING" });
-    expect(sql.some((statement) => statement.includes("resubmitted_from_request_id"))).toBe(true);
-    expect(auditCalls).toContainEqual(expect.objectContaining({ action: "lifecycle.request_resubmitted" }));
+    expect(
+      sql.some((statement) =>
+        statement.includes("resubmitted_from_request_id"),
+      ),
+    ).toBe(true);
+    expect(auditCalls).toContainEqual(
+      expect.objectContaining({ action: "lifecycle.request_resubmitted" }),
+    );
   });
 });

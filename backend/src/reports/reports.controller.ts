@@ -95,17 +95,18 @@ export class ReportsController implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.publicationJobs?.registerPublisher(({ schoolId, actorUserId, reportId }) =>
-      this.publishForActor(
-        {
-          userId: actorUserId,
-          schoolId,
-          role: "SCHOOL_ADMIN",
-          email: "",
-          sessionId: "publication-worker",
-        },
-        reportId,
-      ),
+    this.publicationJobs?.registerPublisher(
+      ({ schoolId, actorUserId, reportId }) =>
+        this.publishForActor(
+          {
+            userId: actorUserId,
+            schoolId,
+            role: "SCHOOL_ADMIN",
+            email: "",
+            sessionId: "publication-worker",
+          },
+          reportId,
+        ),
     );
   }
 
@@ -309,7 +310,9 @@ export class ReportsController implements OnModuleInit {
     @Query("semesterId") semesterId: string,
   ) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
-    const input = z.object({ semesterId: z.string().uuid() }).parse({ semesterId });
+    const input = z
+      .object({ semesterId: z.string().uuid() })
+      .parse({ semesterId });
     return this.db.transaction(async (client) => {
       await assertTeacherActiveSemester(client, actor, input.semesterId);
       return (
@@ -433,8 +436,8 @@ export class ReportsController implements OnModuleInit {
     return this.db.transaction(async (client) => {
       const report = (
         await client.query<{ status: string }>(
-          "SELECT status FROM reports WHERE id=$1",
-          [id],
+          "SELECT status FROM reports WHERE id=$1 AND school_id=$2 FOR UPDATE",
+          [id, actor.schoolId],
         )
       ).rows[0];
       if (!report) throw new NotFoundException("Raport tidak ditemukan");
@@ -460,10 +463,27 @@ export class ReportsController implements OnModuleInit {
         throw new ForbiddenException("Akses ditolak");
       const updated = (
         await client.query(
-          "UPDATE reports SET status=$1::report_status,submitted_at=CASE WHEN $3 THEN now() ELSE submitted_at END,approved_at=CASE WHEN $4 THEN now() ELSE approved_at END,updated_at=now() WHERE id=$2 RETURNING *",
-          [to, id, to === "SUBMITTED", to === "APPROVED"],
+          `UPDATE reports
+           SET status=$1::report_status,
+               submitted_at=CASE WHEN $3 THEN now() ELSE submitted_at END,
+               approved_at=CASE WHEN $4 THEN now() ELSE approved_at END,
+               updated_at=now()
+           WHERE id=$2 AND school_id=$5 AND status=$6::report_status
+           RETURNING *`,
+          [
+            to,
+            id,
+            to === "SUBMITTED",
+            to === "APPROVED",
+            actor.schoolId,
+            report.status,
+          ],
         )
       ).rows[0];
+      if (!updated)
+        throw new ConflictException(
+          "Status raport telah berubah. Muat ulang halaman.",
+        );
       await this.audit.record(
         {
           schoolId: actor.schoolId,
@@ -481,10 +501,14 @@ export class ReportsController implements OnModuleInit {
   }
 
   @Post("publication-jobs")
-  async enqueuePublicationJob(@Req() request: FastifyRequest, @Body() body: unknown) {
+  async enqueuePublicationJob(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+  ) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
     const input = publicationJobInput.parse(body);
-    if (!this.publicationJobs) throw new InternalServerErrorException("Antrean publikasi belum siap");
+    if (!this.publicationJobs)
+      throw new InternalServerErrorException("Antrean publikasi belum siap");
     return this.publicationJobs.enqueue({
       schoolId: actor.schoolId,
       actorUserId: actor.userId,
@@ -494,9 +518,13 @@ export class ReportsController implements OnModuleInit {
   }
 
   @Get("publication-jobs/:jobId")
-  async publicationJob(@Req() request: FastifyRequest, @Param("jobId") jobId: string) {
+  async publicationJob(
+    @Req() request: FastifyRequest,
+    @Param("jobId") jobId: string,
+  ) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN"]);
-    if (!this.publicationJobs) throw new InternalServerErrorException("Antrean publikasi belum siap");
+    if (!this.publicationJobs)
+      throw new InternalServerErrorException("Antrean publikasi belum siap");
     const job = await this.publicationJobs.getJob({
       schoolId: actor.schoolId,
       jobId,
@@ -528,7 +556,8 @@ export class ReportsController implements OnModuleInit {
       if (
         report.publication_lock_token &&
         report.publication_locked_at &&
-        new Date(report.publication_locked_at).getTime() > Date.now() - 15 * 60_000
+        new Date(report.publication_locked_at).getTime() >
+          Date.now() - 15 * 60_000
       ) {
         throw new ConflictException("Raport sedang diproses untuk diterbitkan");
       }
@@ -658,63 +687,67 @@ export class ReportsController implements OnModuleInit {
           )
         ).rows[0];
         if (!lockedReport)
-          throw new ConflictException("Proses penerbitan raport tidak lagi berlaku");
-      const version = (
+          throw new ConflictException(
+            "Proses penerbitan raport tidak lagi berlaku",
+          );
+        const version = (
+          await client.query(
+            "INSERT INTO report_versions(school_id,report_id,version_number,snapshot,pdf_storage_key,published_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
+            [
+              actor.schoolId,
+              id,
+              preparation.versionNumber,
+              preparation.snapshot,
+              pdfStorageKey,
+              actor.userId,
+            ],
+          )
+        ).rows[0];
+        const token = randomBytes(32).toString("base64url"),
+          pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
         await client.query(
-          "INSERT INTO report_versions(school_id,report_id,version_number,snapshot,pdf_storage_key,published_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
+          "INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash) VALUES($1,$2,$3,$4)",
           [
             actor.schoolId,
-            id,
-            preparation.versionNumber,
-            preparation.snapshot,
-            pdfStorageKey,
-            actor.userId,
+            version.id,
+            createHash("sha256").update(token).digest("hex"),
+            createHash("sha256").update(pin).digest("hex"),
           ],
-        )
-      ).rows[0];
-      const token = randomBytes(32).toString("base64url"),
-        pin = randomInt(0, 1_000_000).toString().padStart(6, "0");
-      await client.query(
-        "INSERT INTO report_access(school_id,report_version_id,token_hash,pin_hash) VALUES($1,$2,$3,$4)",
-        [
-          actor.schoolId,
-          version.id,
-          createHash("sha256").update(token).digest("hex"),
-          createHash("sha256").update(pin).digest("hex"),
-        ],
-      );
-      const deliveries = await client.query(
-        "INSERT INTO report_deliveries(school_id,report_version_id,guardian_contact_id,recipient_phone) SELECT $1,$2,g.id,g.phone FROM guardian_contacts g WHERE g.school_id=$1 AND g.student_id=$3 AND g.is_active AND g.is_delivery_recipient RETURNING id",
-        [actor.schoolId, version.id, preparation.report.student_id],
-      );
-      await client.query(
-        "UPDATE reports SET status='PUBLISHED',publication_lock_token=NULL,publication_locked_at=NULL,updated_at=now() WHERE id=$1 AND school_id=$2",
-        [id, actor.schoolId],
-      );
-      await this.audit.record(
-        {
-          schoolId: actor.schoolId,
-          actorUserId: actor.userId,
-          action: "report.published",
-          entityType: "report_version",
-          entityId: version.id,
-          metadata: { pdfStorageKey },
-        },
-        client,
-      );
-      return {
-        ...version,
-        parentAccess: { link: `/r/${token}`, pin },
-        deliveryCount: deliveries.rowCount,
-      };
+        );
+        const deliveries = await client.query(
+          "INSERT INTO report_deliveries(school_id,report_version_id,guardian_contact_id,recipient_phone) SELECT $1,$2,g.id,g.phone FROM guardian_contacts g WHERE g.school_id=$1 AND g.student_id=$3 AND g.is_active AND g.is_delivery_recipient RETURNING id",
+          [actor.schoolId, version.id, preparation.report.student_id],
+        );
+        await client.query(
+          "UPDATE reports SET status='PUBLISHED',publication_lock_token=NULL,publication_locked_at=NULL,updated_at=now() WHERE id=$1 AND school_id=$2",
+          [id, actor.schoolId],
+        );
+        await this.audit.record(
+          {
+            schoolId: actor.schoolId,
+            actorUserId: actor.userId,
+            action: "report.published",
+            entityType: "report_version",
+            entityId: version.id,
+            metadata: { pdfStorageKey },
+          },
+          client,
+        );
+        return {
+          ...version,
+          parentAccess: { link: `/r/${token}`, pin },
+          deliveryCount: deliveries.rowCount,
+        };
       }, actor.schoolId);
     } catch (error) {
-      await this.pdf.deleteStoredObject(pdfStorageKey).catch((cleanupError) =>
-        this.logger.error(
-          `Gagal membersihkan PDF yatim untuk raport ${id}`,
-          cleanupError instanceof Error ? cleanupError.stack : undefined,
-        ),
-      );
+      await this.pdf
+        .deleteStoredObject(pdfStorageKey)
+        .catch((cleanupError) =>
+          this.logger.error(
+            `Gagal membersihkan PDF yatim untuk raport ${id}`,
+            cleanupError instanceof Error ? cleanupError.stack : undefined,
+          ),
+        );
       await this.releasePublicationLock({
         schoolId: actor.schoolId,
         reportId: id,
@@ -917,7 +950,10 @@ export function paginateProgressRows(
     .sort((left, right) => compareProgressRows(left, right, input.view));
 
   return {
-    items: filtered.slice((input.page - 1) * input.limit, input.page * input.limit),
+    items: filtered.slice(
+      (input.page - 1) * input.limit,
+      input.page * input.limit,
+    ),
     total: filtered.length,
     page: input.page,
     limit: input.limit,
@@ -929,16 +965,21 @@ function createProgressSummary(rows: ProgressRow[]): ProgressSummary {
   return {
     total: rows.length,
     notCreated: rows.filter((row) => !row.status).length,
-    draft: rows.filter((row) => ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""))
-      .length,
-    review: rows.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
-      .length,
+    draft: rows.filter((row) =>
+      ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? ""),
+    ).length,
+    review: rows.filter((row) =>
+      ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""),
+    ).length,
     publish: rows.filter((row) => row.status === "APPROVED").length,
     published: rows.filter(
-      (row) => row.status === "PUBLISHED" || Boolean(row.latest_published_version_number),
+      (row) =>
+        row.status === "PUBLISHED" ||
+        Boolean(row.latest_published_version_number),
     ).length,
-    waitingReview: rows.filter((row) => ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""))
-      .length,
+    waitingReview: rows.filter((row) =>
+      ["SUBMITTED", "IN_REVIEW"].includes(row.status ?? ""),
+    ).length,
     approved: rows.filter((row) => row.status === "APPROVED").length,
     correction: rows.filter(
       (row) =>
@@ -956,10 +997,14 @@ function matchesProgressView(
   if (view === "EDITOR") {
     return !row.status || ["DRAFT", "REVISION_REQUIRED"].includes(row.status);
   }
-  return Boolean(row.report_id) &&
-    (["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(row.status ?? "") ||
+  return (
+    Boolean(row.report_id) &&
+    (["SUBMITTED", "IN_REVIEW", "APPROVED", "PUBLISHED"].includes(
+      row.status ?? "",
+    ) ||
       (Boolean(row.latest_published_version_number) &&
-        ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? "")));
+        ["DRAFT", "REVISION_REQUIRED"].includes(row.status ?? "")))
+  );
 }
 
 function matchesDeliveryFilter(
@@ -981,12 +1026,17 @@ function matchesDeliveryFilter(
   );
 }
 
-function compareProgressRows(left: ProgressRow, right: ProgressRow, view: string) {
+function compareProgressRows(
+  left: ProgressRow,
+  right: ProgressRow,
+  view: string,
+) {
   if (view === "PUBLICATION") {
     const deliveryPriority = (row: ProgressRow) =>
       row.status === "PUBLISHED" &&
       !row.delivery_whatsapp_opened_at &&
-      (!row.delivery_status || ["QUEUED", "FAILED"].includes(row.delivery_status))
+      (!row.delivery_status ||
+        ["QUEUED", "FAILED"].includes(row.delivery_status))
         ? 0
         : 1;
     const priorityDifference = deliveryPriority(left) - deliveryPriority(right);

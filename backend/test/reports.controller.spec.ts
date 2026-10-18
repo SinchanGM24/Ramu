@@ -255,11 +255,19 @@ describe("ReportsController", () => {
       controller.move(request, "report-1", { action: "review" }),
     ).resolves.toEqual({ id: "report-1", status: "IN_REVIEW" });
 
-    const update = queries.find(({ sql }) =>
-      sql.startsWith("UPDATE reports SET status"),
-    );
+    expect(queries[0]?.sql).toContain("FOR UPDATE");
+    expect(queries[0]?.values).toEqual(["report-1", "school-1"]);
+    const update = queries.find(({ sql }) => sql.startsWith("UPDATE reports"));
     expect(update?.sql).toContain("status=$1::report_status");
-    expect(update?.values).toEqual(["IN_REVIEW", "report-1", false, false]);
+    expect(update?.sql).toContain("status=$6::report_status");
+    expect(update?.values).toEqual([
+      "IN_REVIEW",
+      "report-1",
+      false,
+      false,
+      "school-1",
+      "SUBMITTED",
+    ]);
   });
 
   it("requires a revision reason before returning a report to a teacher", async () => {
