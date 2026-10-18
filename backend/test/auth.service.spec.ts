@@ -46,4 +46,21 @@ describe("AuthService session revocation", () => {
     expect(queries[1]?.sql).toContain("s.revoked_at IS NULL");
     expect(request.auth).toBeUndefined();
   });
+
+  it("does not attach an expired session", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const service = new AuthService({
+      query: async (sql: string, values: unknown[]) => {
+        queries.push({ sql, values });
+        return { rows: [] };
+      },
+    } as never);
+    const request = { cookies: { ramu_session: "sesi-kedaluwarsa" } } as never;
+
+    await service.attach(request);
+
+    expect(queries).toHaveLength(1);
+    expect(queries[0]?.sql).toContain("s.expires_at > now()");
+    expect(request.auth).toBeUndefined();
+  });
 });

@@ -9,6 +9,7 @@ import {
 import { Injectable, Logger } from "@nestjs/common";
 import PDFDocument from "pdfkit";
 import { DatabaseService } from "../database/database.service";
+import { getObjectStorageConfig } from "./object-storage-config";
 
 type SnapshotAssessment = {
   area_name?: string;
@@ -71,15 +72,15 @@ const scaleDescriptions: Record<string, string> = {
 @Injectable()
 export class ReportPdfService {
   private readonly logger = new Logger(ReportPdfService.name);
-  private readonly bucket = process.env.OBJECT_STORAGE_BUCKET || "ramu-private";
+  private readonly storageConfig = getObjectStorageConfig();
+  private readonly bucket = this.storageConfig.bucket;
   private readonly client = new S3Client({
-    region: process.env.OBJECT_STORAGE_REGION || "us-east-1",
-    endpoint: process.env.OBJECT_STORAGE_ENDPOINT,
+    region: this.storageConfig.region,
+    endpoint: this.storageConfig.endpoint,
     forcePathStyle: true,
     credentials: {
-      accessKeyId: process.env.OBJECT_STORAGE_ACCESS_KEY || "ramu_minio",
-      secretAccessKey:
-        process.env.OBJECT_STORAGE_SECRET_KEY || "ramu_minio_password",
+      accessKeyId: this.storageConfig.accessKeyId,
+      secretAccessKey: this.storageConfig.secretAccessKey,
     },
   });
   private bucketReady: Promise<void> | undefined;

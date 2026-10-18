@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "crypto";
 import { Pool, type PoolClient } from "pg";
 import { ensureDefaultTkFramework } from "../assessment/ensure-default-tk-framework";
 import { DEFAULT_TK_TEMPLATE_NAME } from "../assessment/default-tk-template";
+import { assertSeedAllowed } from "./seed-guard";
 
 const accounts = [
   ["Admin Sekolah", "admin@ramu.test", "081200000001", "SCHOOL_ADMIN"],
@@ -277,9 +278,7 @@ async function guardian(
 }
 
 async function seed() {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("Seed akun demo tidak boleh dijalankan di production");
-  }
+  assertSeedAllowed();
   const classCounts = students.reduce<Record<ClassName, number>>(
     (counts, student) => ({
       ...counts,
@@ -390,9 +389,10 @@ async function seed() {
         [schoolId, yearId, firstStart, firstEnd, secondStart, secondEnd],
       );
     }
-    await client.query("UPDATE semesters SET is_active=false WHERE school_id=$1", [
-      schoolId,
-    ]);
+    await client.query(
+      "UPDATE semesters SET is_active=false WHERE school_id=$1",
+      [schoolId],
+    );
     const activeSemesterId = await id(
       client,
       "SELECT id FROM semesters WHERE school_id=$1 AND academic_year_id=$2 AND name='Semester I'",
