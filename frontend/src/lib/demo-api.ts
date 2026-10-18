@@ -1,6 +1,7 @@
 const reportId = "demo-report";
 const studentId = "demo-student";
 const semesterId = "demo-semester";
+const academicYearId = "demo-year";
 let reviewStatus: "SUBMITTED" | "IN_REVIEW" | "APPROVED" = "SUBMITTED";
 
 const demoSession = {
@@ -10,53 +11,177 @@ const demoSession = {
 	email: "admin@tkcontohceria.id",
 };
 
-const progressItems = [
+const classGroups = [
+	{ id: "demo-group-apel", name: "Kelas Apel", is_active: true },
+	{ id: "demo-group-melati", name: "Kelas Melati", is_active: true },
+	{ id: "demo-group-merpati", name: "Kelas Merpati", is_active: true },
+];
+
+const activeStudents = [
 	{
 		id: studentId,
 		name: "Alya Putri",
-		report_id: reportId,
-		status: "DRAFT",
-		completion_percent: 82,
+		student_number: "TK-2026-014",
+		class_name: "Kelas Apel",
+		lifecycle_status: "ACTIVE" as const,
 	},
 	{
 		id: "demo-student-2",
 		name: "Bima Pratama",
-		report_id: null,
-		status: null,
-		completion_percent: 0,
+		student_number: "TK-2026-021",
+		class_name: "Kelas Melati",
+		lifecycle_status: "ACTIVE" as const,
+	},
+	{
+		id: "demo-student-3",
+		name: "Citra Lestari",
+		student_number: "TK-2026-028",
+		class_name: "Kelas Merpati",
+		lifecycle_status: "ACTIVE" as const,
 	},
 ];
 
-const editor = {
+const archivedStudents = [
+	{
+		id: "demo-archived-student",
+		name: "Dimas Pratama",
+		student_number: "TK-2024-003",
+		class_name: "Kelas Apel",
+		lifecycle_status: "GRADUATED" as const,
+	},
+];
+
+const scales = [
+	{ id: "scale-bb", code: "BB", label: "Belum Berkembang" },
+	{ id: "scale-mb", code: "MB", label: "Mulai Berkembang" },
+	{ id: "scale-bsh", code: "BSH", label: "Berkembang Sesuai Harapan" },
+	{ id: "scale-bsb", code: "BSB", label: "Berkembang Sangat Baik" },
+];
+
+const workspace = {
+	report: {
+		student_name: "Alya Putri",
+		student_number: "TK-2026-014",
+		class_name: "Kelas Apel",
+		semester_name: "Semester I",
+		academic_year_name: "2026",
+		status: "DRAFT",
+	},
+	scales,
+	areas: [
+		{
+			id: "area-moral",
+			name: "Nilai Agama dan Moral",
+			narrative: "Alya mengikuti kegiatan doa bersama dengan tertib dan mandiri.",
+			subAreas: [
+				{
+					id: "sub-area-moral",
+					name: "Pembiasaan",
+					indicators: [
+						{
+							id: "indicator-moral",
+							description: "Mengikuti kegiatan doa bersama",
+							scaleOptionId: "scale-bsh",
+						},
+					],
+				},
+			],
+		},
+		{
+			id: "area-bahasa",
+			name: "Bahasa",
+			narrative: "Alya mampu menyampaikan pengalaman sederhana dengan percaya diri.",
+			subAreas: [
+				{
+					id: "sub-area-bahasa",
+					name: "Komunikasi",
+					indicators: [
+						{
+							id: "indicator-bahasa",
+							description: "Menceritakan kembali kegiatan yang dialami",
+							scaleOptionId: "scale-bsb",
+						},
+					],
+				},
+			],
+		},
+	],
+	growth: { weight_kg: 18.5, height_cm: 108, head_circumference_cm: null },
+	attendance: { sick_days: 1, permission_days: 0, unexcused_days: 0 },
+};
+
+const preview = {
 	report: {
 		student_name: "Alya Putri",
 		student_number: "TK-2026-014",
 		semester_name: "Semester I",
-		status: "DRAFT",
 	},
-	areas: [
-		"Nilai Agama dan Moral",
-		"Fisik Motorik",
-		"Kognitif",
-		"Bahasa",
-		"Sosial Emosional",
-		"Seni",
-	].map((name, index) => ({
-		id: `area-${index}`,
-		name,
-		indicator_count: 1,
-		assessed_count: 1,
-		narrative: "Alya menunjukkan perkembangan yang baik melalui kegiatan belajar dan bermain.",
-	})),
-	assessments: [],
-	growth: { weight_kg: 18.5, height_cm: 108 },
-	attendance: { sick_days: 1, permission_days: 0, unexcused_days: 0 },
+	areas: workspace.areas.map(({ id, name, narrative }) => ({ id, name, narrative })),
+	assessments: [
+		{
+			area_id: "area-moral",
+			sub_area_name: "Pembiasaan",
+			description: "Mengikuti kegiatan doa bersama",
+			scale_code: "BSH",
+		},
+		{
+			area_id: "area-bahasa",
+			sub_area_name: "Komunikasi",
+			description: "Menceritakan kembali kegiatan yang dialami",
+			scale_code: "BSB",
+		},
+	],
 };
 
+const publishedVersion = {
+	current_status: "DRAFT",
+	id: "demo-version-1",
+	version_number: 1,
+	published_at: "2026-10-01T08:00:00.000Z",
+	snapshot: {
+		school: { name: "TK Contoh Ceria", address: "Kota Contoh", logo_storage_key: null },
+		student: { name: "Alya Putri", student_number: "TK-2026-014", class_name: "Kelas Apel" },
+		semester: { name: "Semester I", academic_year_name: "2026" },
+		assessments: preview.assessments.map((item) => ({
+			area_name: item.area_id === "area-moral" ? "Nilai Agama dan Moral" : "Bahasa",
+			sub_area_name: item.sub_area_name,
+			description: item.description,
+			code: item.scale_code,
+		})),
+		narratives: workspace.areas.map((area) => ({ name: area.name, content: area.narrative })),
+		growth: workspace.growth,
+		attendance: workspace.attendance,
+	},
+};
+
+const deliveries = [
+	{
+		id: "delivery-1",
+		guardian_name: "Ibu Sari",
+		relationship: "Ibu",
+		recipient_phone: "0812-0000-0000",
+		version_number: 1,
+		status: "SENT" as const,
+		queued_at: "2026-10-02T08:00:00.000Z",
+		whatsapp_opened_at: "2026-10-02T08:01:00.000Z",
+		attempt_count: 1,
+		failure_reason: null,
+	},
+];
+
+function page<T>(items: T[]) {
+	return { items, total: items.length, page: 1, limit: 10 };
+}
+
 export function demoResponse(path: string, options: RequestInit): unknown {
-	if (path === "/auth/login" && options.method === "POST") return demoSession;
-	if (path === "/auth/session") return demoSession;
-	if (path === "/auth/profile")
+	const request = new URL(path, "https://demo.ramu.local");
+	const pathname = request.pathname;
+	const method = options.method ?? "GET";
+
+	if (pathname === "/auth/login" && method === "POST") return demoSession;
+	if (pathname === "/auth/logout" && method === "POST") return undefined;
+	if (pathname === "/auth/session") return demoSession;
+	if (pathname === "/auth/profile") {
 		return {
 			id: demoSession.userId,
 			name: "Admin Sekolah",
@@ -64,7 +189,8 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 			phone: "0812-0000-0000",
 			role: demoSession.role,
 		};
-	if (path === "/dashboard/summary")
+	}
+	if (pathname === "/dashboard/summary") {
 		return {
 			role: demoSession.role,
 			schoolName: "TK Contoh Ceria",
@@ -94,7 +220,9 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 				},
 			],
 		};
-	if (path === "/schools/current/logo" && options.method === "POST")
+	}
+
+	if (pathname === "/schools/current/logo" && method === "POST") {
 		return {
 			id: "demo-school",
 			name: "TK Contoh Ceria",
@@ -102,62 +230,67 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 			phone: "0812-0000-0000",
 			has_logo: false,
 		};
-	if (path === "/schools/current" && options.method === "PATCH") {
+	}
+	if (pathname === "/schools/current") {
 		const data = typeof options.body === "string" ? JSON.parse(options.body) : {};
 		return {
 			id: "demo-school",
 			name: data.name || "TK Contoh Ceria",
-			address: data.address || null,
-			phone: data.phone || null,
+			address: data.address || "Kota Contoh",
+			phone: data.phone || "0812-0000-0000",
+			has_logo: false,
 		};
 	}
-	if (path === "/parent/verify" && options.method === "POST")
-		return { expiresAt: "2026-10-07T12:00:00.000Z" };
-	if (path.includes("/publish") && options.method === "POST")
-		return { parentAccess: { link: "/r/demo-parent", pin: "123456" } };
-	if (path.includes("/transition") && options.method === "POST") {
-		const action = typeof options.body === "string" ? JSON.parse(options.body).action : undefined;
-		if (action === "review") reviewStatus = "IN_REVIEW";
-		if (action === "approve") reviewStatus = "APPROVED";
-		if (action === "revision") reviewStatus = "SUBMITTED";
-		return { id: reportId, status: reviewStatus };
-	}
-	if (options.method && options.method !== "GET") return { id: reportId, status: "DRAFT" };
-	if (path === "/academic/semesters")
+
+	if (pathname === "/academic/semesters") {
 		return [
 			{
 				id: semesterId,
 				name: "Semester I",
-				academic_year_id: "demo-year",
+				academic_year_id: academicYearId,
 				academic_year_name: "2026",
 				is_active: true,
 			},
 		];
-	if (path === "/academic/active-semester")
+	}
+	if (pathname === "/academic/active-semester") {
 		return {
 			id: semesterId,
 			name: "Semester I",
-			academic_year_id: "demo-year",
+			academic_year_id: academicYearId,
 			academic_year_name: "2026",
 			is_active: true,
 		};
-	if (path === "/academic/years") return [{ id: "demo-year", name: "2026", is_active: true }];
-	if (path.startsWith("/academic/class-groups"))
-		return [{ id: "demo-group", name: "Kelas Apel", is_active: true }];
-	if (path.startsWith("/academic/class-periods"))
+	}
+	if (pathname === "/academic/years")
+		return [{ id: academicYearId, name: "2026", is_active: true }];
+	if (pathname === "/academic/class-groups") return classGroups;
+	if (pathname === "/academic/class-periods") {
+		return classGroups.map((group, index) => ({
+			id: `demo-class-${index + 1}`,
+			class_group_id: group.id,
+			name: group.name,
+			is_active: true,
+			academic_year_name: "2026",
+			teacher_names: index === 0 ? "Guru Aisyah, Guru Budi" : "Guru Citra",
+			student_count: 20,
+		}));
+	}
+	if (pathname === "/academic/enrollments") {
+		return activeStudents.map((student) => ({
+			id: `enrollment-${student.id}`,
+			student_name: student.name,
+			class_name: student.class_name,
+		}));
+	}
+
+	if (pathname.match(/^\/staff\/class-periods\/[^/]+\/assignments$/)) {
 		return [
-			{
-				id: "demo-class",
-				class_group_id: "demo-group",
-				name: "Kelas Apel",
-				is_active: true,
-				academic_year_name: "2026",
-				teacher_names: "Guru Aisyah",
-			},
+			{ id: "assignment-1", teacher_name: "Guru Aisyah", teacher_user_id: "demo-teacher" },
+			{ id: "assignment-2", teacher_name: "Guru Budi", teacher_user_id: "demo-teacher-2" },
 		];
-	if (path.startsWith("/academic/enrollments"))
-		return [{ id: "demo-enrollment", student_name: "Alya Putri", class_name: "Kelas Apel" }];
-	if (path.startsWith("/staff"))
+	}
+	if (pathname === "/staff") {
 		return {
 			items: [
 				{
@@ -169,66 +302,101 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 					is_active: true,
 				},
 				{
+					id: "demo-teacher-2",
+					name: "Guru Budi",
+					email: "guru.budi@ramu.test",
+					phone: "0812-0000-0002",
+					role: "TEACHER",
+					is_active: true,
+				},
+				{
 					id: "demo-principal",
 					name: "Kepala Sekolah",
 					email: "kepsek@ramu.test",
-					phone: "0812-0000-0002",
+					phone: "0812-0000-0003",
 					role: "PRINCIPAL",
 					is_active: true,
 				},
 			],
-			total: 2,
+			total: 3,
 			page: 1,
 		};
-	if (path.startsWith("/students"))
+	}
+
+	if (pathname === "/students/requests") return [];
+	if (pathname === `/students/${studentId}`) {
 		return {
-			items: [
+			id: studentId,
+			name: "Alya Putri",
+			student_number: "TK-2026-014",
+			nickname: "Alya",
+			gender: "FEMALE",
+			birth_place: "Bandung",
+			birth_date: "2021-04-14",
+			religion: "Islam",
+			child_order: 1,
+			address: "Jl. Melati No. 12, Kota Contoh",
+			guardians: [
 				{
-					id: studentId,
-					name: "Alya Putri",
-					student_number: "TK-2026-014",
-					class_name: "Kelas Apel",
+					id: "guardian-1",
+					name: "Sari Wulandari",
+					relationship: "Ibu",
+					phone: "0812-0000-0000",
+					occupation: "Wiraswasta",
+					is_primary: true,
+					is_delivery_recipient: true,
 				},
 			],
-			total: 1,
-			page: 1,
+			enrollments: [
+				{
+					id: "enrollment-1",
+					academic_year_name: "2026",
+					class_name: "Kelas Apel",
+					status: "ACTIVE",
+				},
+			],
+			publishedReports: [
+				{
+					id: reportId,
+					academic_year_name: "2026",
+					semester_name: "Semester I",
+					version_number: 1,
+					published_at: "2026-10-01T08:00:00.000Z",
+				},
+			],
 		};
-	if (path.startsWith("/reports/progress"))
-		return {
-			items: progressItems,
-			total: progressItems.length,
-			page: 1,
-			limit: 10,
-			summary: {
-				total: progressItems.length,
-				notCreated: 1,
-				draft: 1,
-				review: 0,
-				publish: 0,
-				published: 0,
-			},
-		};
-	if (path === "/reports/review-queue")
-		return [
+	}
+	if (pathname === "/students") {
+		const archived = request.searchParams.get("lifecycleStatus") === "GRADUATED";
+		return archived ? page(archivedStudents) : page(activeStudents);
+	}
+
+	if (pathname === "/lifecycle/history") {
+		return page([
 			{
-				id: reportId,
-				status: reviewStatus,
-				submitted_at: "2026-10-01T08:00:00.000Z",
-				student_name: "Alya Putri",
-				semester_name: "Semester I",
+				id: "history-1",
+				student_id: "demo-archived-student",
+				student_name: "Dimas Pratama",
+				action: "GRADUATED",
+				effective_on: "2026-06-20",
+				reason: "Menyelesaikan pendidikan PAUD.",
 			},
-		];
-	if (path.includes("/editor")) return editor;
-	if (path.includes("/completeness"))
+		]);
+	}
+	if (pathname === "/lifecycle/proposals") return [];
+
+	if (pathname === `/reports/${reportId}/workspace`) return workspace;
+	if (pathname === `/reports/${reportId}/editor`) return preview;
+	if (pathname === `/reports/${reportId}/published-version`) return publishedVersion;
+	if (pathname === `/reports/${reportId}/completeness`) {
 		return {
 			complete: true,
 			missingAssessments: [],
 			missingNarratives: [],
 			missingSemesterData: false,
 		};
-	if (path.includes("/extracurricular"))
-		return [{ id: "extra-1", activity_name: "Menari", grade: "A" }];
-	if (path.includes("/portfolio"))
+	}
+	if (pathname === `/reports/${reportId}/portfolio`) {
 		return [
 			{
 				id: "portfolio-1",
@@ -240,55 +408,136 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 				created_at: "2026-09-20T08:00:00.000Z",
 			},
 		];
-	if (path.includes("/deliveries"))
+	}
+	if (pathname === `/reports/${reportId}/extracurricular`) {
+		return [{ id: "extra-1", activity_name: "Menari", grade: "A" }];
+	}
+	if (pathname === `/reports/${reportId}/delivery-recipients`) {
 		return [
 			{
-				id: "delivery-1",
-				guardian_name: "Ibu Sari",
+				id: "guardian-1",
+				name: "Sari Wulandari",
 				relationship: "Ibu",
-				recipient_phone: "0812-0000-0000",
-				version_number: 1,
-				status: "SENT",
-				queued_at: "2026-10-02T08:00:00.000Z",
-				attempt_count: 1,
-				failure_reason: null,
+				phone: "0812-0000-0000",
+				is_primary: true,
+				student_lifecycle_status: "ACTIVE",
 			},
 		];
-	if (path.startsWith("/assessment/students/"))
+	}
+	if (pathname === `/reports/${reportId}/delivery-context`) return { studentId };
+	if (pathname === `/reports/${reportId}/deliveries`) return deliveries;
+	if (pathname === "/reports/review-queue") {
+		return [
+			{
+				id: reportId,
+				status: reviewStatus,
+				submitted_at: "2026-10-01T08:00:00.000Z",
+				student_name: "Alya Putri",
+				semester_name: "Semester I",
+			},
+		];
+	}
+	if (pathname === "/reports/publishable-ids") return [reportId];
+	if (pathname === "/reports/publication-jobs") {
+		return {
+			id: "demo-publication-job",
+			status: "COMPLETED",
+			total_count: 1,
+			completed_count: 1,
+			failed_count: 0,
+		};
+	}
+	if (pathname.startsWith("/reports/publication-jobs/")) {
+		return {
+			id: pathname.split("/").at(-1),
+			status: "COMPLETED",
+			total_count: 1,
+			completed_count: 1,
+			failed_count: 0,
+		};
+	}
+	if (pathname === "/reports/progress") {
+		const publication = request.searchParams.get("view") === "PUBLICATION";
+		const items = publication
+			? [
+					{
+						id: studentId,
+						name: "Alya Putri",
+						report_id: reportId,
+						status: "APPROVED",
+						delivery_status: null,
+						latest_published_version_number: null,
+					},
+				]
+			: activeStudents.map((student, index) => ({
+					id: student.id,
+					name: student.name,
+					report_id: index === 0 ? reportId : null,
+					status: index === 0 ? "DRAFT" : null,
+					completion_percent: index === 0 ? 82 : 0,
+				}));
+		return {
+			items,
+			total: items.length,
+			page: 1,
+			limit: 10,
+			summary: publication
+				? { waitingReview: 0, approved: 1, published: 0, correction: 0 }
+				: { total: items.length, notCreated: 2, draft: 1, review: 0, publish: 0, published: 0 },
+		};
+	}
+
+	if (pathname.startsWith("/assessment/students/")) {
 		return {
 			student: { id: studentId, name: "Alya Putri" },
-			scales: ["BB", "MB", "BSH", "BSB"].map((code, index) => ({
-				id: `scale-${index}`,
-				code,
-				label: code,
-				position: index + 1,
-			})),
+			scales,
 			indicators: [
 				{
-					id: "indicator-1",
-					area_id: "area-1",
+					id: "indicator-moral",
 					area_name: "Nilai Agama dan Moral",
 					description: "Mengikuti kegiatan doa bersama",
-					sub_area_name: "Pembiasaan",
-					scale_option_id: "scale-2",
+					scale_option_id: "scale-bsh",
 				},
 			],
 		};
-	if (path === "/schools/current")
-		return { name: "TK Contoh Ceria", address: "Kota Contoh", phone: "0812-0000-0000" };
-	if (path === "/parent/report")
+	}
+
+	if (pathname === "/parent/verify" && method === "POST") {
+		return { expiresAt: "2026-10-07T12:00:00.000Z" };
+	}
+	if (pathname === "/parent/report") {
 		return {
 			report: {
-				assessments: [{ description: "Mengikuti kegiatan doa bersama", code: "BSH" }],
-				narratives: [{ name: "Bahasa", content: "Alya mampu berkomunikasi dengan baik." }],
+				student: {
+					name: "Alya Putri",
+					nickname: "Alya",
+					student_number: "TK-2026-014",
+					class_name: "Kelas Apel",
+				},
+				semester: { name: "Semester I", academic_year_name: "2026" },
+				assessments: publishedVersion.snapshot.assessments,
+				narratives: workspace.areas.map((area) => ({ name: area.name, content: area.narrative })),
+				growth: workspace.growth,
+				attendance: workspace.attendance,
 				extracurricular: [{ activity_name: "Menari", grade: "A" }],
-				portfolio: [
-					{
-						original_filename: "kegiatan-seni.jpg",
-						caption: "Membuat karya kolase bersama teman.",
-					},
-				],
 			},
 		};
+	}
+
+	if (pathname.includes("/transition") && method === "POST") {
+		const body = typeof options.body === "string" ? JSON.parse(options.body) : {};
+		if (body.action === "review") reviewStatus = "IN_REVIEW";
+		if (body.action === "approve") reviewStatus = "APPROVED";
+		if (body.action === "revision") reviewStatus = "SUBMITTED";
+		return { id: reportId, status: reviewStatus };
+	}
+	if (pathname.includes("/publish") && method === "POST") {
+		return { parentAccess: { link: "/r/demo-parent", pin: "123456" } };
+	}
+	if (pathname.includes("open-whatsapp") || pathname.includes("regenerate-access")) {
+		return { whatsAppUrl: "https://wa.me/628120000000?text=Raport%20Alya%20Putri" };
+	}
+	if (method !== "GET") return { id: reportId, status: "DRAFT" };
+
 	return {};
 }
