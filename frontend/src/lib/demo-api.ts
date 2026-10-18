@@ -7,12 +7,35 @@ const academicYearId = "demo-year";
 let reviewStatus: "SUBMITTED" | "IN_REVIEW" | "APPROVED" = "SUBMITTED";
 let verifiedDemoParentToken: string | null = null;
 
-const demoSession = {
-	userId: "demo-admin",
-	schoolId: "demo-school",
-	role: "SCHOOL_ADMIN" as const,
-	email: "admin@tkcontohceria.id",
+const demoAccounts = {
+	SCHOOL_ADMIN: {
+		userId: "demo-admin",
+		schoolId: "demo-school",
+		role: "SCHOOL_ADMIN" as const,
+		email: "admin@tkcontohceria.id",
+		name: "Admin Sekolah",
+	},
+	TEACHER: {
+		userId: "demo-teacher",
+		schoolId: "demo-school",
+		role: "TEACHER" as const,
+		email: "guru.aisyah@tkcontohceria.id",
+		name: "Guru Aisyah",
+	},
+	PRINCIPAL: {
+		userId: "demo-principal",
+		schoolId: "demo-school",
+		role: "PRINCIPAL" as const,
+		email: "kepsek@tkcontohceria.id",
+		name: "Kepala Sekolah",
+	},
 };
+type DemoRole = keyof typeof demoAccounts;
+let demoSession: (typeof demoAccounts)[DemoRole] = demoAccounts.SCHOOL_ADMIN;
+
+function isDemoRole(value: unknown): value is DemoRole {
+	return typeof value === "string" && value in demoAccounts;
+}
 
 const classGroups = [
 	{ id: "demo-group-apel", name: "Kelas Apel", is_active: true },
@@ -428,13 +451,21 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 	const pathname = request.pathname;
 	const method = options.method ?? "GET";
 
-	if (pathname === "/auth/login" && method === "POST") return demoSession;
+	if (pathname === "/auth/login" && method === "POST") {
+		const body: unknown = typeof options.body === "string" ? JSON.parse(options.body) : {};
+		const role =
+			typeof body === "object" && body !== null && "role" in body
+				? (body as { role?: unknown }).role
+				: undefined;
+		if (isDemoRole(role)) demoSession = demoAccounts[role];
+		return demoSession;
+	}
 	if (pathname === "/auth/logout" && method === "POST") return undefined;
 	if (pathname === "/auth/session") return demoSession;
 	if (pathname === "/auth/profile") {
 		return {
 			id: demoSession.userId,
-			name: "Admin Sekolah",
+			name: demoSession.name,
 			email: demoSession.email,
 			phone: "0812-0000-0000",
 			role: demoSession.role,
