@@ -6,6 +6,7 @@ import { Building2, Landmark } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 import { SchoolProfileForm } from "./components/school-profile-form";
 
 type School = {
@@ -23,6 +24,8 @@ export function SchoolProfilePage() {
 		queryKey: ["school", "current"],
 		queryFn: () => api<School>("/schools/current"),
 	});
+	const session = useQuery(authSessionQueryOptions);
+	const editable = session.data?.role === "SCHOOL_ADMIN";
 	const [name, setName] = useState("");
 	const [address, setAddress] = useState("");
 	const [phone, setPhone] = useState("");
@@ -125,6 +128,7 @@ export function SchoolProfilePage() {
 						) : null}
 						<SchoolProfileForm
 							address={address}
+							editable={editable}
 							hasLogo={school.data?.has_logo}
 							logoUrl={logoUrl}
 							name={name}
