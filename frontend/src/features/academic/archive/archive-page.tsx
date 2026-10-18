@@ -33,7 +33,8 @@ export function ArchivePage() {
 		[studentPage, setStudentPage] = useState(1),
 		[historyPage, setHistoryPage] = useState(1),
 		[notice, setNotice] = useState(""),
-		[error, setError] = useState("");
+		[error, setError] = useState(""),
+		[reversingStudentId, setReversingStudentId] = useState<string | null>(null);
 	const debouncedSearch = useDebouncedValue(search);
 	const students = useQuery({
 		queryKey: ["students", "archive", studentPage, debouncedSearch],
@@ -60,9 +61,11 @@ export function ArchivePage() {
 		setHistoryPage(1);
 	}, [debouncedSearch]);
 	async function reverse(studentId: string) {
+		if (reversingStudentId) return;
 		const reason = window.prompt("Tuliskan alasan pembatalan kelulusan.");
 		if (!reason?.trim()) return;
 		setError("");
+		setReversingStudentId(studentId);
 		try {
 			await api("/lifecycle/graduations/reverse", {
 				method: "POST",
@@ -79,6 +82,8 @@ export function ArchivePage() {
 			]);
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "Kelulusan tidak dapat dibatalkan.");
+		} finally {
+			setReversingStudentId(null);
 		}
 	}
 	return (
@@ -137,8 +142,12 @@ export function ArchivePage() {
 									</span>
 								</span>
 								{canReverseGraduation && (
-									<Button variant="secondary" onClick={() => void reverse(x.id)}>
-										Batalkan kelulusan
+									<Button
+										variant="secondary"
+										disabled={Boolean(reversingStudentId)}
+										onClick={() => void reverse(x.id)}
+									>
+										{reversingStudentId === x.id ? "Membatalkan…" : "Batalkan kelulusan"}
 									</Button>
 								)}
 							</div>

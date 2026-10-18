@@ -10,6 +10,7 @@ export function ConfirmationDialog({
 	description,
 	confirmLabel,
 	confirmVariant = "primary",
+	pending = false,
 	onCancel,
 	onConfirm,
 }: {
@@ -18,6 +19,7 @@ export function ConfirmationDialog({
 	description: string;
 	confirmLabel: string;
 	confirmVariant?: "primary" | "danger";
+	pending?: boolean;
 	onCancel: () => void;
 	onConfirm: () => void;
 }) {
@@ -27,18 +29,18 @@ export function ConfirmationDialog({
 		if (!open) return;
 		cancelButton.current?.focus();
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") onCancel();
+			if (event.key === "Escape" && !pending) onCancel();
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [open, onCancel]);
+	}, [open, onCancel, pending]);
 
 	if (!open) return null;
 	return (
 		<div
 			className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4"
 			onMouseDown={(event) => {
-				if (event.target === event.currentTarget) onCancel();
+				if (event.target === event.currentTarget && !pending) onCancel();
 			}}
 		>
 			<section
@@ -58,17 +60,24 @@ export function ConfirmationDialog({
 						type="button"
 						onClick={onCancel}
 						aria-label="Tutup konfirmasi"
+						disabled={pending}
 						className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
 					>
 						<X className="size-5" />
 					</button>
 				</div>
 				<div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-					<Button ref={cancelButton} type="button" variant="secondary" onClick={onCancel}>
+					<Button
+						ref={cancelButton}
+						type="button"
+						variant="secondary"
+						disabled={pending}
+						onClick={onCancel}
+					>
 						Batal
 					</Button>
-					<Button type="button" variant={confirmVariant} onClick={onConfirm}>
-						{confirmLabel}
+					<Button type="button" variant={confirmVariant} disabled={pending} onClick={onConfirm}>
+						{pending ? "Memproses…" : confirmLabel}
 					</Button>
 				</div>
 			</section>

@@ -24,6 +24,10 @@ export function ClassManagementDialog({
 	const [teacher, setTeacher] = useState("");
 	const [error, setError] = useState("");
 	const [isActive, setIsActive] = useState(period.is_active);
+	const [addingTeacher, setAddingTeacher] = useState(false);
+	const [endingAssignmentId, setEndingAssignmentId] = useState<string | null>(null);
+	const [updatingStatus, setUpdatingStatus] = useState(false);
+	const [deletingClass, setDeletingClass] = useState(false);
 	const [assignmentToEnd, setAssignmentToEnd] = useState<TeacherAssignment | null>(null);
 	const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
 	const staff = useQuery({
@@ -49,7 +53,8 @@ export function ClassManagementDialog({
 		]);
 
 	async function addTeacher() {
-		if (!teacher) return;
+		if (!teacher || addingTeacher) return;
+		setAddingTeacher(true);
 		try {
 			await api(`/staff/class-periods/${period.id}/assignments`, {
 				method: "POST",
@@ -59,10 +64,14 @@ export function ClassManagementDialog({
 			await refresh();
 		} catch (reason) {
 			setError(reason instanceof Error ? reason.message : "Guru tidak dapat ditugaskan.");
+		} finally {
+			setAddingTeacher(false);
 		}
 	}
 
 	async function endAssignment(assignmentId: string) {
+		if (endingAssignmentId) return;
+		setEndingAssignmentId(assignmentId);
 		try {
 			await api(`/staff/class-periods/${period.id}/assignments/${assignmentId}/end`, {
 				method: "POST",
@@ -70,13 +79,17 @@ export function ClassManagementDialog({
 			setAssignmentToEnd(null);
 			await refresh();
 		} catch (reason) {
-			setAssignmentToEnd(null);
 			setError(reason instanceof Error ? reason.message : "Penugasan tidak dapat diakhiri.");
+		} finally {
+			setEndingAssignmentId(null);
+			setAssignmentToEnd(null);
 		}
 	}
 
 	async function updateStatus(checked: boolean) {
+		if (updatingStatus) return;
 		setIsActive(checked);
+		setUpdatingStatus(true);
 		try {
 			await api(`/academic/class-groups/${period.class_group_id}`, {
 				method: "POST",
@@ -86,18 +99,24 @@ export function ClassManagementDialog({
 		} catch (reason) {
 			setIsActive(!checked);
 			setError(reason instanceof Error ? reason.message : "Status kelas tidak dapat diperbarui.");
+		} finally {
+			setUpdatingStatus(false);
 		}
 	}
 
 	async function removeClass() {
+		if (deletingClass) return;
+		setDeletingClass(true);
 		try {
 			await api(`/academic/class-groups/${period.class_group_id}`, { method: "DELETE" });
 			await queryClient.invalidateQueries({ queryKey: ["academic", "class-periods"] });
 			setDeleteConfirmationOpen(false);
 			onClose();
 		} catch (reason) {
-			setDeleteConfirmationOpen(false);
 			setError(reason instanceof Error ? reason.message : "Kelas tidak dapat dihapus.");
+		} finally {
+			setDeletingClass(false);
+			setDeleteConfirmationOpen(false);
 		}
 	}
 
@@ -133,6 +152,7 @@ export function ClassManagementDialog({
 					</div>
 					<Switch
 						checked={isActive}
+						disabled={updatingStatus}
 						onChange={(checked) => void updateStatus(checked)}
 						aria-label="Ubah status kelas"
 					/>
@@ -164,10 +184,11 @@ export function ClassManagementDialog({
 										type="button"
 										variant="ghost"
 										className="min-h-9 shrink-0 px-2.5 text-slate-500 hover:bg-red-50 hover:text-red-700"
+										disabled={Boolean(endingAssignmentId)}
 										onClick={() => setAssignmentToEnd(assignment)}
 									>
 										<UserMinus className="size-4" />
-										Akhiri
+										{endingAssignmentId === assignment.id ? "Mengakhiri…" : "Akhiri"}
 									</Button>
 								</div>
 							))}
@@ -203,9 +224,13 @@ export function ClassManagementDialog({
 								</option>
 							))}
 						</select>
-						<Button variant="secondary" disabled={!teacher} onClick={() => void addTeacher()}>
+						<Button
+							variant="secondary"
+							disabled={!teacher || addingTeacher}
+							onClick={() => void addTeacher()}
+						>
 							<Plus className="size-4" />
-							Tugaskan
+							{addingTeacher ? "Menugaskan…" : "Tugaskan"}
 						</Button>
 					</div>
 				</section>
@@ -235,6 +260,7 @@ export function ClassManagementDialog({
 				description={`Guru ${assignmentToEnd?.teacher_name ?? "ini"} tidak lagi dapat mengelola raport kelas ${period.name}.`}
 				confirmLabel="Akhiri penugasan"
 				confirmVariant="danger"
+				pending={Boolean(endingAssignmentId)}
 				onCancel={() => setAssignmentToEnd(null)}
 				onConfirm={() => {
 					if (assignmentToEnd) void endAssignment(assignmentToEnd.id);
@@ -246,6 +272,7 @@ export function ClassManagementDialog({
 				description="Kelas yang sudah memiliki penempatan murid atau riwayat akademik tidak dapat dihapus."
 				confirmLabel="Hapus kelas"
 				confirmVariant="danger"
+				pending={deletingClass}
 				onCancel={() => setDeleteConfirmationOpen(false)}
 				onConfirm={() => void removeClass()}
 			/>

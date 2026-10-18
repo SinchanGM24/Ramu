@@ -16,10 +16,12 @@ export function ProfilePage() {
 	const profile = useQuery({ queryKey: ["profile"], queryFn: () => api<Profile>("/auth/profile") });
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState("");
+	const [saving, setSaving] = useState(false);
 	const [sensitiveFieldsUnlocked, setSensitiveFieldsUnlocked] = useState(false);
 
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (saving) return;
 		const data = new FormData(event.currentTarget);
 		const password = String(data.get("newAccountPassword") || "");
 		const passwordConfirmation = String(data.get("newAccountPasswordConfirmation") || "");
@@ -34,6 +36,7 @@ export function ProfilePage() {
 			setError("Konfirmasi kata sandi baru tidak sama.");
 			return;
 		}
+		setSaving(true);
 		try {
 			await api("/auth/profile", {
 				method: "PATCH",
@@ -50,6 +53,8 @@ export function ProfilePage() {
 			await profile.refetch();
 		} catch (reason) {
 			setError(reason instanceof Error ? reason.message : "Profil tidak dapat diperbarui.");
+		} finally {
+			setSaving(false);
 		}
 	}
 
@@ -190,7 +195,9 @@ export function ProfilePage() {
 							</div>
 						</div>
 						<div className="flex justify-end border-t border-[#e7e9df] pt-5">
-							<Button type="submit">Simpan profil</Button>
+							<Button type="submit" disabled={saving}>
+								{saving ? "Menyimpan…" : "Simpan profil"}
+							</Button>
 						</div>
 					</form>
 				</div>

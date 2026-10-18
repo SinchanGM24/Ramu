@@ -21,6 +21,7 @@ export function StaffPage() {
 	const [creating, setCreating] = useState(false);
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
+	const [saving, setSaving] = useState(false);
 	const debouncedSearch = useDebouncedValue(search);
 	useEffect(() => {
 		setPage(1);
@@ -35,8 +36,10 @@ export function StaffPage() {
 	});
 	async function create(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (saving) return;
 		const form = event.currentTarget;
 		const data = new FormData(form);
+		setSaving(true);
 		try {
 			await api("/staff", {
 				method: "POST",
@@ -53,12 +56,15 @@ export function StaffPage() {
 			await queryClient.invalidateQueries({ queryKey: ["staff"] });
 		} catch (reason) {
 			setError(reason instanceof Error ? reason.message : "Akun tidak dapat dibuat.");
+		} finally {
+			setSaving(false);
 		}
 	}
 	async function update(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!editing) return;
+		if (!editing || saving) return;
 		const data = new FormData(event.currentTarget);
+		setSaving(true);
 		try {
 			await api(`/staff/${editing.id}`, {
 				method: "PATCH",
@@ -74,6 +80,8 @@ export function StaffPage() {
 			await queryClient.invalidateQueries({ queryKey: ["staff"] });
 		} catch (reason) {
 			setError(reason instanceof Error ? reason.message : "Akun tidak dapat diperbarui.");
+		} finally {
+			setSaving(false);
 		}
 	}
 	return (
@@ -139,9 +147,16 @@ export function StaffPage() {
 					/>
 				</div>
 			</Card>
-			{creating && <StaffFormDialog onClose={() => setCreating(false)} onSubmit={create} />}
+			{creating && (
+				<StaffFormDialog pending={saving} onClose={() => setCreating(false)} onSubmit={create} />
+			)}
 			{editing && (
-				<StaffFormDialog editing={editing} onClose={() => setEditing(null)} onSubmit={update} />
+				<StaffFormDialog
+					editing={editing}
+					pending={saving}
+					onClose={() => setEditing(null)}
+					onSubmit={update}
+				/>
 			)}
 		</>
 	);

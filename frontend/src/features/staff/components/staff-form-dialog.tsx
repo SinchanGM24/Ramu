@@ -11,10 +11,12 @@ export function StaffFormDialog({
 	editing,
 	onClose,
 	onSubmit,
+	pending = false,
 }: {
 	editing?: StaffMember | null;
 	onClose: () => void;
 	onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+	pending?: boolean;
 }) {
 	const [isActive, setIsActive] = useState(editing?.is_active ?? true);
 	const creating = !editing;
@@ -128,11 +130,13 @@ export function StaffFormDialog({
 					</div>
 				)}
 				<div className="flex justify-end gap-2 border-t border-[#e7e9df] pt-4">
-					<Button type="button" variant="ghost" onClick={onClose}>
+					<Button type="button" variant="ghost" disabled={pending} onClick={onClose}>
 						Batal
 					</Button>
-					<Button type="submit">
-						{creating ? (
+					<Button type="submit" disabled={pending}>
+						{pending ? (
+							"Menyimpan…"
+						) : creating ? (
 							<>
 								<Plus size={16} />
 								Buat akun

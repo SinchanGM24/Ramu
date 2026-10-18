@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
 import { CheckCircle2, ClipboardCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { LoadingState } from "@/components/shared/loading-state";
@@ -18,6 +19,8 @@ type Data = {
 
 export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 	const queryClient = useQueryClient();
+	const saveQueues = useRef<Record<string, Promise<void>>>({});
+	const [savingScaleOptionIds, setSavingScaleOptionIds] = useState<Record<string, string>>({});
 	const activeSemester = useQuery({
 		queryKey: ["academic", "active-semester"],
 		queryFn: () => api<Semester | null>("/academic/active-semester"),
@@ -34,11 +37,32 @@ export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 
 	async function choose(indicatorId: string, scaleOptionId: string) {
 		if (!semesterId) return;
-		await api(`/assessment/students/${studentId}`, {
-			method: "POST",
-			body: JSON.stringify({ semesterId, indicatorId, scaleOptionId }),
-		});
-		await queryClient.invalidateQueries({ queryKey: ["assessment", studentId, semesterId] });
+		if (savingScaleOptionIds[indicatorId] === scaleOptionId) return;
+		const previous = saveQueues.current[indicatorId] ?? Promise.resolve();
+		const save = previous
+			.catch(() => undefined)
+			.then(async () => {
+				setSavingScaleOptionIds((current) => ({ ...current, [indicatorId]: scaleOptionId }));
+				try {
+					await api(`/assessment/students/${studentId}`, {
+						method: "POST",
+						body: JSON.stringify({ semesterId, indicatorId, scaleOptionId }),
+					});
+					await queryClient.invalidateQueries({ queryKey: ["assessment", studentId, semesterId] });
+				} finally {
+					setSavingScaleOptionIds((current) => {
+						const next = { ...current };
+						delete next[indicatorId];
+						return next;
+					});
+				}
+			});
+		saveQueues.current[indicatorId] = save;
+		try {
+			await save;
+		} finally {
+			if (saveQueues.current[indicatorId] === save) delete saveQueues.current[indicatorId];
+		}
 	}
 
 	if (activeSemester.isLoading || (Boolean(semesterId) && work.isLoading)) {
@@ -124,6 +148,7 @@ export function AssessmentWorkspace({ studentId }: { studentId: string }) {
 								<button
 									key={scale.id}
 									onClick={() => void choose(indicator.id, scale.id)}
+									disabled={savingScaleOptionIds[indicator.id] === scale.id}
 									className={`rounded-xl px-4 py-2 text-sm font-bold transition ${indicator.scale_option_id === scale.id ? "bg-brand-700 text-white shadow-[0_6px_14px_rgba(23,75,49,0.16)]" : "bg-[#f0f3ed] text-[#5d695f] hover:bg-brand-50 hover:text-brand-800"}`}
 								>
 									{scale.code}
