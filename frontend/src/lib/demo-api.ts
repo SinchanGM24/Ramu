@@ -1,8 +1,11 @@
+import { demoParentProfileByToken } from "./demo-parent-reports";
+
 const reportId = "demo-report";
 const studentId = "demo-student";
 const semesterId = "demo-semester";
 const academicYearId = "demo-year";
 let reviewStatus: "SUBMITTED" | "IN_REVIEW" | "APPROVED" = "SUBMITTED";
+let verifiedDemoParentToken: string | null = null;
 
 const demoSession = {
 	userId: "demo-admin",
@@ -398,6 +401,24 @@ const deliveries = [
 	},
 ];
 
+function parentReport(profile: NonNullable<ReturnType<typeof demoParentProfileByToken>>) {
+	return {
+		student: profile.student,
+		semester: profile.semester,
+		assessments: publishedVersion.snapshot.assessments.map((assessment, index) => ({
+			...assessment,
+			code: profile.assessmentPattern[index % profile.assessmentPattern.length],
+		})),
+		narratives: workspace.areas.map((area) => ({
+			name: area.name,
+			content: profile.narratives[area.name] ?? "-",
+		})),
+		growth: profile.growth,
+		attendance: profile.attendance,
+		extracurricular: profile.extracurricular,
+	};
+}
+
 function page<T>(items: T[]) {
 	return { items, total: items.length, page: 1, limit: 10 };
 }
@@ -732,24 +753,20 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 	}
 
 	if (pathname === "/parent/verify" && method === "POST") {
+		const body = typeof options.body === "string" ? JSON.parse(options.body) : {};
+		const profile =
+			typeof body.token === "string" ? demoParentProfileByToken(body.token) : undefined;
+		if (!profile || body.pin !== profile.pin) throw new Error("PIN atau tautan tidak valid.");
+		verifiedDemoParentToken = profile.token;
 		return { expiresAt: "2026-10-07T12:00:00.000Z" };
 	}
 	if (pathname === "/parent/report") {
+		const profile = verifiedDemoParentToken
+			? demoParentProfileByToken(verifiedDemoParentToken)
+			: undefined;
+		if (!profile) throw new Error("Akses wali belum diverifikasi.");
 		return {
-			report: {
-				student: {
-					name: "Alya Putri",
-					nickname: "Alya",
-					student_number: "TK-2026-014",
-					class_name: "Kelas Apel",
-				},
-				semester: { name: "Semester I", academic_year_name: "2026" },
-				assessments: publishedVersion.snapshot.assessments,
-				narratives: workspace.areas.map((area) => ({ name: area.name, content: area.narrative })),
-				growth: workspace.growth,
-				attendance: workspace.attendance,
-				extracurricular: [{ activity_name: "Menari", grade: "A" }],
-			},
+			report: parentReport(profile),
 		};
 	}
 

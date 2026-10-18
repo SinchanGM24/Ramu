@@ -1,5 +1,7 @@
 import type { FormEvent } from "react";
+import Link from "next/link";
 import { KeyRound, ShieldCheck } from "lucide-react";
+import { demoParentProfiles } from "@/lib/demo-parent-reports";
 
 type ParentAccessFormProps = {
 	demo: boolean;
@@ -30,11 +32,7 @@ export function ParentAccessForm({
 					<KeyRound className="mt-0.5 size-5 shrink-0 text-brand-700" aria-hidden="true" />
 					<span>Masukkan PIN dari sekolah untuk membuka raport.</span>
 				</div>
-				{demo ? (
-					<p className="mt-3 rounded-xl bg-brand-50 p-2 text-xs">
-						Demo: PIN <b>123456</b>
-					</p>
-				) : null}
+				{demo ? <DemoAccessExamples /> : null}
 				<input
 					required
 					value={pin}
@@ -56,5 +54,39 @@ export function ParentAccessForm({
 				</p>
 			</form>
 		</main>
+	);
+}
+
+function DemoAccessExamples() {
+	return (
+		<section className="mt-4 rounded-2xl border border-brand-100 bg-brand-50/60 p-3.5">
+			<p className="text-xs font-bold uppercase tracking-[0.12em] text-brand-800">
+				Contoh akses wali
+			</p>
+			<p className="mt-1 text-xs leading-5 text-[#526156]">
+				Pilih contoh raport, lalu masukkan PIN masing-masing untuk mencoba akses wali.
+			</p>
+			<div className="mt-3 grid gap-2">
+				{demoParentProfiles.map((profile) => (
+					<Link
+						key={profile.token}
+						href={`/r/${profile.token}`}
+						className="flex items-center justify-between gap-3 rounded-xl border border-white/90 bg-white px-3 py-2.5 text-left shadow-[0_3px_8px_rgba(41,93,65,0.06)] transition hover:border-brand-200 hover:bg-brand-50"
+					>
+						<span>
+							<span className="block text-sm font-semibold text-[#17251b]">
+								{profile.student.name}
+							</span>
+							<span className="mt-0.5 block text-xs text-[#68746a]">
+								{profile.student.class_name} Â· {profile.semester.name}
+							</span>
+						</span>
+						<span className="shrink-0 rounded-lg bg-brand-700 px-2 py-1 font-mono text-xs font-bold tracking-wide text-white">
+							{profile.pin}
+						</span>
+					</Link>
+				))}
+			</div>
+		</section>
 	);
 }
