@@ -35,6 +35,44 @@ const principalRequest = {
   },
 } as never;
 
+function publicationPreparationClient(
+  queries: Array<{ sql: string; values: unknown[] }>,
+  finalizationFails = false,
+) {
+  return {
+    query: async (sql: string, values: unknown[]) => {
+      queries.push({ sql, values });
+      if (sql.includes("FROM reports r JOIN schools school")) {
+        return {
+          rows: [
+            {
+              id: "report-1",
+              status: "APPROVED",
+              student_id: "student-1",
+              semester_id: "semester-1",
+              student_enrollment_id: "enrollment-1",
+              school_name: "TK Contoh Ceria",
+            },
+          ],
+        };
+      }
+      if (sql.includes("SELECT i.description")) return { rows: [] };
+      if (sql.includes("SELECT da.name\n    FROM development_areas"))
+        return { rows: [] };
+      if (sql.includes("EXISTS(SELECT 1 FROM attendance_summaries")) {
+        return { rows: [{ ready: true }] };
+      }
+      if (sql.includes("SELECT COALESCE(max(version_number),0)+1")) {
+        return { rows: [{ next: 1 }] };
+      }
+      if (sql.includes("FROM reports\n             WHERE id=$1")) {
+        return { rows: finalizationFails ? [] : [{ id: "report-1" }] };
+      }
+      return { rows: [] };
+    },
+  };
+}
+
 describe("ReportsController", () => {
   it("scopes the review queue to the current school and review stages", async () => {
     const queries: Array<{ sql: string; values?: unknown[] }> = [];
@@ -226,6 +264,76 @@ describe("ReportsController", () => {
     expect(queries).toHaveLength(1);
     expect(queries[0]?.sql).toContain("FOR UPDATE OF r");
     expect(pdfCalls).toBe(0);
+  });
+
+  it("releases the publication lock when PDF storage fails", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const client = publicationPreparationClient(queries);
+    const db = {
+      transaction: async (
+        callback: (input: typeof client) => Promise<unknown>,
+      ) => callback(client),
+    };
+    const controller = new ReportsController(
+      new AuthService({} as never),
+      db as never,
+      {} as never,
+      {
+        storePublishedReport: async () => {
+          throw new Error("Object storage tidak tersedia");
+        },
+      } as never,
+    );
+
+    await expect(
+      controller.publishForActor(schoolAdminRequest.auth, "report-1"),
+    ).rejects.toThrow("PDF raport belum dapat dibuat atau disimpan");
+
+    expect(
+      queries.some(({ sql }) =>
+        sql.includes(
+          "SET publication_lock_token=NULL,publication_locked_at=NULL",
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("deletes an uploaded PDF and releases the lock when finalization fails", async () => {
+    const queries: Array<{ sql: string; values: unknown[] }> = [];
+    const client = publicationPreparationClient(queries, true);
+    const deletedKeys: string[] = [];
+    const db = {
+      transaction: async (
+        callback: (input: typeof client) => Promise<unknown>,
+      ) => callback(client),
+    };
+    const controller = new ReportsController(
+      new AuthService({} as never),
+      db as never,
+      {} as never,
+      {
+        storePublishedReport: async () =>
+          "schools/school-1/reports/report-1/orphan.pdf",
+        deleteStoredObject: async (storageKey: string) => {
+          deletedKeys.push(storageKey);
+        },
+      } as never,
+    );
+
+    await expect(
+      controller.publishForActor(schoolAdminRequest.auth, "report-1"),
+    ).rejects.toThrow("Proses penerbitan raport tidak lagi berlaku");
+
+    expect(deletedKeys).toEqual([
+      "schools/school-1/reports/report-1/orphan.pdf",
+    ]);
+    expect(
+      queries.some(({ sql }) =>
+        sql.includes(
+          "SET publication_lock_token=NULL,publication_locked_at=NULL",
+        ),
+      ),
+    ).toBe(true);
   });
 
   it("casts the report status update and uses boolean transition flags", async () => {
