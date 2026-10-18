@@ -58,6 +58,139 @@ const scales = [
 	{ id: "scale-bsb", code: "BSB", label: "Berkembang Sangat Baik" },
 ];
 
+const defaultIndicatorDescriptions: Record<string, string[]> = {
+	"Nilai-Nilai Agama dan Moral": [
+		"Mengetahui agama yang dianutnya",
+		"Meniru gerakan beribadah dengan urutan yang benar",
+		"Mengucapkan doa sebelum dan/atau sesudah melakukan sesuatu",
+		"Mengenal perilaku baik/sopan dan buruk",
+		"Membiasakan diri berperilaku baik",
+		"Mengucapkan salam dan membalas salam",
+	],
+	"Motorik Kasar": [
+		"Menirukan gerakan binatang, pohon tertiup angin, pesawat terbang, dan sebagainya",
+		"Melakukan gerakan menggantung (bergelayut)",
+		"Melakukan gerakan melompat, meloncat, dan berlari secara terkoordinasi",
+		"Melempar sesuatu secara terarah",
+		"Menangkap sesuatu secara tepat",
+		"Melakukan gerakan antisipasi",
+		"Menendang sesuatu secara terarah",
+		"Memanfaatkan alat permainan di luar kelas",
+	],
+	"Motorik Halus": [
+		"Membuat garis vertikal, horizontal, lengkung kiri/kanan, miring kiri/kanan, dan lingkaran",
+		"Menjiplak bentuk",
+		"Mengkoordinasikan mata dan tangan untuk melakukan gerakan yang rumit",
+		"Melakukan gerakan manipulatif untuk menghasilkan suatu bentuk dengan menggunakan berbagai media",
+		"Mengekspresikan diri dengan berkarya seni menggunakan berbagai media",
+		"Mengontrol gerakan tangan yang menggunakan otot halus",
+	],
+	"Kesehatan dan Perilaku Keselamatan": [
+		"Berat badan sesuai tingkat usia",
+		"Tinggi badan sesuai tingkat usia",
+		"Berat badan sesuai dengan standar tinggi badan",
+		"Lingkar kepala sesuai tingkat usia",
+		"Menggunakan toilet dengan bantuan minimal",
+		"Memahami berbagai alarm bahaya",
+		"Mengenal rambu lalu lintas yang ada di jalan",
+	],
+	"Belajar dan Pemecahan Masalah": [
+		"Mengenal benda berdasarkan fungsi",
+		"Menggunakan benda-benda sebagai permainan simbolik",
+		"Mengenal konsep sederhana dalam kehidupan sehari-hari",
+		"Mengetahui konsep banyak dan sedikit",
+		"Mengkreasikan sesuatu sesuai dengan idenya sendiri yang terkait dengan berbagai pemecahan masalah",
+		"Mengamati benda dan gejala dengan rasa ingin tahu",
+		"Mengenal pola kegiatan dan menyadari pentingnya waktu",
+		"Memahami posisi atau kedudukan dalam keluarga, ruang, dan lingkungan sosial",
+	],
+	"Berpikir Logis": [
+		"Mengklasifikasikan benda berdasarkan fungsi, bentuk, warna, atau ukuran",
+		"Mengenal gejala sebab-akibat yang terkait dengan dirinya",
+		"Mengklasifikasikan benda ke dalam kelompok yang sama, sejenis, atau berpasangan dengan dua variasi",
+		"Mengenal pola dan mengulanginya",
+		"Mengurutkan benda berdasarkan lima seriasi ukuran atau warna",
+	],
+	"Berpikir Simbolik": [
+		"Membilang banyak benda satu sampai sepuluh",
+		"Mengenal konsep bilangan",
+		"Mengenal lambang bilangan",
+		"Mengenal lambang huruf",
+	],
+	"Memahami Bahasa": [
+		"Menyimak perkataan orang lain",
+		"Mengerti dua perintah yang diberikan bersamaan",
+		"Memahami cerita yang dibacakan",
+		"Mengenal perbendaharaan kata mengenai kata sifat",
+		"Mendengar dan membedakan bunyi-bunyian dalam Bahasa Indonesia",
+	],
+	"Mengungkapkan Bahasa": [
+		"Mengulang kalimat sederhana",
+		"Bertanya dengan kalimat yang benar",
+		"Menjawab pertanyaan sesuai pertanyaan",
+		"Mengungkapkan perasaan dengan kata sifat",
+		"Menyebutkan kata-kata yang dikenal",
+		"Mengutarakan pendapat kepada orang lain",
+		"Menyatakan alasan terhadap sesuatu yang diinginkan atau ketidaksetujuan",
+		"Menceritakan kembali cerita atau dongeng yang pernah didengar",
+		"Memperkaya perbendaharaan kata",
+		"Berpartisipasi dalam percakapan",
+	],
+	Keaksaraan: [
+		"Mengenal simbol-simbol",
+		"Mengenal suara-suara hewan atau benda yang ada di sekitarnya",
+		"Membuat coretan yang bermakna",
+		"Meniru huruf A-Z",
+	],
+	"Kesadaran Diri": [
+		"Menunjukkan sikap mandiri dalam memilih kegiatan",
+		"Mengendalikan perasaan",
+		"Menunjukkan rasa percaya diri",
+		"Memahami peraturan dan disiplin",
+		"Memiliki sikap gigih",
+		"Bangga terhadap hasil karya sendiri",
+	],
+	"Tanggungjawab Diri dan Orang Lain": [
+		"Menjaga diri sendiri dari lingkungannya",
+		"Menghargai keunggulan orang lain",
+		"Mau berbagi, menolong, dan membantu teman",
+	],
+	"Perilaku Prososial": [
+		"Menunjukkan antusiasme dalam melakukan permainan kompetitif secara positif",
+		"Menaati aturan yang berlaku dalam suatu permainan",
+		"Menghargai orang lain",
+		"Menunjukkan rasa empati",
+	],
+	"Menikmati Lagu dan Suara": [
+		"Senang mendengarkan berbagai macam musik atau lagu kesukaannya",
+		"Memainkan alat musik, instrumen, atau benda yang dapat membentuk irama teratur",
+	],
+	"Tertarik dengan Kegiatan Seni": [
+		"Memilih jenis lagu yang disukai",
+		"Bernyanyi sendiri",
+		"Menggunakan imajinasi untuk mencerminkan perasaan dalam sebuah peran",
+		"Membedakan peran fantasi dan kenyataan",
+		"Menggunakan dialog, perilaku, dan berbagai materi dalam menceritakan suatu cerita",
+		"Mengekspresikan gerakan dengan irama yang bervariasi",
+		"Menggambar objek di sekitarnya",
+		"Membentuk berdasarkan objek yang dilihatnya",
+		"Mendeskripsikan sesuatu dengan ekspresif yang berirama",
+		"Mengkombinasikan berbagai warna ketika menggambar atau mewarnai",
+	],
+};
+
+function demoIndicators(idPrefix: string, subAreaName: string, count: number) {
+	const descriptions =
+		defaultIndicatorDescriptions[subAreaName] ??
+		Array.from({ length: count }, (_, index) => `Indikator ${index + 1}: ${subAreaName}`);
+
+	return descriptions.map((description, index) => ({
+		id: `${idPrefix}-${index + 1}`,
+		description,
+		scaleOptionId: index % 4 === 0 ? "scale-bsb" : "scale-bsh",
+	}));
+}
+
 const workspace = {
 	report: {
 		student_name: "Alya Putri",
@@ -76,14 +209,8 @@ const workspace = {
 			subAreas: [
 				{
 					id: "sub-area-moral",
-					name: "Pembiasaan",
-					indicators: [
-						{
-							id: "indicator-moral",
-							description: "Mengikuti kegiatan doa bersama",
-							scaleOptionId: "scale-bsh",
-						},
-					],
+					name: "Nilai-Nilai Agama dan Moral",
+					indicators: demoIndicators("indicator-moral", "Nilai-Nilai Agama dan Moral", 6),
 				},
 			],
 		},
@@ -93,15 +220,23 @@ const workspace = {
 			narrative: "Alya bergerak lincah saat kegiatan luar ruang dan teliti saat berkarya.",
 			subAreas: [
 				{
-					id: "sub-area-fisik-motorik",
-					name: "Motorik Kasar dan Halus",
-					indicators: [
-						{
-							id: "indicator-fisik-motorik",
-							description: "Mengkoordinasikan gerakan tubuh saat bermain",
-							scaleOptionId: "scale-bsh",
-						},
-					],
+					id: "sub-area-motorik-kasar",
+					name: "Motorik Kasar",
+					indicators: demoIndicators("indicator-motorik-kasar", "Motorik Kasar", 8),
+				},
+				{
+					id: "sub-area-motorik-halus",
+					name: "Motorik Halus",
+					indicators: demoIndicators("indicator-motorik-halus", "Motorik Halus", 6),
+				},
+				{
+					id: "sub-area-kesehatan-keselamatan",
+					name: "Kesehatan dan Perilaku Keselamatan",
+					indicators: demoIndicators(
+						"indicator-kesehatan-keselamatan",
+						"Kesehatan dan Perilaku Keselamatan",
+						7,
+					),
 				},
 			],
 		},
@@ -112,15 +247,23 @@ const workspace = {
 				"Alya mampu membandingkan benda dan mencoba beberapa cara saat memecahkan masalah.",
 			subAreas: [
 				{
-					id: "sub-area-kognitif",
+					id: "sub-area-pemecahan-masalah",
+					name: "Belajar dan Pemecahan Masalah",
+					indicators: demoIndicators(
+						"indicator-pemecahan-masalah",
+						"Belajar dan Pemecahan Masalah",
+						8,
+					),
+				},
+				{
+					id: "sub-area-logis",
 					name: "Berpikir Logis",
-					indicators: [
-						{
-							id: "indicator-kognitif",
-							description: "Mengelompokkan benda berdasarkan warna dan bentuk",
-							scaleOptionId: "scale-bsh",
-						},
-					],
+					indicators: demoIndicators("indicator-logis", "Berpikir Logis", 5),
+				},
+				{
+					id: "sub-area-simbolik",
+					name: "Berpikir Simbolik",
+					indicators: demoIndicators("indicator-simbolik", "Berpikir Simbolik", 4),
 				},
 			],
 		},
@@ -130,15 +273,19 @@ const workspace = {
 			narrative: "Alya mampu menyampaikan pengalaman sederhana dengan percaya diri.",
 			subAreas: [
 				{
-					id: "sub-area-bahasa",
-					name: "Komunikasi",
-					indicators: [
-						{
-							id: "indicator-bahasa",
-							description: "Menceritakan kembali kegiatan yang dialami",
-							scaleOptionId: "scale-bsb",
-						},
-					],
+					id: "sub-area-memahami-bahasa",
+					name: "Memahami Bahasa",
+					indicators: demoIndicators("indicator-memahami-bahasa", "Memahami Bahasa", 5),
+				},
+				{
+					id: "sub-area-mengungkapkan-bahasa",
+					name: "Mengungkapkan Bahasa",
+					indicators: demoIndicators("indicator-mengungkapkan-bahasa", "Mengungkapkan Bahasa", 10),
+				},
+				{
+					id: "sub-area-keaksaraan",
+					name: "Keaksaraan",
+					indicators: demoIndicators("indicator-keaksaraan", "Keaksaraan", 4),
 				},
 			],
 		},
@@ -149,15 +296,23 @@ const workspace = {
 				"Alya mampu menunggu giliran dan menunjukkan kepedulian kepada teman saat bermain bersama.",
 			subAreas: [
 				{
-					id: "sub-area-sosem",
+					id: "sub-area-kesadaran-diri",
+					name: "Kesadaran Diri",
+					indicators: demoIndicators("indicator-kesadaran-diri", "Kesadaran Diri", 6),
+				},
+				{
+					id: "sub-area-tanggung-jawab",
+					name: "Tanggungjawab Diri dan Orang Lain",
+					indicators: demoIndicators(
+						"indicator-tanggung-jawab",
+						"Tanggungjawab Diri dan Orang Lain",
+						3,
+					),
+				},
+				{
+					id: "sub-area-prososial",
 					name: "Perilaku Prososial",
-					indicators: [
-						{
-							id: "indicator-sosem",
-							description: "Mau berbagi dan bekerja sama dengan teman",
-							scaleOptionId: "scale-bsb",
-						},
-					],
+					indicators: demoIndicators("indicator-prososial", "Perilaku Prososial", 4),
 				},
 			],
 		},
@@ -168,15 +323,18 @@ const workspace = {
 				"Alya menikmati kegiatan musik dan mampu mengekspresikan gagasan melalui karya sederhana.",
 			subAreas: [
 				{
-					id: "sub-area-seni",
-					name: "Ekspresi dan Karya Seni",
-					indicators: [
-						{
-							id: "indicator-seni",
-							description: "Membuat karya seni dengan berbagai bahan",
-							scaleOptionId: "scale-bsb",
-						},
-					],
+					id: "sub-area-lagu-suara",
+					name: "Menikmati Lagu dan Suara",
+					indicators: demoIndicators("indicator-lagu-suara", "Menikmati Lagu dan Suara", 2),
+				},
+				{
+					id: "sub-area-kegiatan-seni",
+					name: "Tertarik dengan Kegiatan Seni",
+					indicators: demoIndicators(
+						"indicator-kegiatan-seni",
+						"Tertarik dengan Kegiatan Seni",
+						10,
+					),
 				},
 			],
 		},
