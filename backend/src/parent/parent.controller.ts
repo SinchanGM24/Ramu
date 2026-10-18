@@ -42,12 +42,12 @@ export class ParentController {
       .parse(body);
     const ip = rateLimitFingerprint(request.ip ?? "unknown");
     const token = rateLimitFingerprint(input.token);
-    this.rateLimiter.assert({
+    await this.rateLimiter.assert({
       key: `parent-verify:ip:${ip}`,
       limit: 120,
       windowMs: fifteenMinutes,
     });
-    this.rateLimiter.assert({
+    await this.rateLimiter.assert({
       key: `parent-verify:token:${ip}:${token}`,
       limit: 30,
       windowMs: fifteenMinutes,
@@ -106,7 +106,8 @@ export class ParentController {
       [rawSession],
     );
     const storageKey = result.rows[0]?.pdf_storage_key;
-    if (!storageKey) throw new NotFoundException("File PDF raport belum tersedia");
+    if (!storageKey)
+      throw new NotFoundException("File PDF raport belum tersedia");
     const pdf = await this.pdf.readPublishedReport(storageKey);
     reply.header("Content-Type", "application/pdf");
     reply.header("Content-Disposition", "attachment; filename=raport-anak.pdf");

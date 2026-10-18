@@ -80,7 +80,7 @@ export class SchoolsController {
   }
   @Post("logo") async uploadLogo(@Req() request: FastifyRequest) {
     const session = this.auth.require(request, ["SCHOOL_ADMIN"]);
-    this.rateLimiter.assert({
+    await this.rateLimiter.assert({
       key: `upload:school-logo:${rateLimitFingerprint(`${session.schoolId}:${session.userId}`)}`,
       limit: 10,
       windowMs: 15 * 60_000,

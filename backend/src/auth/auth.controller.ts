@@ -77,7 +77,7 @@ export class AuthController {
     @Req() request: FastifyRequest = {} as FastifyRequest,
   ) {
     const input = registrationSchema.parse(body);
-    this.rateLimiter.assert({
+    await this.rateLimiter.assert({
       key: `register:${rateLimitFingerprint(request.ip ?? "unknown")}`,
       limit: 10,
       windowMs: oneHour,
@@ -87,7 +87,9 @@ export class AuthController {
       [input.email],
     );
     if (existing.rowCount)
-      throw new ConflictException("Email sudah digunakan sebagai akun sekolah.");
+      throw new ConflictException(
+        "Email sudah digunakan sebagai akun sekolah.",
+      );
     const passwordHash = await this.auth.hashPassword(input.password);
     const schoolId = crypto.randomUUID();
     const created = await this.db.transaction(async (client) => {
@@ -124,12 +126,12 @@ export class AuthController {
     const input = loginSchema.parse(body);
     const ip = rateLimitFingerprint(request.ip ?? "unknown");
     const email = rateLimitFingerprint(input.email.trim().toLowerCase());
-    this.rateLimiter.assert({
+    await this.rateLimiter.assert({
       key: `login:ip:${ip}`,
       limit: 80,
       windowMs: fifteenMinutes,
     });
-    this.rateLimiter.assert({
+    await this.rateLimiter.assert({
       key: `login:identity:${ip}:${email}`,
       limit: 10,
       windowMs: fifteenMinutes,

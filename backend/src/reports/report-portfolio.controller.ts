@@ -55,7 +55,7 @@ export class ReportPortfolioController {
   @Post(":id/portfolio")
   async upload(@Req() request: FastifyRequest, @Param("id") id: string) {
     const actor = this.auth.require(request, ["SCHOOL_ADMIN", "TEACHER"]);
-    this.rateLimiter.assert({
+    await this.rateLimiter.assert({
       key: `upload:portfolio:${rateLimitFingerprint(`${actor.schoolId}:${actor.userId}`)}`,
       limit: 30,
       windowMs: 15 * 60_000,
