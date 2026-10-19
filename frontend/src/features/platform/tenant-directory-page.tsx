@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import type { Paginated, Tenant } from "./types";
 
@@ -24,11 +25,12 @@ export function TenantDirectoryPage() {
 	const [showCreate, setShowCreate] = useState(false);
 	const [temporaryPassword, setTemporaryPassword] = useState("");
 	const [error, setError] = useState("");
+	const debouncedSearch = useDebouncedValue(search);
 	const tenants = useQuery({
-		queryKey: ["platform-tenants", page, search, status],
+		queryKey: ["platform-tenants", page, debouncedSearch, status],
 		queryFn: () => {
 			const params = new URLSearchParams({ page: String(page) });
-			if (search) params.set("query", search);
+			if (debouncedSearch) params.set("query", debouncedSearch);
 			if (status) params.set("status", status);
 			return api<Paginated<Tenant>>(`/platform/tenants?${params}`);
 		},

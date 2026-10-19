@@ -29,37 +29,37 @@ export function PlatformLoginForm() {
 	}
 
 	return (
-		<main className="flex min-h-screen items-center justify-center bg-slate-950 p-5">
+		<main className="flex min-h-screen items-center justify-center bg-[#eaf5ed] p-5">
 			<form
 				onSubmit={submit}
-				className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-7 shadow-2xl"
+				className="w-full max-w-md rounded-3xl border border-[#6b4b3b] bg-[#765646] p-7 shadow-[0_20px_45px_rgba(80,54,39,0.18)]"
 			>
-				<p className="text-sm font-bold uppercase tracking-[0.16em] text-emerald-400">
+				<p className="text-sm font-bold uppercase tracking-[0.16em] text-[#f2daca]">
 					RAMU Platform
 				</p>
-				<h1 className="mt-3 text-3xl font-bold tracking-tight text-white">
+				<h1 className="mt-3 text-3xl font-bold tracking-tight text-[#fff9f4]">
 					Masuk sebagai Super Admin
 				</h1>
-				<p className="mt-2 text-sm leading-6 text-slate-400">
+				<p className="mt-2 text-sm leading-6 text-[#f0dcd0]">
 					Ruang operasional tenant dan akun sekolah. Bukan ruang akses data sekolah.
 				</p>
 				<div className="mt-7 space-y-4">
-					<label className="block text-sm font-semibold text-slate-200">
+					<label className="block text-sm font-semibold text-[#fff4ec]">
 						Email
 						<input
 							required
 							name="email"
 							type="email"
-							className="mt-1.5 w-full rounded-xl border border-white/10 bg-slate-800 px-3 py-3 text-white outline-none focus:border-emerald-400"
+							className="mt-1.5 w-full rounded-xl border border-[#a98978] bg-[#fff9f4] px-3 py-3 text-[#3c2a20] outline-none focus:border-[#d9bda9] focus:ring-2 focus:ring-[#f2daca]"
 						/>
 					</label>
-					<label className="block text-sm font-semibold text-slate-200">
+					<label className="block text-sm font-semibold text-[#fff4ec]">
 						Kata sandi
 						<input
 							required
 							name="password"
 							type="password"
-							className="mt-1.5 w-full rounded-xl border border-white/10 bg-slate-800 px-3 py-3 text-white outline-none focus:border-emerald-400"
+							className="mt-1.5 w-full rounded-xl border border-[#a98978] bg-[#fff9f4] px-3 py-3 text-[#3c2a20] outline-none focus:border-[#d9bda9] focus:ring-2 focus:ring-[#f2daca]"
 						/>
 					</label>
 					{error ? (
@@ -68,7 +68,7 @@ export function PlatformLoginForm() {
 						</p>
 					) : null}
 					<Button
-						className="w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300"
+						className="w-full bg-[#f2daca] text-[#5f4032] hover:bg-[#fff2e7]"
 						disabled={loading}
 					>
 						{loading ? "Memproses…" : "Masuk ke platform"}

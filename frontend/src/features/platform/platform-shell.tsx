@@ -41,22 +41,22 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 	}
 
 	return (
-		<div className="min-h-screen bg-[#edf2ee] text-[#1d2921]">
+		<div className="min-h-screen bg-[#eaf5ed] text-[#1d2921]">
 			<div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col md:flex-row">
-				<aside className="flex shrink-0 flex-col bg-[#edf2ee] md:w-[228px]">
+				<aside className="flex shrink-0 flex-col bg-[#765646] text-[#fff9f4] md:w-[228px]">
 					<header className="flex h-14 items-center justify-between px-4 md:px-5">
 						<Link
 							href="/platform"
 							className="flex items-center gap-2.5 font-bold tracking-[-0.025em]"
 						>
-							<span className="grid size-7 place-items-center rounded-full bg-[#174b31] text-xs text-white">
+							<span className="grid size-7 place-items-center rounded-full bg-[#f2daca] text-xs text-[#68483a]">
 								R
 							</span>
 							<span>RAMU Platform</span>
 						</Link>
 						<Button
 							variant="ghost"
-							className="px-2 text-slate-600 hover:bg-white hover:text-slate-950 md:hidden"
+							className="px-2 text-[#f8e9df] hover:bg-white/10 hover:text-white md:hidden"
 							onClick={logout}
 							aria-label="Keluar dari platform"
 						>
@@ -71,7 +71,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 								<Link
 									key={item.href}
 									href={item.href}
-									className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active ? "bg-white text-[#174b31]" : "text-slate-600 hover:bg-white/70 hover:text-slate-950"}`}
+									className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active ? "bg-[#fff8f1] text-[#68483a]" : "text-[#f7e8de] hover:bg-white/10 hover:text-white"}`}
 								>
 									<Icon size={17} /> {item.label}
 								</Link>
@@ -79,17 +79,17 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 						})}
 					</nav>
 					<div className="mt-auto hidden px-5 pb-5 md:block">
-						<p className="truncate text-xs text-slate-500">{session.data?.email}</p>
+						<p className="truncate text-xs text-[#f0dcd0]">{session.data?.email}</p>
 						<Button
 							variant="ghost"
-							className="mt-2 px-0 text-slate-600 hover:bg-transparent hover:text-slate-950"
+							className="mt-2 px-0 text-[#f7e8de] hover:bg-transparent hover:text-white"
 							onClick={logout}
 						>
 							<LogOut size={16} /> Keluar
 						</Button>
 					</div>
 				</aside>
-				<main className="m-2 min-w-0 flex-1 rounded-2xl border border-[#e0e6df] bg-white px-4 py-7 sm:px-8 sm:py-9 md:ml-0">
+				<main className="m-2 min-w-0 flex-1 rounded-2xl border border-[#d7e7da] bg-[#f5fbf6]/90 px-4 py-7 sm:px-8 sm:py-9 md:ml-0">
 					{children}
 				</main>
 			</div>

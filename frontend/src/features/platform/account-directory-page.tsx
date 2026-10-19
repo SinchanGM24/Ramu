@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import type { Paginated, PlatformAccount } from "./types";
 
@@ -24,11 +25,12 @@ export function AccountDirectoryPage() {
 	const [search, setSearch] = useState("");
 	const [status, setStatus] = useState("");
 	const [role, setRole] = useState("");
+	const debouncedSearch = useDebouncedValue(search);
 	const accounts = useQuery({
-		queryKey: ["platform-accounts", page, search, status, role],
+		queryKey: ["platform-accounts", page, debouncedSearch, status, role],
 		queryFn: () => {
 			const params = new URLSearchParams({ page: String(page) });
-			if (search) params.set("query", search);
+			if (debouncedSearch) params.set("query", debouncedSearch);
 			if (status) params.set("status", status);
 			if (role) params.set("role", role);
 			return api<Paginated<PlatformAccount>>(`/platform/accounts?${params}`);
