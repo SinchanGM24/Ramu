@@ -3,7 +3,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Building2, GraduationCap, ShieldCheck } from "lucide-react";
+import { Building2, GraduationCap, HeartHandshake, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { AuthShell } from "./auth-shell";
 import { Button } from "@/components/ui/button";
@@ -177,6 +177,23 @@ function DemoRoleLogin({
 					</button>
 				))}
 			</div>
+			<div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#778478] before:h-px before:flex-1 before:bg-[#dfe5da] after:h-px after:flex-1 after:bg-[#dfe5da]">
+				Akses laporan
+			</div>
+			<Link
+				href="/r/demo-parent"
+				className="group flex w-full items-center gap-3 rounded-2xl border border-[#dfe5da] bg-[#fffefa] p-4 text-left transition hover:border-brand-300 hover:bg-brand-50 focus:outline-none focus:ring-4 focus:ring-brand-100"
+			>
+				<span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#f2e8d6] text-[#876231] transition group-hover:bg-brand-700 group-hover:text-white">
+					<HeartHandshake size={20} aria-hidden="true" />
+				</span>
+				<span>
+					<span className="block text-sm font-bold text-[#17251b]">Akses wali demo</span>
+					<span className="mt-0.5 block text-xs leading-5 text-[#637065]">
+						Lihat raport Alya sebagai wali · PIN 123456
+					</span>
+				</span>
+			</Link>
 			{error ? (
 				<p
 					role="alert"
