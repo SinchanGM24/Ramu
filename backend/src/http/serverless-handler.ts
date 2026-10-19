@@ -29,7 +29,7 @@ export async function handleServerlessRequest(
     ? undefined
     : Buffer.from(await request.arrayBuffer());
   const fastify = app.getHttpAdapter().getInstance() as FastifyInstance;
-  const inject = fastify.inject as unknown as (input: {
+  const inject = fastify.inject.bind(fastify) as unknown as (input: {
     method: string;
     url: string;
     headers: Record<string, string>;
