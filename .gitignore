@@ -13,3 +13,4 @@ coverage/
 !.env.example
 postgres-data/
 minio-data/
+.neon
