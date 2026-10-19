@@ -72,17 +72,12 @@ const scaleDescriptions: Record<string, string> = {
 @Injectable()
 export class ReportPdfService {
   private readonly logger = new Logger(ReportPdfService.name);
-  private readonly storageConfig = getObjectStorageConfig();
-  private readonly bucket = this.storageConfig.bucket;
-  private readonly client = new S3Client({
-    region: this.storageConfig.region,
-    endpoint: this.storageConfig.endpoint,
-    forcePathStyle: true,
-    credentials: {
-      accessKeyId: this.storageConfig.accessKeyId,
-      secretAccessKey: this.storageConfig.secretAccessKey,
-    },
-  });
+  private storage:
+    | {
+        bucket: string;
+        client: S3Client;
+      }
+    | undefined;
   private bucketReady: Promise<void> | undefined;
 
   constructor(private readonly db: DatabaseService) {}
@@ -233,6 +228,33 @@ export class ReportPdfService {
       { bytes: input.body.length },
     );
     return key;
+  }
+
+  private getStorage() {
+    if (this.storage) return this.storage;
+
+    const config = getObjectStorageConfig();
+    this.storage = {
+      bucket: config.bucket,
+      client: new S3Client({
+        region: config.region,
+        endpoint: config.endpoint,
+        forcePathStyle: true,
+        credentials: {
+          accessKeyId: config.accessKeyId,
+          secretAccessKey: config.secretAccessKey,
+        },
+      }),
+    };
+    return this.storage;
+  }
+
+  private get bucket() {
+    return this.getStorage().bucket;
+  }
+
+  private get client() {
+    return this.getStorage().client;
   }
 
   private async ensureBucket() {
