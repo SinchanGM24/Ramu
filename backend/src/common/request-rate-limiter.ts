@@ -4,6 +4,7 @@ import {
   Injectable,
   OnModuleDestroy,
   OnModuleInit,
+  Optional,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { createHash } from "crypto";
@@ -45,8 +46,8 @@ export class RequestRateLimiter implements OnModuleInit, OnModuleDestroy {
   private now: () => number = () => Date.now();
 
   constructor(
-    environment: Partial<NodeJS.ProcessEnv> = process.env,
-    redisClient?: RedisClientType,
+    @Optional() environment: Partial<NodeJS.ProcessEnv> = process.env,
+    @Optional() redisClient?: RedisClientType,
   ) {
     const redisUrl = environment.RATE_LIMIT_REDIS_URL?.trim();
     if (redisUrl) {
