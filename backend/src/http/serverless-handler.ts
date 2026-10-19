@@ -14,6 +14,13 @@ export type ServerlessResponse = {
   headers: Array<[string, string]>;
   body: Buffer;
 };
+
+type InjectedResponse = {
+  statusCode: number;
+  headers: Record<string, string | string[]>;
+  rawPayload: Buffer;
+};
+
 let application: Promise<NestFastifyApplication> | undefined;
 
 function getApplication() {
@@ -29,21 +36,24 @@ export async function handleServerlessRequest(
     ? undefined
     : Buffer.from(await request.arrayBuffer());
   const fastify = app.getHttpAdapter().getInstance() as FastifyInstance;
-  const inject = fastify.inject.bind(fastify) as unknown as (input: {
-    method: string;
-    url: string;
-    headers: Record<string, string>;
-    payload?: Buffer;
-  }) => Promise<{
-    statusCode: number;
-    headers: Record<string, string | string[]>;
-    rawPayload: Buffer;
-  }>;
-  const response = await inject({
+  const input = {
     method: request.method,
     url: request.url,
     headers: Object.fromEntries(request.headers),
     payload,
+  };
+  const response = await new Promise<InjectedResponse>((resolve, reject) => {
+    fastify.inject(input as never, (error, injectedResponse) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (!injectedResponse) {
+        reject(new Error("Fastify tidak mengembalikan respons serverless."));
+        return;
+      }
+      resolve(injectedResponse as InjectedResponse);
+    });
   });
   const headers = Object.entries(response.headers).flatMap(([name, value]) =>
     Array.isArray(value)
