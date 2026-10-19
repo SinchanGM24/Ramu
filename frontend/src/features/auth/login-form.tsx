@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -37,14 +36,7 @@ export function LoginForm() {
 		<AuthShell
 			title="Selamat datang kembali"
 			description="Masuk untuk melanjutkan ke ruang kerja sekolah."
-			footer={
-				<>
-					Belum memiliki akun?{" "}
-					<Link className="font-semibold text-brand-700" href="/register">
-						Daftarkan sekolah
-					</Link>
-				</>
-			}
+			footer="Akun sekolah dibuat oleh pengelola RAMU."
 		>
 			<form onSubmit={submit} className="space-y-5">
 				<label className="block text-sm font-semibold text-[#314137]">

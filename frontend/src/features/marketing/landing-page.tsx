@@ -52,10 +52,9 @@ export function LandingPage() {
 					>
 						Masuk
 					</Link>
-					<Link href="/register">
-						<Button className="hidden sm:inline-flex">Daftarkan sekolah</Button>
-						<Button className="sm:hidden">Daftar</Button>
-					</Link>
+					<span className="hidden text-sm font-medium text-[#637065] sm:inline">
+						Pendaftaran belum dibuka
+					</span>
 				</nav>
 			</header>
 
@@ -83,9 +82,9 @@ export function LandingPage() {
 						dan wali menerima hasilnya melalui satu alur yang jelas.
 					</p>
 					<div className="mt-8 flex flex-wrap gap-3">
-						<Link href="/register">
+						<Link href="/login">
 							<Button className="gap-2 px-5">
-								Mulai untuk sekolah
+								Masuk ke RAMU
 								<ArrowRight size={17} />
 							</Button>
 						</Link>
@@ -215,9 +214,9 @@ export function LandingPage() {
 							Satu raport yang disusun dengan baik dapat menjaga cerita tumbuh kembang anak.
 						</h2>
 					</div>
-					<Link href="/register">
+					<Link href="/login">
 						<Button className="gap-2 px-5">
-							Daftarkan sekolah
+							Masuk ke RAMU
 							<ArrowRight size={17} />
 						</Button>
 					</Link>

@@ -5,6 +5,7 @@ export type AuthSession = {
 	schoolId: string;
 	role: "SCHOOL_ADMIN" | "TEACHER" | "PRINCIPAL";
 	email: string;
+	mustChangePassword: boolean;
 };
 
 export const authSessionQueryKey = ["session"] as const;
