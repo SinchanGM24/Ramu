@@ -37,12 +37,17 @@ const createTenantSchema = z.object({
   adminName: z.string().trim().min(2).max(120),
   adminEmail: z.string().trim().email().max(320),
 });
+const optionalQueryValue = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    schema.optional(),
+  );
 const pagingSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   query: z.string().trim().max(160).optional().default(""),
-  status: z.enum(["ACTIVE", "SUSPENDED"]).optional(),
-  schoolId: z.string().uuid().optional(),
-  role: z.enum(["SCHOOL_ADMIN", "TEACHER", "PRINCIPAL"]).optional(),
+  status: optionalQueryValue(z.enum(["ACTIVE", "SUSPENDED"])),
+  schoolId: optionalQueryValue(z.string().uuid()),
+  role: optionalQueryValue(z.enum(["SCHOOL_ADMIN", "TEACHER", "PRINCIPAL"])),
 });
 
 const temporaryPassword = () => {

@@ -12,7 +12,7 @@ import { api } from "@/lib/api";
 import type { Paginated, Tenant } from "./types";
 
 const inputClass =
-	"w-full rounded-xl border border-[#dfe2d6] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-50";
+	"h-9 w-full rounded-lg border border-[#d7dfd7] bg-white px-3 text-sm outline-none transition focus:border-[#174b31] focus:ring-2 focus:ring-[#dcebe0]";
 const labelStatus = (status: "ACTIVE" | "SUSPENDED") =>
 	status === "ACTIVE" ? "Aktif" : "Ditangguhkan";
 
@@ -26,10 +26,12 @@ export function TenantDirectoryPage() {
 	const [error, setError] = useState("");
 	const tenants = useQuery({
 		queryKey: ["platform-tenants", page, search, status],
-		queryFn: () =>
-			api<Paginated<Tenant>>(
-				`/platform/tenants?page=${page}&query=${encodeURIComponent(search)}&status=${status}`,
-			),
+		queryFn: () => {
+			const params = new URLSearchParams({ page: String(page) });
+			if (search) params.set("query", search);
+			if (status) params.set("status", status);
+			return api<Paginated<Tenant>>(`/platform/tenants?${params}`);
+		},
 	});
 
 	async function setTenantStatus(tenant: Tenant) {
@@ -140,8 +142,8 @@ export function TenantDirectoryPage() {
 					</form>
 				</Card>
 			) : null}
-			<Card>
-				<div className="flex flex-col gap-3 border-b border-[#e7e7dc] pb-4 md:flex-row">
+			<Card className="rounded-xl border-[#e3e8e3] bg-white p-4 shadow-none sm:p-5">
+				<div className="flex flex-col gap-3 pb-5 md:flex-row">
 					<label className="relative flex-1">
 						<span className="sr-only">Cari tenant</span>
 						<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -169,7 +171,7 @@ export function TenantDirectoryPage() {
 						<option value="SUSPENDED">Ditangguhkan</option>
 					</select>
 				</div>
-				<div className="mt-4 hidden md:block">
+				<div className="hidden md:block">
 					<table className="w-full table-fixed text-left text-sm">
 						<colgroup>
 							<col className="w-[29%]" />
@@ -178,7 +180,7 @@ export function TenantDirectoryPage() {
 							<col className="w-[16%]" />
 							<col className="w-[18%]" />
 						</colgroup>
-						<thead className="border-b border-[#e7e7dc] text-xs uppercase tracking-[0.12em] text-slate-500">
+						<thead className="border-b border-[#e7e7dc] text-xs font-medium text-slate-500">
 							<tr>
 								<th className="px-4 py-3">Sekolah</th>
 								<th className="px-4 py-3">Admin Sekolah</th>
@@ -202,7 +204,10 @@ export function TenantDirectoryPage() {
 								</tr>
 							) : tenants.data?.data.length ? (
 								tenants.data.data.map((tenant) => (
-									<tr key={tenant.id} className="border-b border-slate-100 hover:bg-brand-50/50">
+									<tr
+										key={tenant.id}
+										className="border-b border-slate-100 transition-colors hover:bg-[#f5faf6]"
+									>
 										<td className="px-4 py-4">
 											<Link
 												href={`/platform/tenants/${tenant.id}`}
@@ -225,7 +230,7 @@ export function TenantDirectoryPage() {
 										</td>
 										<td className="px-4 py-4">
 											<span
-												className={`rounded-full px-2.5 py-1 text-xs font-bold ${tenant.tenant_status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}
+												className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${tenant.tenant_status === "ACTIVE" ? "bg-[#e7f3e9] text-[#1d643e]" : "bg-[#fff4dc] text-[#8a5a12]"}`}
 											>
 												{labelStatus(tenant.tenant_status)}
 											</span>
@@ -250,7 +255,7 @@ export function TenantDirectoryPage() {
 						</tbody>
 					</table>
 				</div>
-				<div className="mt-4 space-y-3 md:hidden">
+				<div className="space-y-3 md:hidden">
 					{tenants.data?.data.map((tenant) => (
 						<article key={tenant.id} className="rounded-xl border border-slate-200 p-4">
 							<div className="flex justify-between gap-3">
