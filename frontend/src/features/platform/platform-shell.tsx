@@ -16,6 +16,12 @@ const navigation = [
 	{ href: "/platform/accounts", label: "Akun sekolah", icon: Users },
 ];
 
+function isNavigationActive(pathname: string, href: string) {
+	return href === "/platform"
+		? pathname === href
+		: pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function PlatformShell({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname();
 	const router = useRouter();
@@ -85,7 +91,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 					<nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:px-4 md:pt-5">
 						{navigation.map((item) => {
 							const Icon = item.icon;
-							const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+							const active = isNavigationActive(pathname, item.href);
 							return (
 								<Link
 									key={item.href}
@@ -116,7 +122,7 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 			>
 				{navigation.map((item) => {
 					const Icon = item.icon;
-					const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+					const active = isNavigationActive(pathname, item.href);
 					return (
 						<Link
 							key={item.href}
