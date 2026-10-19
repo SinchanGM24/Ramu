@@ -11,6 +11,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"*.{ts,mjs}\""
   },
   "dependencies": {
+    "@ramu/backend": "file:../backend",
     "@tanstack/react-query": "^5.62.11",
     "@vercel/queue": "^0.8.0",
     "clsx": "^2.1.1",
