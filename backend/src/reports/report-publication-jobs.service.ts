@@ -1,5 +1,6 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
+import { enqueuePublicationMessages } from "./vercel-publication-queue";
 
 type PublicationJob = {
   id: string;
@@ -21,33 +22,15 @@ type Publisher = (input: {
 }) => Promise<{ id: string }>;
 
 const maxAttemptsPerItem = 3;
-const workerConcurrency = Math.min(
-  Math.max(Number(process.env.REPORT_PUBLICATION_WORKER_CONCURRENCY) || 2, 1),
-  4,
-);
-
 @Injectable()
-export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestroy {
+export class ReportPublicationJobsService {
   private readonly logger = new Logger(ReportPublicationJobsService.name);
   private publisher: Publisher | undefined;
-  private timer: NodeJS.Timeout | undefined;
-  private running = 0;
 
   constructor(private readonly db: DatabaseService) {}
 
-  onModuleInit() {
-    this.timer = setInterval(() => void this.drain(), 1_000);
-    this.timer.unref();
-    void this.drain();
-  }
-
-  onModuleDestroy() {
-    if (this.timer) clearInterval(this.timer);
-  }
-
   registerPublisher(publisher: Publisher) {
     this.publisher = publisher;
-    void this.drain();
   }
 
   async enqueue(input: {
@@ -61,7 +44,7 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
       throw new Error("Tidak ada raport yang dapat diterbitkan.");
     }
 
-    return this.db.transaction(async (client) => {
+    const created = await this.db.transaction(async (client) => {
       const reports = await client.query<{ id: string }>(
         `SELECT id
          FROM reports
@@ -78,16 +61,30 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
           `INSERT INTO report_publication_jobs(school_id,created_by,semester_id,total_count)
            VALUES($1,$2,$3,$4)
            RETURNING *`,
-          [input.schoolId, input.actorUserId, input.semesterId ?? null, reportIds.length],
+          [
+            input.schoolId,
+            input.actorUserId,
+            input.semesterId ?? null,
+            reportIds.length,
+          ],
         )
       ).rows[0];
-      await client.query(
+      const items = await client.query<{ id: string }>(
         `INSERT INTO report_publication_job_items(school_id,job_id,report_id)
-         SELECT $1,$2,unnest($3::uuid[])`,
+         SELECT $1,$2,unnest($3::uuid[])
+         RETURNING id`,
         [input.schoolId, job.id, reportIds],
       );
-      return job;
+      return { job, itemIds: items.rows.map((item) => item.id) };
     }, input.schoolId);
+    await enqueuePublicationMessages(
+      created.itemIds.map((itemId) => ({
+        jobId: created.job.id,
+        itemId,
+        schoolId: input.schoolId,
+      })),
+    );
+    return created.job;
   }
 
   async getJob(input: { schoolId: string; jobId: string }) {
@@ -115,17 +112,12 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
     }, input.schoolId);
   }
 
-  private async drain() {
-    if (!this.publisher) return;
-    while (this.running < workerConcurrency) {
-      const claimed = await this.claimNext();
-      if (!claimed) return;
-      this.running += 1;
-      void this.process(claimed).finally(() => {
-        this.running -= 1;
-        void this.drain();
-      });
-    }
+  async processNext({ throwOnFailure = false }: { throwOnFailure?: boolean } = {}) {
+    if (!this.publisher) return false;
+    const claimed = await this.claimNext();
+    if (!claimed) return false;
+    await this.process(claimed, throwOnFailure);
+    return true;
   }
 
   private async claimNext() {
@@ -135,7 +127,10 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
     return result.rows[0] ?? null;
   }
 
-  private async process(job: { job_id: string; school_id: string }) {
+  private async process(
+    job: { job_id: string; school_id: string },
+    throwOnFailure: boolean,
+  ) {
     const claimedItem = await this.db.transaction(async (client) => {
       const item = (
         await client.query<{
@@ -188,7 +183,10 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
         );
       }, job.school_id);
     } catch (error) {
-      const message = error instanceof Error ? error.message.slice(0, 1000) : "Publikasi gagal";
+      const message =
+        error instanceof Error
+          ? error.message.slice(0, 1000)
+          : "Publikasi gagal";
       const attempts = claimedItem.attempts + 1;
       await this.db.transaction(async (client) => {
         await client.query(
@@ -211,7 +209,11 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
           [message, job.job_id, job.school_id],
         );
       }, job.school_id);
-      this.logger.error({ event: "report_publication.failed", jobId: job.job_id });
+      this.logger.error({
+        event: "report_publication.failed",
+        jobId: job.job_id,
+      });
+      if (throwOnFailure) throw error;
     }
     await this.finishIfSettled(job);
   }
@@ -219,7 +221,11 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
   private async finishIfSettled(job: { job_id: string; school_id: string }) {
     await this.db.transaction(async (client) => {
       const totals = (
-        await client.query<{ completed: number; failed: number; pending: number }>(
+        await client.query<{
+          completed: number;
+          failed: number;
+          pending: number;
+        }>(
           `SELECT
              count(*) FILTER (WHERE status='PUBLISHED')::int AS completed,
              count(*) FILTER (WHERE status='FAILED')::int AS failed,
@@ -237,7 +243,13 @@ export class ReportPublicationJobsService implements OnModuleInit, OnModuleDestr
              finished_at=CASE WHEN $3=0 THEN now() ELSE NULL END,
              updated_at=now()
          WHERE id=$4 AND school_id=$5`,
-        [totals.completed, totals.failed, totals.pending, job.job_id, job.school_id],
+        [
+          totals.completed,
+          totals.failed,
+          totals.pending,
+          job.job_id,
+          job.school_id,
+        ],
       );
     }, job.school_id);
   }

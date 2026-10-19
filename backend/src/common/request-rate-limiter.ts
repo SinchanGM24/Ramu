@@ -45,7 +45,7 @@ export class RequestRateLimiter implements OnModuleInit, OnModuleDestroy {
   private now: () => number = () => Date.now();
 
   constructor(
-    environment: NodeJS.ProcessEnv = process.env,
+    environment: Partial<NodeJS.ProcessEnv> = process.env,
     redisClient?: RedisClientType,
   ) {
     const redisUrl = environment.RATE_LIMIT_REDIS_URL?.trim();

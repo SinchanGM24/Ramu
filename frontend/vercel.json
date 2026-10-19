@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/internal/retention/cleanup",
+      "schedule": "0 3 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/queues/report-publication/route.ts": {
+      "maxDuration": 60,
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "ramu-report-publication",
+          "retryAfterSeconds": 60
+        }
+      ]
+    }
+  }
+}

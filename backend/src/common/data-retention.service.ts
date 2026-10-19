@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 
 export type RetentionSettings = {
@@ -52,25 +52,11 @@ export function getRetentionSettings(
 }
 
 @Injectable()
-export class DataRetentionService implements OnModuleInit, OnModuleDestroy {
+export class DataRetentionService {
   private readonly logger = new Logger(DataRetentionService.name);
   private readonly settings = getRetentionSettings();
-  private timer?: NodeJS.Timeout;
 
   constructor(private readonly db: DatabaseService) {}
-
-  async onModuleInit() {
-    await this.runCleanup();
-    this.timer = setInterval(
-      () => void this.runCleanup(),
-      this.settings.cleanupIntervalMinutes * 60_000,
-    );
-    this.timer.unref();
-  }
-
-  onModuleDestroy() {
-    if (this.timer) clearInterval(this.timer);
-  }
 
   async runCleanup() {
     try {
@@ -100,7 +86,8 @@ export class DataRetentionService implements OnModuleInit, OnModuleDestroy {
           event: "data_retention.cleanup_completed",
           expiredStaffSessions: expiredStaffSessions.rowCount ?? 0,
           expiredParentSessions: expiredParentSessions.rowCount ?? 0,
-          expiredAuditLogs: expiredAuditLogs?.rows[0]?.prune_expired_audit_logs ?? 0,
+          expiredAuditLogs:
+            expiredAuditLogs?.rows[0]?.prune_expired_audit_logs ?? 0,
           auditRetentionEnabled: this.settings.auditRetentionDays !== null,
           tableBytes: sizes,
         }),

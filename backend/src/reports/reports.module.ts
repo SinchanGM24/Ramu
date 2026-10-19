@@ -12,6 +12,7 @@ import { ReportWorkflowController } from "./report-workflow.controller";
 import { ReportWorkspaceController } from "./report-workspace.controller";
 import { ParentController } from "../parent/parent.controller";
 import { ReportPublicationJobsService } from "./report-publication-jobs.service";
+import { InternalMaintenanceController } from "../common/internal-maintenance.controller";
 @Module({
   imports: [AuthModule, AuditModule, FilesModule],
   providers: [ReportPublicationJobsService],
@@ -25,6 +26,7 @@ import { ReportPublicationJobsService } from "./report-publication-jobs.service"
     ReportWorkflowController,
     ReportWorkspaceController,
     ParentController,
+    InternalMaintenanceController,
   ],
 })
 export class ReportsModule {}

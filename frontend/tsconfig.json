@@ -26,11 +26,14 @@
     "allowJs": true,
     "skipLibCheck": true,
     "incremental": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "../backend/src/types/**/*.d.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     ".next-dev/types/**/*.ts"
