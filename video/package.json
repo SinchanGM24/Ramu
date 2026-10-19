@@ -1,0 +1,24 @@
+{
+  "name": "@ramu/promo-video",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render:desktop": "remotion render src/index.ts RamuPromoDesktop out/ramu-promo-desktop.mp4",
+    "render:reels": "remotion render src/index.ts RamuPromoReels out/ramu-promo-reels.mp4",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2",
+    "zod": "4.5.4"
+  }
+}

@@ -2,13 +2,20 @@
   "name": "ramu",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["frontend", "backend"],
+  "workspaces": [
+    "frontend",
+    "backend",
+    "video"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev -w frontend\" \"npm run dev -w backend\"",
     "build": "npm run build -w frontend && npm run build -w backend",
     "test": "npm run test -w backend",
     "db:migrate": "npm run db:migrate -w backend",
-    "db:seed": "npm run db:seed -w backend"
+    "db:seed": "npm run db:seed -w backend",
+    "video:studio": "npm run studio -w @ramu/promo-video",
+    "video:render:desktop": "npm run render:desktop -w @ramu/promo-video",
+    "video:render:reels": "npm run render:reels -w @ramu/promo-video"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

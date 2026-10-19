@@ -5,6 +5,7 @@ frontend/.next-dev/
 .agents/
 skills-lock.json
 frontend/out/
+video/out/
 dist/
 coverage/
 .env
