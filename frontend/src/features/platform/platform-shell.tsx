@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, LogOut, School, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, School, UserRound, Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import type { PlatformSession } from "./types";
+import { PlatformAccountCard } from "./platform-account-card";
 
 const navigation = [
 	{ href: "/platform", label: "Ringkasan", icon: LayoutDashboard },
@@ -19,6 +20,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const queryClient = useQueryClient();
+	const [isLoggingOut, setIsLoggingOut] = useState(false);
+	const [logoutError, setLogoutError] = useState("");
 	const session = useQuery({
 		queryKey: ["platform-session"],
 		queryFn: () => api<PlatformSession>("/platform/auth/session"),
@@ -35,9 +38,17 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 	if (session.isError) return null;
 
 	async function logout() {
-		await api("/platform/auth/logout", { method: "POST" });
-		queryClient.clear();
-		router.replace("/platform/login");
+		setIsLoggingOut(true);
+		setLogoutError("");
+		try {
+			await api("/platform/auth/logout", { method: "POST" });
+			queryClient.clear();
+			router.replace("/platform/login");
+		} catch {
+			setLogoutError("Tidak dapat keluar akun. Coba lagi.");
+		} finally {
+			setIsLoggingOut(false);
+		}
 	}
 
 	return (
@@ -49,7 +60,14 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 					</span>
 					RAMU Platform
 				</Link>
-				<span className="max-w-32 truncate text-xs text-[#f0dcd0]">{session.data?.email}</span>
+				<Link
+					href="/platform/profile"
+					aria-label="Buka profil akun"
+					className="flex max-w-40 items-center gap-1.5 truncate text-xs text-[#f0dcd0]"
+				>
+					<UserRound size={15} className="shrink-0" />
+					<span className="truncate">{session.data?.email}</span>
+				</Link>
 			</header>
 			<div className="mx-auto flex min-h-screen w-full max-w-[1440px] md:flex-row">
 				<aside className="hidden shrink-0 flex-col bg-[#765646] text-[#fff9f4] md:flex md:w-[228px]">
@@ -80,14 +98,12 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 						})}
 					</nav>
 					<div className="mt-auto hidden px-5 pb-5 md:block">
-						<p className="truncate text-xs text-[#f0dcd0]">{session.data?.email}</p>
-						<Button
-							variant="ghost"
-							className="mt-2 px-0 text-[#f7e8de] hover:bg-transparent hover:text-white"
-							onClick={logout}
-						>
-							<LogOut size={16} /> Keluar
-						</Button>
+						<PlatformAccountCard
+							email={session.data?.email}
+							isLoggingOut={isLoggingOut}
+							logoutError={logoutError}
+							onLogout={() => void logout()}
+						/>
 					</div>
 				</aside>
 				<main className="min-w-0 flex-1 bg-[#eff8f1]/80 px-4 py-6 pb-24 sm:px-7 md:m-2 md:ml-0 md:rounded-2xl md:border md:border-[#d7e7da] md:px-8 md:py-9 md:pb-9">
@@ -114,7 +130,8 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 				})}
 				<button
 					type="button"
-					onClick={logout}
+					onClick={() => void logout()}
+					disabled={isLoggingOut}
 					className="flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-[#88756b]"
 				>
 					<LogOut size={20} />

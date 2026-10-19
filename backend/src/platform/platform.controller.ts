@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -30,6 +31,31 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+const platformProfileSchema = z
+  .object({
+    name: z.string().trim().min(2).max(120),
+    phone: z.string().trim().max(40).optional(),
+    password: z.string().min(8).max(128).optional(),
+    currentPassword: z.string().min(1).max(128).optional(),
+    passwordConfirmation: z.string().min(8).max(128).optional(),
+  })
+  .superRefine((input, context) => {
+    if (!input.password) return;
+    if (!input.currentPassword) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["currentPassword"],
+        message: "Kata sandi saat ini wajib diisi.",
+      });
+    }
+    if (input.passwordConfirmation !== input.password) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["passwordConfirmation"],
+        message: "Konfirmasi kata sandi baru tidak sama.",
+      });
+    }
+  });
 const createTenantSchema = z.object({
   schoolName: z.string().trim().min(2).max(160),
   address: z.string().trim().max(1_000).optional(),
@@ -119,6 +145,62 @@ export class PlatformController {
       email: actor.email,
       role: "SUPER_ADMIN" as const,
     };
+  }
+
+  @Get("profile")
+  async profile(@Req() request: FastifyRequest) {
+    const actor = this.auth.requirePlatform(request);
+    return (
+      await this.db.query("SELECT id,name,email,phone FROM users WHERE id=$1", [
+        actor.userId,
+      ])
+    ).rows[0];
+  }
+
+  @Patch("profile")
+  async updateProfile(
+    @Req() request: FastifyRequest,
+    @Body() body: unknown,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const actor = this.auth.requirePlatform(request);
+    const input = platformProfileSchema.parse(body);
+    return this.db.transaction(async (client) => {
+      let passwordHash: string | null = null;
+      if (input.password) {
+        const user = (
+          await client.query<{ password_hash: string }>(
+            "SELECT password_hash FROM users WHERE id=$1",
+            [actor.userId],
+          )
+        ).rows[0];
+        if (
+          !user ||
+          !(await this.auth.verifyPassword(
+            user.password_hash,
+            input.currentPassword!,
+          ))
+        ) {
+          throw new BadRequestException("Kata sandi saat ini tidak sesuai.");
+        }
+        passwordHash = await this.auth.hashPassword(input.password);
+      }
+      const updated = (
+        await client.query(
+          "UPDATE users SET name=$2,phone=$3,password_hash=COALESCE($4,password_hash),updated_at=now() WHERE id=$1 RETURNING id,name,email,phone",
+          [actor.userId, input.name, input.phone || null, passwordHash],
+        )
+      ).rows[0];
+      if (input.password) {
+        await this.auth.revokeAllPlatformSessions(actor.userId, client);
+        await this.auth.createPlatformSession(actor.userId, reply, client);
+        await client.query(
+          "INSERT INTO platform_audit_logs (actor_user_id, action, entity_type, entity_id) VALUES ($1, 'platform.password_changed', 'user', $1)",
+          [actor.userId],
+        );
+      }
+      return updated;
+    });
   }
 
   @Get("overview")

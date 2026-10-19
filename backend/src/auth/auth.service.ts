@@ -67,11 +67,18 @@ export class AuthService {
     });
   }
 
-  async createPlatformSession(userId: string, reply: FastifyReply) {
+  async createPlatformSession(
+    userId: string,
+    reply: FastifyReply,
+    client?: QueryClient,
+  ) {
     const rawToken = randomBytes(32).toString("base64url");
     const days = Number(process.env.SESSION_TTL_DAYS || 7);
     const expiresAt = new Date(Date.now() + days * 86_400_000);
-    await this.db.query(
+    const query = client
+      ? client.query.bind(client)
+      : this.db.query.bind(this.db);
+    await query(
       "INSERT INTO platform_sessions (user_id, token_hash, expires_at) VALUES ($1, $2, $3)",
       [userId, hashToken(rawToken), expiresAt],
     );
@@ -90,6 +97,16 @@ export class AuthService {
       : this.db.query.bind(this.db);
     await query(
       "UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL",
+      [userId],
+    );
+  }
+
+  async revokeAllPlatformSessions(userId: string, client?: QueryClient) {
+    const query = client
+      ? client.query.bind(client)
+      : this.db.query.bind(this.db);
+    await query(
+      "UPDATE platform_sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL",
       [userId],
     );
   }
