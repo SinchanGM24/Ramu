@@ -61,7 +61,7 @@ export function AccountDirectoryPage() {
 				title="Akun sekolah"
 				description="Tinjau metadata akun sekolah. Sandi, token, PIN, serta data anak tidak ditampilkan di platform."
 			/>
-			<Card className="rounded-xl border-[#e3e8e3] bg-white p-4 shadow-none sm:p-5">
+			<Card className="rounded-xl border-[#dfcdbf] bg-[#fffaf6] p-4 shadow-none sm:p-5">
 				<div className="grid gap-3 pb-5 md:grid-cols-[minmax(0,1fr)_180px_190px]">
 					<label className="relative">
 						<span className="sr-only">Cari akun</span>
@@ -181,7 +181,10 @@ export function AccountDirectoryPage() {
 				</div>
 				<div className="space-y-3 md:hidden">
 					{accounts.data?.data.map((account) => (
-						<article key={account.id} className="rounded-xl border border-slate-200 p-4">
+						<article
+							key={account.id}
+							className="rounded-xl border border-[#dfcdbf] bg-[#fffaf6] p-4"
+						>
 							<p className="font-bold">{account.name}</p>
 							<p className="mt-1 text-sm text-slate-500">{account.email}</p>
 							<p className="mt-3 text-sm text-slate-700">
@@ -209,6 +212,7 @@ export function AccountDirectoryPage() {
 					pageSize={15}
 					total={accounts.data?.total ?? 0}
 					onPageChange={setPage}
+					activeClassName="bg-[#765646] text-[#fff9f4]"
 				/>
 			</Card>
 		</>

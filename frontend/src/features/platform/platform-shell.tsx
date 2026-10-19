@@ -42,8 +42,17 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 
 	return (
 		<div className="min-h-screen bg-[#eaf5ed] text-[#1d2921]">
-			<div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col md:flex-row">
-				<aside className="flex shrink-0 flex-col bg-[#765646] text-[#fff9f4] md:w-[228px]">
+			<header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#68483a]/15 bg-[#765646] px-4 text-[#fff9f4] md:hidden">
+				<Link href="/platform" className="flex items-center gap-2 font-bold tracking-[-0.025em]">
+					<span className="grid size-9 place-items-center rounded-xl bg-[#f2daca] text-sm text-[#68483a]">
+						R
+					</span>
+					RAMU Platform
+				</Link>
+				<span className="max-w-32 truncate text-xs text-[#f0dcd0]">{session.data?.email}</span>
+			</header>
+			<div className="mx-auto flex min-h-screen w-full max-w-[1440px] md:flex-row">
+				<aside className="hidden shrink-0 flex-col bg-[#765646] text-[#fff9f4] md:flex md:w-[228px]">
 					<header className="flex h-14 items-center justify-between px-4 md:px-5">
 						<Link
 							href="/platform"
@@ -54,19 +63,11 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 							</span>
 							<span>RAMU Platform</span>
 						</Link>
-						<Button
-							variant="ghost"
-							className="px-2 text-[#f8e9df] hover:bg-white/10 hover:text-white md:hidden"
-							onClick={logout}
-							aria-label="Keluar dari platform"
-						>
-							<LogOut size={17} />
-						</Button>
 					</header>
 					<nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:px-4 md:pt-5">
 						{navigation.map((item) => {
 							const Icon = item.icon;
-							const active = pathname === item.href;
+							const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
 							return (
 								<Link
 									key={item.href}
@@ -89,10 +90,37 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 						</Button>
 					</div>
 				</aside>
-				<main className="m-2 min-w-0 flex-1 rounded-2xl border border-[#d7e7da] bg-[#f5fbf6]/90 px-4 py-7 sm:px-8 sm:py-9 md:ml-0">
+				<main className="min-w-0 flex-1 bg-[#eff8f1]/80 px-4 py-6 pb-24 sm:px-7 md:m-2 md:ml-0 md:rounded-2xl md:border md:border-[#d7e7da] md:px-8 md:py-9 md:pb-9">
 					{children}
 				</main>
 			</div>
+			<nav
+				aria-label="Navigasi platform"
+				className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-[#68483a]/15 bg-[#fff9f4]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(104,72,58,0.08)] backdrop-blur md:hidden"
+			>
+				{navigation.map((item) => {
+					const Icon = item.icon;
+					const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+					return (
+						<Link
+							key={item.href}
+							href={item.href}
+							className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium ${active ? "text-[#765646]" : "text-[#88756b]"}`}
+						>
+							<Icon size={20} strokeWidth={active ? 2.5 : 2} />
+							{item.label}
+						</Link>
+					);
+				})}
+				<button
+					type="button"
+					onClick={logout}
+					className="flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-[#88756b]"
+				>
+					<LogOut size={20} />
+					Keluar
+				</button>
+			</nav>
 		</div>
 	);
 }

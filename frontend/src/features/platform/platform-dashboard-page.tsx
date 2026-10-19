@@ -52,16 +52,16 @@ export function PlatformDashboardPage() {
 			) : null}
 			<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				{statistics.map(([label, value, description]) => (
-					<Card key={label as string} className="p-5">
+					<Card key={label as string} className="border-[#dfcdbf] bg-[#fffaf6] p-5 shadow-none">
 						<p className="text-sm font-medium text-slate-600">{label}</p>
-						<p className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+						<p className="mt-3 text-3xl font-bold tracking-tight text-[#68483a]">
 							{overview.isLoading ? "—" : numberFormat.format(value as number)}
 						</p>
 						<p className="mt-2 text-xs leading-5 text-slate-500">{description}</p>
 					</Card>
 				))}
 			</div>
-			<Card className="mt-6">
+			<Card className="mt-6 border-[#dfcdbf] bg-[#fffaf6] shadow-none">
 				<h2 className="font-bold text-slate-950">Aktivitas operasional terakhir</h2>
 				<p className="mt-1 text-sm text-slate-600">
 					Log ini tidak menyimpan kata sandi, token, PIN, atau data anak.

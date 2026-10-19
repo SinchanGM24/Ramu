@@ -85,6 +85,7 @@ export function TenantDirectoryPage() {
 				description="Kelola status tenant dan akun Admin Sekolah tanpa membuka isi data tenant."
 				action={
 					<Button
+						className="bg-[#765646] hover:bg-[#68483a]"
 						onClick={() => {
 							setShowCreate((value) => !value);
 							setTemporaryPassword("");
@@ -107,7 +108,7 @@ export function TenantDirectoryPage() {
 				</Card>
 			) : null}
 			{showCreate ? (
-				<Card className="mb-6">
+				<Card className="mb-6 border-[#dfcdbf] bg-[#fffaf6] shadow-none">
 					<h2 className="font-bold text-slate-950">Buat tenant baru</h2>
 					<form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={createTenant}>
 						<label className="text-sm font-semibold">
@@ -144,7 +145,7 @@ export function TenantDirectoryPage() {
 					</form>
 				</Card>
 			) : null}
-			<Card className="rounded-xl border-[#e3e8e3] bg-white p-4 shadow-none sm:p-5">
+			<Card className="rounded-xl border-[#dfcdbf] bg-[#fffaf6] p-4 shadow-none sm:p-5">
 				<div className="flex flex-col gap-3 pb-5 md:flex-row">
 					<label className="relative flex-1">
 						<span className="sr-only">Cari tenant</span>
@@ -259,7 +260,10 @@ export function TenantDirectoryPage() {
 				</div>
 				<div className="space-y-3 md:hidden">
 					{tenants.data?.data.map((tenant) => (
-						<article key={tenant.id} className="rounded-xl border border-slate-200 p-4">
+						<article
+							key={tenant.id}
+							className="rounded-xl border border-[#dfcdbf] bg-[#fffaf6] p-4"
+						>
 							<div className="flex justify-between gap-3">
 								<div>
 									<Link
@@ -292,6 +296,7 @@ export function TenantDirectoryPage() {
 					pageSize={15}
 					total={tenants.data?.total ?? 0}
 					onPageChange={setPage}
+					activeClassName="bg-[#765646] text-[#fff9f4]"
 				/>
 			</Card>
 		</>

@@ -29,11 +29,13 @@ export function PaginationControls({
 	pageSize,
 	total,
 	onPageChange,
+	activeClassName,
 }: {
 	page: number;
 	pageSize: number;
 	total: number;
 	onPageChange: (page: number) => void;
+	activeClassName?: string;
 }) {
 	const pageCount = Math.max(1, Math.ceil(total / pageSize));
 	const pages = nearbyPages(page, pageCount);
@@ -70,7 +72,7 @@ export function PaginationControls({
 				</Button>
 			))}
 			<span
-				className="inline-flex min-h-9 items-center rounded-xl bg-brand-700 px-3 text-sm font-semibold text-white"
+				className={`inline-flex min-h-9 items-center rounded-xl px-3 text-sm font-semibold ${activeClassName ?? "bg-brand-700 text-white"}`}
 				aria-current="page"
 			>
 				{page}

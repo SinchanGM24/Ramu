@@ -31,7 +31,7 @@ export function TenantDetailPage({ id }: { id: string }) {
 				description="Informasi operasional tenant. Data murid, penilaian, raport, PDF, dan wali tidak tersedia di platform."
 			/>
 			<div className="grid gap-5 lg:grid-cols-2">
-				<Card>
+				<Card className="border-[#dfcdbf] bg-[#fffaf6] shadow-none">
 					<h2 className="font-bold text-slate-950">Profil sekolah</h2>
 					<dl className="mt-4 space-y-3 text-sm">
 						<div>
@@ -56,7 +56,7 @@ export function TenantDetailPage({ id }: { id: string }) {
 						</div>
 					</dl>
 				</Card>
-				<Card>
+				<Card className="border-[#dfcdbf] bg-[#fffaf6] shadow-none">
 					<h2 className="font-bold text-slate-950">Admin dan status</h2>
 					<dl className="mt-4 space-y-3 text-sm">
 						<div>
@@ -80,17 +80,17 @@ export function TenantDetailPage({ id }: { id: string }) {
 						</div>
 					</dl>
 				</Card>
-				<Card className="lg:col-span-2">
+				<Card className="border-[#dfcdbf] bg-[#fffaf6] shadow-none lg:col-span-2">
 					<h2 className="font-bold text-slate-950">Agregat tenant</h2>
 					<p className="mt-1 text-sm text-slate-600">
 						Ringkasan jumlah tanpa membuka data individual.
 					</p>
 					<div className="mt-4 grid gap-3 sm:grid-cols-2">
-						<div className="rounded-xl bg-brand-50 p-4">
+						<div className="rounded-xl bg-[#f5e9df] p-4">
 							<p className="text-sm text-slate-600">Akun aktif pada tenant</p>
 							<p className="mt-1 text-2xl font-bold">{data.accountCount}</p>
 						</div>
-						<div className="rounded-xl bg-brand-50 p-4">
+						<div className="rounded-xl bg-[#f5e9df] p-4">
 							<p className="text-sm text-slate-600">Murid terdaftar</p>
 							<p className="mt-1 text-2xl font-bold">{data.studentCount}</p>
 						</div>
