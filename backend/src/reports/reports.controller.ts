@@ -104,6 +104,7 @@ export class ReportsController implements OnModuleInit {
             role: "SCHOOL_ADMIN",
             email: "",
             sessionId: "publication-worker",
+            mustChangePassword: false,
           },
           reportId,
         ),

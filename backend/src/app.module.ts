@@ -14,6 +14,7 @@ import { StaffModule } from "./staff/staff.module";
 import { LifecycleModule } from "./lifecycle/lifecycle.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { CommonModule } from "./common/common.module";
+import { PlatformModule } from "./platform/platform.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CommonModule } from "./common/common.module";
     StaffModule,
     LifecycleModule,
     DashboardModule,
+    PlatformModule,
   ],
 })
 export class AppModule {}

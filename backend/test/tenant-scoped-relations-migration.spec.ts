@@ -4,13 +4,15 @@ import { describe, expect, it } from "vitest";
 
 describe("tenant-scoped relations migration", () => {
   it("enforces same-school relationships for critical student and report data", async () => {
-    const migration = await readFile(
-      resolve(
-        process.cwd(),
-        "src/database/migrations/039_enforce_tenant_scoped_relations.sql",
-      ),
-      "utf8",
-    );
+    const migration = (
+      await readFile(
+        resolve(
+          process.cwd(),
+          "src/database/migrations/039_enforce_tenant_scoped_relations.sql",
+        ),
+        "utf8",
+      )
+    ).replace(/\r\n/g, "\n");
 
     for (const table of [
       "students",

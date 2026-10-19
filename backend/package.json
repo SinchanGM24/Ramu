@@ -10,7 +10,8 @@
     "start": "node dist/main.js",
     "test": "vitest run",
     "db:migrate": "tsx src/database/migrate.ts",
-    "db:seed": "tsx src/database/seed.ts"
+    "db:seed": "tsx src/database/seed.ts",
+    "platform:bootstrap": "tsx src/database/bootstrap-platform-admin.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1147.0",

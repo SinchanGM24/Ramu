@@ -22,6 +22,27 @@ type TenantFixture = {
   studentId: string;
 };
 
+async function platformActor(client: PoolClient, suffix: string) {
+  const existing = await client.query<{ user_id: string }>(
+    "SELECT user_id FROM platform_administrators LIMIT 1",
+  );
+  if (existing.rows[0]?.user_id) return existing.rows[0].user_id;
+
+  const account = await client.query<{ id: string }>(
+    `INSERT INTO users(name, email, password_hash)
+		 VALUES('Platform Test', $1, 'not-a-real-password-hash')
+		 RETURNING id`,
+    [`platform-${suffix}@example.test`],
+  );
+  const userId = account.rows[0]?.id;
+  if (!userId) throw new Error("Akun platform fixture tidak dapat dibuat.");
+  await client.query(
+    "INSERT INTO platform_administrators(user_id) VALUES($1)",
+    [userId],
+  );
+  return userId;
+}
+
 async function insertTenantFixture(
   client: PoolClient,
   input: { suffix: string; label: string },
@@ -230,6 +251,7 @@ describeIntegration("tenant RLS isolation", () => {
       suffix,
       label: "dua",
     });
+    const actorUserId = await platformActor(client, suffix);
 
     await client.query("SET ROLE ramu_app");
     try {
@@ -322,6 +344,42 @@ describeIntegration("tenant RLS isolation", () => {
         [parentSessionToken],
       );
       expect(parentReport.rows[0]?.report).toMatchObject({ tenant: "dua" });
+
+      const platformTenant = await client.query<{
+        tenant: { studentCount: number; name: string };
+      }>("SELECT public.platform_tenant_detail($1, $2) AS tenant", [
+        actorUserId,
+        second.schoolId,
+      ]);
+      expect(platformTenant.rows[0]?.tenant).toEqual(
+        expect.objectContaining({ name: expect.any(String), studentCount: 1 }),
+      );
+
+      await client.query(
+        "SELECT public.platform_set_tenant_status($1, $2, 'SUSPENDED')",
+        [actorUserId, second.schoolId],
+      );
+      const suspendedParent = await client.query<{
+        result: { reportVersionId: string } | null;
+      }>("SELECT public.verify_parent_report($1, $2) AS result", [
+        second.parentToken,
+        second.parentPin,
+      ]);
+      expect(suspendedParent.rows[0]?.result).toBeNull();
+
+      await client.query(
+        "SELECT public.platform_set_tenant_status($1, $2, 'ACTIVE')",
+        [actorUserId, second.schoolId],
+      );
+      const reactivatedParent = await client.query<{
+        result: { reportVersionId: string } | null;
+      }>("SELECT public.verify_parent_report($1, $2) AS result", [
+        second.parentToken,
+        second.parentPin,
+      ]);
+      expect(reactivatedParent.rows[0]?.result).toEqual({
+        reportVersionId: second.reportVersionId,
+      });
     } finally {
       await client.query("RESET ROLE");
     }

@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  UnauthorizedException,
-} from "@nestjs/common";
+import { BadRequestException, UnauthorizedException } from "@nestjs/common";
 import { describe, expect, it } from "vitest";
 import { AuthController } from "../src/auth/auth.controller";
 import { RequestRateLimiter } from "../src/common/request-rate-limiter";
@@ -24,9 +21,9 @@ describe("AuthController login", () => {
     const body = { email: "guru@contoh.test", password: "kata-sandi" };
 
     for (let attempt = 0; attempt < 10; attempt += 1) {
-      await expect(controller.login(body, {} as never, request)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        controller.login(body, {} as never, request),
+      ).rejects.toThrow(UnauthorizedException);
     }
     await expect(
       controller.login(body, {} as never, request),
@@ -38,7 +35,13 @@ describe("AuthController login", () => {
     let createdSession = false;
     const db = {
       query: async () => ({
-        rows: [{ id: "user-a", password_hash: "stored-password-hash" }],
+        rows: [
+          {
+            id: "user-a",
+            password_hash: "stored-password-hash",
+            is_active: true,
+          },
+        ],
       }),
     };
     const auth = {
@@ -66,10 +69,18 @@ describe("AuthController login", () => {
     const queries: string[] = [];
     const db = {
       query: async () => ({
-        rows: [{ id: "user-a", password_hash: "stored-password-hash" }],
+        rows: [
+          {
+            id: "user-a",
+            password_hash: "stored-password-hash",
+            is_active: true,
+          },
+        ],
       }),
       transaction: async (
-        callback: (client: { query: (sql: string) => Promise<unknown> }) => Promise<unknown>,
+        callback: (client: {
+          query: (sql: string) => Promise<unknown>;
+        }) => Promise<unknown>,
       ) =>
         callback({
           query: async (sql: string) => {
@@ -108,10 +119,18 @@ describe("AuthController login", () => {
   it("rejects ambiguous active school memberships without revealing account state", async () => {
     const db = {
       query: async () => ({
-        rows: [{ id: "user-a", password_hash: "stored-password-hash" }],
+        rows: [
+          {
+            id: "user-a",
+            password_hash: "stored-password-hash",
+            is_active: true,
+          },
+        ],
       }),
       transaction: async (
-        callback: (client: { query: () => Promise<unknown> }) => Promise<unknown>,
+        callback: (client: {
+          query: () => Promise<unknown>;
+        }) => Promise<unknown>,
       ) =>
         callback({
           query: async () => ({

@@ -1,8 +1,8 @@
 import {
   BadRequestException,
   Body,
-  ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   Patch,
@@ -16,21 +16,12 @@ import { z } from "zod";
 import { DatabaseService } from "../database/database.service";
 import { AuditService } from "../audit/audit.service";
 import { AuthService, Role } from "./auth.service";
-import { ensureDefaultTkFramework } from "../assessment/ensure-default-tk-framework";
 import {
   rateLimitFingerprint,
   RequestRateLimiter,
 } from "../common/request-rate-limiter";
 
 const fifteenMinutes = 15 * 60_000;
-const oneHour = 60 * 60_000;
-
-const registrationSchema = z.object({
-  name: z.string().min(2).max(120),
-  schoolName: z.string().min(2).max(160),
-  email: z.string().email(),
-  password: z.string().min(8).max(128),
-});
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -71,49 +62,10 @@ export class AuthController {
   ) {}
 
   @Post("register-school")
-  async register(
-    @Body() body: unknown,
-    @Res({ passthrough: true }) reply: FastifyReply,
-    @Req() request: FastifyRequest = {} as FastifyRequest,
-  ) {
-    const input = registrationSchema.parse(body);
-    await this.rateLimiter.assert({
-      key: `register:${rateLimitFingerprint(request.ip ?? "unknown")}`,
-      limit: 10,
-      windowMs: oneHour,
-    });
-    const existing = await this.db.query(
-      "SELECT 1 FROM users WHERE lower(email) = lower($1)",
-      [input.email],
+  register() {
+    throw new ForbiddenException(
+      "Pendaftaran sekolah belum dibuka. Hubungi pengelola RAMU untuk membuat akun sekolah.",
     );
-    if (existing.rowCount)
-      throw new ConflictException(
-        "Email sudah digunakan sebagai akun sekolah.",
-      );
-    const passwordHash = await this.auth.hashPassword(input.password);
-    const schoolId = crypto.randomUUID();
-    const created = await this.db.transaction(async (client) => {
-      const user = await client.query<{ id: string }>(
-        "INSERT INTO users (name, email, password_hash) VALUES ($1, lower($2), $3) RETURNING id",
-        [input.name, input.email, passwordHash],
-      );
-      await client.query(
-        "INSERT INTO schools (id, name, slug) VALUES ($1, $2, lower(regexp_replace($2, '[^a-zA-Z0-9]+', '-', 'g')) || '-' || substring($1::text, 1, 8))",
-        [schoolId, input.schoolName],
-      );
-      await client.query(
-        "INSERT INTO school_memberships (user_id, school_id, role) VALUES ($1, $2, 'SCHOOL_ADMIN')",
-        [user.rows[0].id, schoolId],
-      );
-      await ensureDefaultTkFramework(client, schoolId);
-      await client.query(
-        "INSERT INTO audit_logs (school_id, actor_user_id, action, entity_type, entity_id) VALUES ($1, $2, 'school.registered', 'school', $1)",
-        [schoolId, user.rows[0].id],
-      );
-      return { userId: user.rows[0].id, schoolId };
-    }, schoolId);
-    await this.auth.createSession(created.userId, created.schoolId, reply);
-    return { schoolId: created.schoolId, role: "SCHOOL_ADMIN" };
   }
 
   @Post("login")
@@ -136,13 +88,18 @@ export class AuthController {
       limit: 10,
       windowMs: fifteenMinutes,
     });
-    const account = await this.db.query<{ id: string; password_hash: string }>(
-      "SELECT id, password_hash FROM users WHERE lower(email)=lower($1)",
+    const account = await this.db.query<{
+      id: string;
+      password_hash: string;
+      is_active: boolean;
+    }>(
+      "SELECT id, password_hash, is_active FROM users WHERE lower(email)=lower($1)",
       [input.email],
     );
     const user = account.rows[0];
     if (
       !user ||
+      !user.is_active ||
       !(await this.auth.verifyPassword(user.password_hash, input.password))
     ) {
       throw new UnauthorizedException("Email atau kata sandi salah");
@@ -185,6 +142,7 @@ export class AuthController {
       schoolId: auth.schoolId,
       role: auth.role,
       email: auth.email,
+      mustChangePassword: auth.mustChangePassword,
     };
   }
 
@@ -209,6 +167,12 @@ export class AuthController {
     return this.db.transaction(async (client) => {
       let passwordHash: string | null = null;
 
+      if (actor.mustChangePassword && !input.password) {
+        throw new BadRequestException(
+          "Kata sandi sementara wajib diganti sebelum melanjutkan.",
+        );
+      }
+
       if (input.password) {
         const user = (
           await client.query<{ password_hash: string }>(
@@ -230,7 +194,7 @@ export class AuthController {
 
       const updated = (
         await client.query(
-          "UPDATE users SET name=$2,phone=$3,password_hash=COALESCE($4,password_hash),updated_at=now() WHERE id=$1 RETURNING id,name,email,phone",
+          "UPDATE users SET name=$2,phone=$3,password_hash=COALESCE($4,password_hash),must_change_password=CASE WHEN $4 IS NULL THEN must_change_password ELSE false END,updated_at=now() WHERE id=$1 RETURNING id,name,email,phone",
           [actor.userId, input.name, input.phone || null, passwordHash],
         )
       ).rows[0];

@@ -108,6 +108,36 @@ async function bootstrap() {
     .addHook("preHandler", async (request: import("fastify").FastifyRequest) =>
       auth.attach(request),
     );
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook("preHandler", async (request: import("fastify").FastifyRequest) =>
+      auth.attachPlatform(request),
+    );
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook(
+      "preHandler",
+      async (
+        request: import("fastify").FastifyRequest,
+        reply: import("fastify").FastifyReply,
+      ) => {
+        if (!request.auth?.mustChangePassword) return;
+        const allowed = new Set([
+          "/api/auth/session",
+          "/api/auth/profile",
+          "/api/auth/logout",
+        ]);
+        if (allowed.has(request.url.split("?")[0])) return;
+        return reply.status(403).send({
+          statusCode: 403,
+          message: "Ganti kata sandi sementara Anda sebelum melanjutkan.",
+          error: "Forbidden",
+          correlationId: request.headers["x-correlation-id"],
+        });
+      },
+    );
   await app.listen(Number(process.env.PORT || 4001), "0.0.0.0");
 }
 bootstrap();

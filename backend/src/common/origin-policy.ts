@@ -1,7 +1,11 @@
 type CookieMap = Record<string, string | undefined> | undefined;
 
 const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-const sessionCookieNames = new Set(["ramu_session", "ramu_parent_session"]);
+const sessionCookieNames = new Set([
+  process.env.SESSION_COOKIE_NAME || "ramu_session",
+  process.env.PLATFORM_SESSION_COOKIE_NAME || "ramu_platform_session",
+  "ramu_parent_session",
+]);
 
 export function getTrustedOrigins(value = process.env.FRONTEND_ORIGIN) {
   const fallback =
@@ -22,8 +26,13 @@ export function getTrustedOrigins(value = process.env.FRONTEND_ORIGIN) {
     } catch {
       throw new Error("FRONTEND_ORIGIN harus berisi URL origin yang valid.");
     }
-    if (!/^https?:$/.test(parsed.protocol) || parsed.origin !== origin.replace(/\/$/, ""))
-      throw new Error("FRONTEND_ORIGIN harus berupa origin HTTP(S) tanpa path.");
+    if (
+      !/^https?:$/.test(parsed.protocol) ||
+      parsed.origin !== origin.replace(/\/$/, "")
+    )
+      throw new Error(
+        "FRONTEND_ORIGIN harus berupa origin HTTP(S) tanpa path.",
+      );
     return parsed.origin;
   });
 }
@@ -53,7 +62,10 @@ export function validateCookieMutationOrigin(input: {
   referer?: string | string[];
   trustedOrigins: readonly string[];
 }) {
-  if (!unsafeMethods.has(input.method.toUpperCase()) || !hasSessionCookie(input.cookies))
+  if (
+    !unsafeMethods.has(input.method.toUpperCase()) ||
+    !hasSessionCookie(input.cookies)
+  )
     return null;
 
   const origin = firstHeader(input.origin);
