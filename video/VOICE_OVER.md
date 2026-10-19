@@ -1,17 +1,22 @@
-# Naskah voice-over
+# Naskah voice-over: Dari Kelas ke Wali Murid
 
-Gunakan suara Bahasa Indonesia yang hangat, tenang, dan profesional. Kecepatan target: 135–145 kata per menit. Beri jeda singkat pada pergantian adegan.
+Gunakan suara Bahasa Indonesia yang hangat, tenang, dan profesional. Kecepatan
+target 135-145 kata per menit. Sisakan jeda singkat saat peran dan adegan
+berubah.
 
-| Durasi      | Naskah                                                                                      |
-| ----------- | ------------------------------------------------------------------------------------------- |
-| 00:00–00:05 | Mengelola raport PAUD seharusnya tidak rumit.                                               |
-| 00:05–00:11 | RAMU menyatukan data murid, kelas, dan tahun ajaran dalam satu ruang kerja.                 |
-| 00:11–00:17 | Guru fokus pada perkembangan setiap murid, satu raport dalam satu waktu.                    |
-| 00:17–00:27 | Raport mengalir dengan jelas: diisi guru, ditinjau Kepala Sekolah, lalu disetujui.          |
-| 00:27–00:35 | Admin Sekolah menerbitkan raport yang telah disetujui dan menyiapkan akses wali.            |
-| 00:35–00:43 | Wali melihat, mengunduh, atau mencetak raport melalui tautan dan PIN yang aman.             |
-| 00:43–00:50 | RAMU. Satu ruang kerja untuk raport murid yang lebih rapi, kolaboratif, dan mudah dipantau. |
+| Durasi      | Naskah                                                                                                   |
+| ----------- | -------------------------------------------------------------------------------------------------------- |
+| 00:00-00:05 | Setiap perkembangan murid layak dicatat dengan lebih mudah.                                              |
+| 00:05-00:12 | Admin Sekolah menata tahun ajaran, kelas, guru, dan murid dalam satu tempat.                             |
+| 00:12-00:22 | Guru bekerja dari kelas yang ditugaskan untuk mengisi indikator, narasi, dan data semester setiap murid. |
+| 00:22-00:28 | Saat lengkap, guru mengirim raport untuk ditinjau Kepala Sekolah.                                        |
+| 00:28-00:36 | Kepala Sekolah dapat menyetujui atau meminta revisi dengan catatan yang jelas.                           |
+| 00:36-00:44 | Admin Sekolah menerbitkan raport yang telah disetujui, termasuk secara batch ketika diperlukan.          |
+| 00:44-00:53 | Wali menerima tautan dan PIN pribadi untuk melihat, mengunduh, atau mencetak raport anaknya.             |
+| 00:53-01:00 | RAMU. Dari kelas ke wali murid, setiap perkembangan tersampaikan dengan lebih rapi.                      |
 
 ## Musik
 
-Pilih instrumental akustik ringan tanpa vokal. Musik dimulai lembut pada pembuka, sedikit menguat saat alur kerja ditampilkan, lalu mereda ketika CTA muncul. Pastikan penggunaan musik memiliki lisensi yang sesuai.
+Pilih instrumental akustik ringan tanpa vokal. Musik dibuka perlahan, sedikit
+menguat pada alur pengisian dan tinjauan, lalu mereda pada CTA. Pastikan lisensi
+musik memperbolehkan penggunaan promosi.

@@ -1,7 +1,7 @@
 import { Composition } from "remotion";
 import { PromoVideo } from "./PromoVideo";
 
-const durationInFrames = 50 * 30;
+const durationInFrames = 60 * 30;
 
 export function RemotionRoot() {
   return (

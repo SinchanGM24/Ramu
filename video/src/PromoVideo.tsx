@@ -7,17 +7,24 @@ import {
 import { BrandMark } from "./components/brand-mark";
 import { promoScript } from "./data/promo-script";
 import { ClosingScene } from "./scenes/closing-scene";
+import { HandoffScene } from "./scenes/handoff-scene";
 import { OpeningScene } from "./scenes/opening-scene";
 import { ParentScene } from "./scenes/parent-scene";
-import { WorkflowScene } from "./scenes/workflow-scene";
+import { PublishScene } from "./scenes/publish-scene";
+import { ReviewScene } from "./scenes/review-scene";
 import { WorkspaceScene } from "./scenes/workspace-scene";
+
+const sceneStarts = [0, 150, 360, 660, 840, 1080, 1320, 1590];
 
 export function PromoVideo({ format }: { format: "desktop" | "reels" }) {
   const frame = useCurrentFrame();
   const { height, width } = useVideoConfig();
   const isReels = format === "reels";
   const scale = isReels ? width / 1920 : 1;
-  const scriptIndex = Math.min(Math.floor(frame / 210), promoScript.length - 1);
+  const scriptIndex = sceneStarts.reduce(
+    (activeIndex, start, index) => (frame >= start ? index : activeIndex),
+    0,
+  );
   const activeScript = promoScript[scriptIndex];
   const presentationStyle = isReels
     ? {
@@ -115,19 +122,25 @@ export function PromoVideo({ format }: { format: "desktop" | "reels" }) {
         <Sequence from={0} durationInFrames={150}>
           <OpeningScene />
         </Sequence>
-        <Sequence from={150} durationInFrames={180}>
+        <Sequence from={150} durationInFrames={210}>
           <WorkspaceScene />
         </Sequence>
-        <Sequence from={330} durationInFrames={180}>
+        <Sequence from={360} durationInFrames={300}>
           <WorkspaceScene assessment />
         </Sequence>
-        <Sequence from={510} durationInFrames={300}>
-          <WorkflowScene />
+        <Sequence from={660} durationInFrames={180}>
+          <HandoffScene />
         </Sequence>
-        <Sequence from={810} durationInFrames={240}>
+        <Sequence from={840} durationInFrames={240}>
+          <ReviewScene />
+        </Sequence>
+        <Sequence from={1080} durationInFrames={240}>
+          <PublishScene />
+        </Sequence>
+        <Sequence from={1320} durationInFrames={270}>
           <ParentScene />
         </Sequence>
-        <Sequence from={1050} durationInFrames={450}>
+        <Sequence from={1590} durationInFrames={210}>
           <ClosingScene />
         </Sequence>
       </div>

@@ -1,4 +1,4 @@
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate, staticFile, useCurrentFrame } from "remotion";
 import { AnimatedText } from "../components/animated-text";
 import { BrandMark } from "../components/brand-mark";
 import { DeviceFrame } from "../components/device-frame";
@@ -30,6 +30,18 @@ export function WorkspaceScene({
           position: "relative",
         }}
       >
+        {assessment ? (
+          <img
+            src={staticFile("illustrations/ramu-children-learning.png")}
+            style={{
+              bottom: -155,
+              left: -130,
+              opacity: 0.88,
+              position: "absolute",
+              width: 470,
+            }}
+          />
+        ) : null}
         <div style={{ alignSelf: "center", flex: "0 0 38%" }}>
           <BrandMark compact />
           <AnimatedText delay={8} style={{ marginTop: 32 }}>
@@ -95,7 +107,9 @@ export function WorkspaceScene({
           style={{
             alignSelf: "center",
             flex: 1,
+            position: "relative",
             transform: `translateY(${offset}px)`,
+            zIndex: 1,
           }}
         >
           <DeviceFrame

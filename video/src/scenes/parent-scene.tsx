@@ -1,4 +1,4 @@
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate, staticFile, useCurrentFrame } from "remotion";
 import { AnimatedText } from "../components/animated-text";
 import { BrandMark } from "../components/brand-mark";
 import { SceneLayout } from "../components/scene-layout";
@@ -20,6 +20,16 @@ export function ParentScene() {
           position: "relative",
         }}
       >
+        <img
+          src={staticFile("illustrations/ramu-parent-tablet.png")}
+          style={{
+            bottom: -145,
+            opacity: 0.56,
+            position: "absolute",
+            right: -130,
+            width: 610,
+          }}
+        />
         <div style={{ flex: "0 0 44%" }}>
           <BrandMark compact />
           <AnimatedText delay={8} style={{ marginTop: 34 }}>
@@ -87,7 +97,14 @@ export function ParentScene() {
             </div>
           </AnimatedText>
         </div>
-        <div style={{ transform: `translateY(${shift}px)`, width: 440 }}>
+        <div
+          style={{
+            position: "relative",
+            transform: `translateY(${shift}px)`,
+            width: 440,
+            zIndex: 1,
+          }}
+        >
           <div
             style={{
               background: "#243a2d",

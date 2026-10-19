@@ -1,43 +1,49 @@
 export const promoScript = [
   {
-    time: "00:00–00:05",
-    voiceOver: "Mengelola raport PAUD seharusnya tidak rumit.",
-    caption: "Raport PAUD, lebih rapi.",
+    time: "00:00-00:05",
+    voiceOver: "Setiap perkembangan murid layak dicatat dengan lebih mudah.",
+    caption: "Setiap perkembangan berarti.",
   },
   {
-    time: "00:05–00:11",
+    time: "00:05-00:12",
     voiceOver:
-      "RAMU menyatukan data murid, kelas, dan tahun ajaran dalam satu ruang kerja.",
-    caption: "Data murid dan kelas terorganisasi.",
+      "Admin Sekolah menata tahun ajaran, kelas, guru, dan murid dalam satu tempat.",
+    caption: "Data akademik tersusun rapi.",
   },
   {
-    time: "00:11–00:17",
+    time: "00:12-00:22",
     voiceOver:
-      "Guru fokus pada perkembangan setiap murid, satu raport dalam satu waktu.",
-    caption: "Pengisian raport individual.",
+      "Guru bekerja dari kelas yang ditugaskan untuk mengisi indikator, narasi, dan data semester setiap murid.",
+    caption: "Satu murid. Satu perkembangan.",
   },
   {
-    time: "00:17–00:25",
+    time: "00:22-00:28",
     voiceOver:
-      "Raport mengalir dengan jelas: diisi guru, ditinjau Kepala Sekolah, lalu disetujui.",
-    caption: "Isi. Tinjau. Setujui.",
+      "Saat lengkap, guru mengirim raport untuk ditinjau Kepala Sekolah.",
+    caption: "Siap ditinjau.",
   },
   {
-    time: "00:25–00:35",
+    time: "00:28-00:36",
     voiceOver:
-      "Admin Sekolah menerbitkan raport yang telah disetujui dan menyiapkan akses wali.",
-    caption: "Publikasi yang terkendali.",
+      "Kepala Sekolah dapat menyetujui atau meminta revisi dengan catatan yang jelas.",
+    caption: "Tinjau dengan kendali penuh.",
   },
   {
-    time: "00:35–00:43",
+    time: "00:36-00:44",
     voiceOver:
-      "Wali melihat, mengunduh, atau mencetak raport melalui tautan dan PIN yang aman.",
+      "Admin Sekolah menerbitkan raport yang telah disetujui, termasuk secara batch ketika diperlukan.",
+    caption: "Terbitkan saat siap.",
+  },
+  {
+    time: "00:44-00:53",
+    voiceOver:
+      "Wali menerima tautan dan PIN pribadi untuk melihat, mengunduh, atau mencetak raport anaknya.",
     caption: "Akses wali yang aman.",
   },
   {
-    time: "00:43–00:50",
+    time: "00:53-01:00",
     voiceOver:
-      "RAMU. Satu ruang kerja untuk raport murid yang lebih rapi, kolaboratif, dan mudah dipantau.",
-    caption: "RAMU — Raport Murid",
+      "RAMU. Dari kelas ke wali murid, setiap perkembangan tersampaikan dengan lebih rapi.",
+    caption: "RAMU - Raport Murid",
   },
 ] as const;
