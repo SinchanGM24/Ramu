@@ -3,6 +3,7 @@ import type { ParentReport } from "@/features/reports/parent/types";
 type AssessmentCode = "BB" | "MB" | "BSH" | "BSB";
 
 export type DemoParentProfile = {
+	reportId: string;
 	token: string;
 	pin: string;
 	student: NonNullable<ParentReport["student"]>;
@@ -21,6 +22,7 @@ export type DemoParentProfile = {
  */
 export const demoParentProfiles: DemoParentProfile[] = [
 	{
+		reportId: "demo-report-published-alya",
 		token: "demo-parent",
 		pin: "123456",
 		student: {
@@ -49,6 +51,7 @@ export const demoParentProfiles: DemoParentProfile[] = [
 		extracurricular: [{ activity_name: "Menari", grade: "A" }],
 	},
 	{
+		reportId: "demo-report-published-bima",
 		token: "demo-parent-bima",
 		pin: "246810",
 		student: {
@@ -77,6 +80,7 @@ export const demoParentProfiles: DemoParentProfile[] = [
 		extracurricular: [{ activity_name: "Futsal", grade: "B" }],
 	},
 	{
+		reportId: "demo-report-published-citra",
 		token: "demo-parent-citra",
 		pin: "135791",
 		student: {

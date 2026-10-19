@@ -1,4 +1,4 @@
-import { demoParentProfileByToken } from "./demo-parent-reports";
+import { demoParentProfileByToken, demoParentProfiles } from "./demo-parent-reports";
 
 const reportId = "demo-report";
 const studentId = "demo-student";
@@ -442,6 +442,40 @@ function parentReport(profile: NonNullable<ReturnType<typeof demoParentProfileBy
 	};
 }
 
+const publishedReportSeeds = demoParentProfiles.map((profile, index) => ({
+	deliveryStatus: (["READ", "SENT", "FAILED"] as const)[index],
+	id: profile.reportId,
+	publishedAt: `2026-10-${String(index + 1).padStart(2, "0")}T08:00:00.000Z`,
+	profile,
+	whatsAppOpenedAt: index === 0 ? "2026-10-01T08:05:00.000Z" : null,
+}));
+
+function publishedReportSeed(reportId: string) {
+	return publishedReportSeeds.find((seed) => seed.id === reportId);
+}
+
+function publishedVersionFor(reportId: string) {
+	const seed = publishedReportSeed(reportId);
+	if (!seed) return publishedVersion;
+
+	const report = parentReport(seed.profile);
+	return {
+		current_status: "PUBLISHED",
+		id: `version-${seed.id}`,
+		version_number: 1,
+		published_at: seed.publishedAt,
+		snapshot: {
+			school: publishedVersion.snapshot.school,
+			student: report.student,
+			semester: report.semester,
+			assessments: report.assessments,
+			narratives: report.narratives,
+			growth: report.growth,
+			attendance: report.attendance,
+		},
+	};
+}
+
 function page<T>(items: T[]) {
 	return { items, total: items.length, page: 1, limit: 10 };
 }
@@ -669,6 +703,47 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 	if (pathname === `/reports/${reportId}/workspace`) return workspace;
 	if (pathname === `/reports/${reportId}/editor`) return preview;
 	if (pathname === `/reports/${reportId}/published-version`) return publishedVersion;
+	const publishedReportMatch = pathname.match(
+		/^\/reports\/([^/]+)\/(published-version|deliveries|delivery-recipients|delivery-context)$/,
+	);
+	const publishedSeed = publishedReportMatch
+		? publishedReportSeed(publishedReportMatch[1])
+		: undefined;
+	if (publishedSeed && publishedReportMatch?.[2] === "published-version")
+		return publishedVersionFor(publishedSeed.id);
+	if (publishedSeed && publishedReportMatch?.[2] === "delivery-recipients") {
+		return [
+			{
+				id: `guardian-${publishedSeed.id}`,
+				name: `Wali ${publishedSeed.profile.student.nickname}`,
+				relationship: "Orang tua",
+				phone: "0813-0000-0000",
+				is_primary: true,
+				student_lifecycle_status: "ACTIVE",
+			},
+		];
+	}
+	if (publishedSeed && publishedReportMatch?.[2] === "delivery-context")
+		return { studentId: `student-${publishedSeed.id}` };
+	if (publishedSeed && publishedReportMatch?.[2] === "deliveries") {
+		return [
+			{
+				id: `delivery-${publishedSeed.id}`,
+				guardian_name: `Wali ${publishedSeed.profile.student.nickname}`,
+				relationship: "Orang tua",
+				recipient_phone: "0813-0000-0000",
+				version_number: 1,
+				status: publishedSeed.deliveryStatus,
+				queued_at: publishedSeed.publishedAt,
+				whatsapp_opened_at: publishedSeed.whatsAppOpenedAt,
+				attempt_count: publishedSeed.deliveryStatus === "FAILED" ? 2 : 1,
+				failure_reason:
+					publishedSeed.deliveryStatus === "FAILED"
+						? "Nomor WhatsApp belum dapat dihubungi."
+						: null,
+			},
+		];
+	}
 	if (pathname === `/reports/${reportId}/completeness`) {
 		return {
 			complete: true,
@@ -741,11 +816,21 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 		const publication = request.searchParams.get("view") === "PUBLICATION";
 		const items = publication
 			? [
+					...publishedReportSeeds.map((seed) => ({
+						id: `student-${seed.id}`,
+						name: seed.profile.student.name,
+						report_id: seed.id,
+						status: "PUBLISHED" as const,
+						delivery_status: seed.deliveryStatus,
+						delivery_whatsapp_opened_at: seed.whatsAppOpenedAt,
+						latest_published_version_number: 1,
+						latest_published_at: seed.publishedAt,
+					})),
 					{
 						id: studentId,
-						name: "Alya Putri",
+						name: "Dimas Pratama",
 						report_id: reportId,
-						status: "APPROVED",
+						status: "APPROVED" as const,
 						delivery_status: null,
 						latest_published_version_number: null,
 					},
@@ -763,7 +848,7 @@ export function demoResponse(path: string, options: RequestInit): unknown {
 			page: 1,
 			limit: 10,
 			summary: publication
-				? { waitingReview: 0, approved: 1, published: 0, correction: 0 }
+				? { waitingReview: 0, approved: 1, published: publishedReportSeeds.length, correction: 0 }
 				: { total: items.length, notCreated: 2, draft: 1, review: 0, publish: 0, published: 0 },
 		};
 	}
