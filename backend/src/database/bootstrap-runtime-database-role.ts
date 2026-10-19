@@ -56,7 +56,7 @@ async function bootstrap() {
     }
 
     const createStatement = await client.query<{ statement: string }>(
-      "SELECT format('CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOBYPASSRLS INHERIT', $1, $2) AS statement",
+      "SELECT format('CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOBYPASSRLS INHERIT', $1::text, $2::text) AS statement",
       [runtimeRoleName, password],
     );
     await client.query(createStatement.rows[0].statement);
