@@ -7,6 +7,7 @@ import { LoadingState } from "@/components/shared/loading-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DemoParentAccessCard } from "./components/demo-parent-access-card";
 import { DeliveryHistoryList } from "./components/delivery-history-list";
 import { DeliveryRecipientSelector } from "./components/delivery-recipient-selector";
 import { useReportDeliveries } from "./hooks/use-report-deliveries";
@@ -56,6 +57,9 @@ function ReportDeliveriesContent({ reportId }: { reportId: string }) {
 				>
 					{delivery.notice}
 				</p>
+			) : null}
+			{process.env.NEXT_PUBLIC_DEMO_MODE === "true" ? (
+				<DemoParentAccessCard reportId={reportId} />
 			) : null}
 			<RecipientPanel
 				loading={delivery.recipients.isLoading}
