@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { handleServerlessRequest } from "../../../../../backend/src/http/serverless-handler";
 
 export const runtime = "nodejs";
@@ -12,13 +13,13 @@ async function handle(request: Request) {
 		headers: request.headers.entries(),
 		arrayBuffer: () => request.arrayBuffer(),
 	});
-	const headers = new Headers();
-	for (const [name, value] of result.headers) headers.append(name, value);
 	const body = result.body.buffer.slice(
 		result.body.byteOffset,
 		result.body.byteOffset + result.body.byteLength,
 	) as ArrayBuffer;
-	return new Response(body, { status: result.status, headers });
+	const response = new NextResponse(body, { status: result.status });
+	for (const [name, value] of result.headers) response.headers.append(name, value);
+	return response;
 }
 
 export const GET = handle;

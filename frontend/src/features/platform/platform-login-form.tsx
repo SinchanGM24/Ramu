@@ -2,11 +2,14 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import type { PlatformSession } from "./types";
 
 export function PlatformLoginForm() {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -19,6 +22,11 @@ export function PlatformLoginForm() {
 			await api("/platform/auth/login", {
 				method: "POST",
 				body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+			});
+			await queryClient.fetchQuery({
+				queryKey: ["platform-session"],
+				queryFn: () => api<PlatformSession>("/platform/auth/session"),
+				retry: false,
 			});
 			router.replace("/platform");
 		} catch (cause) {

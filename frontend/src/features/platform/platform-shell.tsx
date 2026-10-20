@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, LogOut, School, UserRound, Users } from "lucide-react";
 import { api } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import type { PlatformSession } from "./types";
 import { PlatformAccountCard } from "./platform-account-card";
@@ -50,7 +51,12 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 			await api("/platform/auth/logout", { method: "POST" });
 			queryClient.clear();
 			router.replace("/platform/login");
-		} catch {
+		} catch (cause) {
+			if (cause instanceof ApiError && cause.status === 401) {
+				queryClient.clear();
+				router.replace("/platform/login");
+				return;
+			}
 			setLogoutError("Tidak dapat keluar akun. Coba lagi.");
 		} finally {
 			setIsLoggingOut(false);

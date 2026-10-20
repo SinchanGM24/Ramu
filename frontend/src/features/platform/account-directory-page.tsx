@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
+import { TenantAdminPasswordDialog } from "./components/tenant-admin-password-dialog";
 import type { Paginated, PlatformAccount } from "./types";
 
 const inputClass =
@@ -25,6 +27,11 @@ export function AccountDirectoryPage() {
 	const [search, setSearch] = useState("");
 	const [status, setStatus] = useState("");
 	const [role, setRole] = useState("");
+	const [selectedAdmin, setSelectedAdmin] = useState<PlatformAccount | null>(null);
+	const [passwordError, setPasswordError] = useState("");
+	const [actionError, setActionError] = useState("");
+	const [actionMessage, setActionMessage] = useState("");
+	const [isSavingPassword, setIsSavingPassword] = useState(false);
 	const debouncedSearch = useDebouncedValue(search);
 	const accounts = useQuery({
 		queryKey: ["platform-accounts", page, debouncedSearch, status, role],
@@ -39,21 +46,64 @@ export function AccountDirectoryPage() {
 
 	async function changeStatus(account: PlatformAccount) {
 		if (account.role !== "SCHOOL_ADMIN") return;
+		setActionError("");
+		setActionMessage("");
 		const isActive = !account.is_active;
 		if (!window.confirm(`${isActive ? "Aktifkan kembali" : "Tangguhkan"} akun ${account.email}?`))
 			return;
-		await api(`/platform/accounts/${account.id}/status`, {
-			method: "PATCH",
-			body: JSON.stringify({ isActive }),
-		});
-		await queryClient.invalidateQueries({ queryKey: ["platform-accounts"] });
-		await queryClient.invalidateQueries({ queryKey: ["platform-overview"] });
+		try {
+			await api(`/platform/accounts/${account.id}/status`, {
+				method: "PATCH",
+				body: JSON.stringify({ isActive }),
+			});
+			await queryClient.invalidateQueries({ queryKey: ["platform-accounts"] });
+			await queryClient.invalidateQueries({ queryKey: ["platform-overview"] });
+			setActionMessage(
+				`Akun ${account.email} berhasil ${isActive ? "diaktifkan" : "ditangguhkan"}.`,
+			);
+		} catch (cause) {
+			setActionError(
+				cause instanceof Error ? cause.message : "Status akun tidak dapat diperbarui.",
+			);
+		}
 	}
 
 	async function revoke(account: PlatformAccount) {
 		if (account.role !== "SCHOOL_ADMIN") return;
+		setActionError("");
+		setActionMessage("");
 		if (!window.confirm(`Cabut seluruh sesi aktif ${account.email}?`)) return;
-		await api(`/platform/accounts/${account.id}/revoke-sessions`, { method: "POST" });
+		try {
+			await api(`/platform/accounts/${account.id}/revoke-sessions`, { method: "POST" });
+			setActionMessage(`Seluruh sesi ${account.email} berhasil dicabut.`);
+		} catch (cause) {
+			setActionError(cause instanceof Error ? cause.message : "Sesi akun tidak dapat dicabut.");
+		}
+	}
+
+	async function updateAdminPassword(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!selectedAdmin || isSavingPassword) return;
+		const form = new FormData(event.currentTarget);
+		setPasswordError("");
+		setIsSavingPassword(true);
+		try {
+			await api(`/platform/tenants/${selectedAdmin.school_id}/admin/${selectedAdmin.id}/password`, {
+				method: "PATCH",
+				body: JSON.stringify({
+					password: form.get("password"),
+					passwordConfirmation: form.get("passwordConfirmation"),
+				}),
+			});
+			setSelectedAdmin(null);
+			setActionMessage(
+				`Sandi ${selectedAdmin.email} berhasil diperbarui. Seluruh sesi aktifnya telah dicabut.`,
+			);
+		} catch (cause) {
+			setPasswordError(cause instanceof Error ? cause.message : "Sandi tidak dapat diperbarui.");
+		} finally {
+			setIsSavingPassword(false);
+		}
 	}
 
 	return (
@@ -63,6 +113,35 @@ export function AccountDirectoryPage() {
 				title="Akun sekolah"
 				description="Tinjau metadata akun sekolah. Tindakan akun hanya tersedia untuk Admin Sekolah; sandi, token, PIN, serta data anak tidak ditampilkan di platform."
 			/>
+			{actionError ? (
+				<p
+					role="alert"
+					className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700"
+				>
+					{actionError}
+				</p>
+			) : null}
+			{actionMessage ? (
+				<p
+					role="status"
+					className="mb-5 rounded-xl border border-[#b9d8bf] bg-[#edf7ee] px-4 py-3 text-sm text-[#1d643e]"
+				>
+					{actionMessage}
+				</p>
+			) : null}
+			{selectedAdmin ? (
+				<TenantAdminPasswordDialog
+					adminName={selectedAdmin.name}
+					pending={isSavingPassword}
+					error={passwordError}
+					onClose={() => {
+						if (isSavingPassword) return;
+						setPasswordError("");
+						setSelectedAdmin(null);
+					}}
+					onSubmit={updateAdminPassword}
+				/>
+			) : null}
 			<Card className="rounded-xl border-[#dfcdbf] bg-[#fffaf6] p-4 shadow-none sm:p-5">
 				<div className="grid gap-3 pb-5 md:grid-cols-[minmax(0,1fr)_180px_190px]">
 					<label className="relative">
@@ -158,16 +237,35 @@ export function AccountDirectoryPage() {
 										</td>
 										<td className="px-4 py-4 text-right">
 											{account.role === "SCHOOL_ADMIN" ? (
-												<div className="flex justify-end gap-2">
-													<Button variant="secondary" onClick={() => revoke(account)}>
-														Cabut sesi
-													</Button>
-													<Button
-														variant={account.is_active ? "danger" : "secondary"}
-														onClick={() => changeStatus(account)}
+												<div>
+													<div className="flex justify-end gap-2">
+														<Button
+															variant="secondary"
+															onClick={() => {
+																setActionError("");
+																setActionMessage("");
+																setPasswordError("");
+																setSelectedAdmin(account);
+															}}
+														>
+															Atur sandi
+														</Button>
+														<Button variant="secondary" onClick={() => revoke(account)}>
+															Cabut sesi
+														</Button>
+														<Button
+															variant={account.is_active ? "danger" : "secondary"}
+															onClick={() => changeStatus(account)}
+														>
+															{account.is_active ? "Tangguhkan" : "Aktifkan"}
+														</Button>
+													</div>
+													<Link
+														href={`/platform/tenants/${account.school_id}`}
+														className="mt-2 inline-block text-xs font-semibold text-[#765646] hover:underline"
 													>
-														{account.is_active ? "Tangguhkan" : "Aktifkan"}
-													</Button>
+														Kelola tenant
+													</Link>
 												</div>
 											) : (
 												<span className="text-xs text-slate-500">Hanya baca</span>
@@ -200,16 +298,36 @@ export function AccountDirectoryPage() {
 								{account.is_active ? "Aktif" : "Ditangguhkan"}
 							</p>
 							{account.role === "SCHOOL_ADMIN" ? (
-								<div className="mt-4 grid grid-cols-2 gap-2">
-									<Button variant="secondary" onClick={() => revoke(account)}>
-										Cabut sesi
-									</Button>
-									<Button
-										variant={account.is_active ? "danger" : "secondary"}
-										onClick={() => changeStatus(account)}
+								<div>
+									<div className="mt-4 grid grid-cols-2 gap-2">
+										<Button
+											variant="secondary"
+											className="col-span-2"
+											onClick={() => {
+												setActionError("");
+												setActionMessage("");
+												setPasswordError("");
+												setSelectedAdmin(account);
+											}}
+										>
+											Atur ulang sandi
+										</Button>
+										<Button variant="secondary" onClick={() => revoke(account)}>
+											Cabut sesi
+										</Button>
+										<Button
+											variant={account.is_active ? "danger" : "secondary"}
+											onClick={() => changeStatus(account)}
+										>
+											{account.is_active ? "Tangguhkan" : "Aktifkan"}
+										</Button>
+									</div>
+									<Link
+										href={`/platform/tenants/${account.school_id}`}
+										className="mt-3 inline-block text-xs font-semibold text-[#765646] hover:underline"
 									>
-										{account.is_active ? "Tangguhkan" : "Aktifkan"}
-									</Button>
+										Kelola tenant
+									</Link>
 								</div>
 							) : (
 								<p className="mt-4 border-t border-[#ead9cc] pt-3 text-xs text-slate-500">
