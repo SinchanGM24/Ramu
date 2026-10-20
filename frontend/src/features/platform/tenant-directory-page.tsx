@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ const labelStatus = (status: "ACTIVE" | "SUSPENDED") =>
 	status === "ACTIVE" ? "Aktif" : "Ditangguhkan";
 
 export function TenantDirectoryPage() {
+	const queryClient = useQueryClient();
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState("");
 	const [status, setStatus] = useState("");
