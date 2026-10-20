@@ -26,6 +26,51 @@ describe("AuthService.require", () => {
 });
 
 describe("AuthService session revocation", () => {
+  it("attaches an active school session after establishing its RLS tenant context", async () => {
+    const transactionQueries: Array<{ sql: string; values: unknown[] }> = [];
+    const service = new AuthService({
+      query: async () => ({
+        rows: [
+          {
+            user_id: "user-a",
+            school_id: "school-a",
+            session_id: "session-a",
+            email: "admin@sekolah.test",
+            must_change_password: true,
+          },
+        ],
+      }),
+      transaction: async (
+        callback: (client: {
+          query: (sql: string, values: unknown[]) => Promise<unknown>;
+        }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async (sql: string, values: unknown[]) => {
+            transactionQueries.push({ sql, values });
+            if (sql.startsWith("SELECT id FROM schools")) {
+              return { rows: [{ id: "school-a" }] };
+            }
+            return { rows: [{ role: "SCHOOL_ADMIN" }] };
+          },
+        }),
+    } as never);
+    const request = { cookies: { ramu_session: "sesi-aktif" } } as never;
+
+    await service.attach(request);
+
+    expect(transactionQueries[0]).toEqual({
+      sql: "SELECT id FROM schools WHERE id=$1 AND tenant_status='ACTIVE'",
+      values: ["school-a"],
+    });
+    expect(request.auth).toMatchObject({
+      userId: "user-a",
+      schoolId: "school-a",
+      role: "SCHOOL_ADMIN",
+      mustChangePassword: true,
+    });
+  });
+
   it("revokes every active session and never attaches a revoked token", async () => {
     const queries: Array<{ sql: string; values: unknown[] }> = [];
     const service = new AuthService({

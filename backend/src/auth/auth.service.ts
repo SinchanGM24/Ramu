@@ -124,13 +124,19 @@ export class AuthService {
       `SELECT s.user_id, s.school_id, s.id AS session_id, u.email, u.must_change_password
        FROM sessions s
        JOIN users u ON u.id=s.user_id AND u.is_active
-       JOIN schools school ON school.id=s.school_id AND school.tenant_status='ACTIVE'
        WHERE s.token_hash=$1 AND s.expires_at > now() AND s.revoked_at IS NULL`,
       [hashToken(rawToken)],
     );
     const row = session.rows[0];
     if (!row) return;
     await this.db.transaction(async (client) => {
+      // `schools` is RLS-protected. Read it only after DatabaseService has
+      // established the session's school context for this transaction.
+      const school = await client.query<{ id: string }>(
+        "SELECT id FROM schools WHERE id=$1 AND tenant_status='ACTIVE'",
+        [row.school_id],
+      );
+      if (!school.rows[0]) return;
       const membership = await client.query<{ role: Role }>(
         "SELECT role FROM school_memberships WHERE user_id=$1 AND school_id=$2 AND is_active",
         [row.user_id, row.school_id],
