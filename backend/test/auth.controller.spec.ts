@@ -1,4 +1,8 @@
-import { BadRequestException, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { describe, expect, it } from "vitest";
 import { AuthController } from "../src/auth/auth.controller";
 import { RequestRateLimiter } from "../src/common/request-rate-limiter";
@@ -88,6 +92,9 @@ describe("AuthController login", () => {
             if (sql.startsWith("SELECT school_id")) {
               return { rows: [{ school_id: "school-a", role: "TEACHER" }] };
             }
+            if (sql.startsWith("SELECT tenant_status")) {
+              return { rows: [{ tenant_status: "ACTIVE" }] };
+            }
             return { rows: [] };
           },
         }),
@@ -114,6 +121,58 @@ describe("AuthController login", () => {
 
     expect(createdSessions).toEqual([["user-a", "school-a"]]);
     expect(queries.some((sql) => sql.includes("ORDER BY"))).toBe(false);
+  });
+
+  it("rejects a suspended tenant before creating a session", async () => {
+    let createdSession = false;
+    const db = {
+      query: async () => ({
+        rows: [
+          {
+            id: "user-a",
+            password_hash: "stored-password-hash",
+            is_active: true,
+          },
+        ],
+      }),
+      transaction: async (
+        callback: (client: {
+          query: (sql: string) => Promise<unknown>;
+        }) => Promise<unknown>,
+      ) =>
+        callback({
+          query: async (sql: string) => {
+            if (sql.startsWith("SELECT school_id")) {
+              return {
+                rows: [{ school_id: "school-a", role: "SCHOOL_ADMIN" }],
+              };
+            }
+            if (sql.startsWith("SELECT tenant_status")) {
+              return { rows: [{ tenant_status: "SUSPENDED" }] };
+            }
+            return { rows: [] };
+          },
+        }),
+    };
+    const auth = {
+      verifyPassword: async () => true,
+      createSession: async () => {
+        createdSession = true;
+      },
+    };
+    const controller = new AuthController(
+      db as never,
+      auth as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.login(
+        { email: "admin.sekolah@ramu.test", password: "kata-sandi" },
+        {} as never,
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(createdSession).toBe(false);
   });
 
   it("rejects ambiguous active school memberships without revealing account state", async () => {

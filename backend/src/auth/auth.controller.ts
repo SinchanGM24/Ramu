@@ -104,21 +104,43 @@ export class AuthController {
     ) {
       throw new UnauthorizedException("Email atau kata sandi salah");
     }
-    const memberships = await this.db.transaction(async (client) => {
+    const loginContext = await this.db.transaction(async (client) => {
       await client.query("SELECT set_config('app.user_id', $1, true)", [
         user.id,
       ]);
-      return (
+      const memberships = (
         await client.query<{ school_id: string; role: Role }>(
           "SELECT school_id, role FROM school_memberships WHERE user_id=$1 AND is_active",
           [user.id],
         )
       ).rows;
+
+      if (memberships.length !== 1) return { memberships, tenantStatus: null };
+
+      await client.query("SELECT set_config('app.school_id', $1, true)", [
+        memberships[0].school_id,
+      ]);
+      const school = await client.query<{
+        tenant_status: "ACTIVE" | "SUSPENDED";
+      }>("SELECT tenant_status FROM schools WHERE id=$1", [
+        memberships[0].school_id,
+      ]);
+
+      return {
+        memberships,
+        tenantStatus: school.rows[0]?.tenant_status ?? null,
+      };
     });
+    const { memberships, tenantStatus } = loginContext;
     if (!memberships.length)
       throw new UnauthorizedException("Email atau kata sandi salah");
     if (memberships.length > 1) {
       throw new UnauthorizedException("Email atau kata sandi salah");
+    }
+    if (tenantStatus !== "ACTIVE") {
+      throw new ForbiddenException(
+        "Akses tenant sekolah sedang ditangguhkan. Hubungi pengelola RAMU.",
+      );
     }
     const membership = memberships[0];
     await this.auth.createSession(user.id, membership.school_id, reply);
