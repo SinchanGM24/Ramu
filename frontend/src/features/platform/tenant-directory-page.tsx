@@ -333,7 +333,11 @@ export function TenantDirectoryPage() {
 										{tenant.admin_email ?? "Admin belum tersedia"}
 									</p>
 								</div>
-								<span className="text-xs font-bold">{labelStatus(tenant.tenant_status)}</span>
+								<span
+									className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${tenant.tenant_status === "ACTIVE" ? "bg-[#e7f3e9] text-[#1d643e]" : "bg-[#fff4dc] text-[#8a5a12]"}`}
+								>
+									{labelStatus(tenant.tenant_status)}
+								</span>
 							</div>
 							<p className="mt-3 text-sm text-slate-600">
 								{tenant.account_count} akun · {tenant.student_count} murid

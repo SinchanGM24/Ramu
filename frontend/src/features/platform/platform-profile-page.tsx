@@ -101,36 +101,42 @@ export function PlatformProfilePage() {
 						key={profile.data?.id || "platform-profile"}
 						autoComplete="off"
 						onSubmit={save}
-						className="space-y-6"
+						className="space-y-5"
 					>
-						<div className="grid gap-5 md:grid-cols-2">
-							<label className="block text-sm font-semibold text-[#543b2e]">
-								Nama
-								<input
-									required
-									name="name"
-									defaultValue={profile.data?.name || ""}
-									className={`${inputClass} mt-1`}
-								/>
-							</label>
-							<label className="block text-sm font-semibold text-[#543b2e]">
-								Nomor telepon
-								<input
-									name="phone"
-									inputMode="tel"
-									defaultValue={profile.data?.phone || ""}
-									placeholder="08xxxxxxxxxx"
-									className={`${inputClass} mt-1`}
-								/>
-							</label>
-							<label className="block text-sm font-semibold text-[#543b2e] md:col-span-2">
-								Email
-								<span className="mt-1 block rounded-xl border border-[#ead9cc] bg-[#f8efe8] px-3 py-2.5 text-sm font-normal text-[#765f52]">
-									{profile.data?.email || "Memuat..."}
-								</span>
-							</label>
-						</div>
-						<div className="border-t border-[#ead9cc] pt-5">
+						<section className="rounded-2xl border border-[#ead9cc] bg-[#fffdf9] p-5">
+							<h3 className="text-sm font-semibold text-[#4e3428]">Identitas akun</h3>
+							<p className="mt-1 text-sm text-[#745d51]">
+								Informasi ini membantu mengenali pemilik akun platform.
+							</p>
+							<div className="mt-5 grid gap-5 md:grid-cols-2">
+								<label className="block text-sm font-semibold text-[#543b2e]">
+									Nama
+									<input
+										required
+										name="name"
+										defaultValue={profile.data?.name || ""}
+										className={`${inputClass} mt-1`}
+									/>
+								</label>
+								<label className="block text-sm font-semibold text-[#543b2e]">
+									Nomor telepon
+									<input
+										name="phone"
+										inputMode="tel"
+										defaultValue={profile.data?.phone || ""}
+										placeholder="08xxxxxxxxxx"
+										className={`${inputClass} mt-1`}
+									/>
+								</label>
+								<label className="block text-sm font-semibold text-[#543b2e] md:col-span-2">
+									Email
+									<span className="mt-1 block rounded-xl border border-[#ead9cc] bg-[#f8efe8] px-3 py-2.5 text-sm font-normal text-[#765f52]">
+										{profile.data?.email || "Memuat..."}
+									</span>
+								</label>
+							</div>
+						</section>
+						<section className="rounded-2xl border border-[#ead9cc] bg-[#fffdf9] p-5">
 							<div className="flex items-start gap-3">
 								<span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#f5e9df] text-[#765646]">
 									<KeyRound size={17} />
@@ -173,8 +179,8 @@ export function PlatformProfilePage() {
 									/>
 								</label>
 							</div>
-						</div>
-						<div className="flex justify-end border-t border-[#ead9cc] pt-5">
+						</section>
+						<div className="flex justify-end pt-1">
 							<Button type="submit" className="bg-[#765646] hover:bg-[#68483a]" disabled={saving}>
 								{saving ? "Menyimpan…" : "Simpan profil"}
 							</Button>

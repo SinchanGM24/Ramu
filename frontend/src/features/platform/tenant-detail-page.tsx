@@ -11,6 +11,21 @@ import { TenantAdminPasswordDialog } from "./components/tenant-admin-password-di
 import { PlatformPageHeader } from "./components/platform-page-header";
 import type { TenantDetail } from "./types";
 
+const subscriptionPlanLabel: Record<string, string> = {
+	TRIAL: "Masa percobaan",
+	FREE: "Gratis",
+	BASIC: "Dasar",
+	PRO: "Pro",
+};
+
+const subscriptionStatusLabel: Record<string, string> = {
+	TRIAL: "Masa percobaan",
+	ACTIVE: "Aktif",
+	PAST_DUE: "Menunggu pembayaran",
+	CANCELED: "Dibatalkan",
+	SUSPENDED: "Ditangguhkan",
+};
+
 export function TenantDetailPage({ id }: { id: string }) {
 	const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 	const [isSavingPassword, setIsSavingPassword] = useState(false);
@@ -138,7 +153,9 @@ export function TenantDetailPage({ id }: { id: string }) {
 						) : null}
 						<div>
 							<dt className="text-slate-500">Status tenant</dt>
-							<dd className="mt-1 font-medium">
+							<dd
+								className={`mt-1 inline-flex rounded-md px-2 py-1 text-xs font-medium ${data.status === "ACTIVE" ? "bg-[#e7f3e9] text-[#1d643e]" : "bg-[#fff4dc] text-[#8a5a12]"}`}
+							>
 								{data.status === "ACTIVE" ? "Aktif" : "Ditangguhkan"}
 							</dd>
 						</div>
@@ -146,7 +163,7 @@ export function TenantDetailPage({ id }: { id: string }) {
 							<dt className="text-slate-500">Langganan (hanya baca)</dt>
 							<dd className="mt-1 font-medium">
 								{data.subscription
-									? `${data.subscription.plan} · ${data.subscription.status}`
+									? `${subscriptionPlanLabel[data.subscription.plan] ?? data.subscription.plan} — ${subscriptionStatusLabel[data.subscription.status] ?? data.subscription.status}`
 									: "Belum tersedia"}
 							</dd>
 						</div>
