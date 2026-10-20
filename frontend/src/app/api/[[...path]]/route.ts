@@ -17,7 +17,13 @@ async function handle(request: Request) {
 		result.body.byteOffset,
 		result.body.byteOffset + result.body.byteLength,
 	) as ArrayBuffer;
-	const response = new NextResponse(body, { status: result.status });
+	// The Fetch standard forbids a response body for these statuses. Passing even
+	// an empty ArrayBuffer makes Next.js throw, which turns valid Fastify 204
+	// responses (such as logout) into a 500 at the Vercel boundary.
+	const noContentStatus = [204, 205, 304].includes(result.status);
+	const response = new NextResponse(noContentStatus ? null : body, {
+		status: result.status,
+	});
 	for (const [name, value] of result.headers) response.headers.append(name, value);
 	return response;
 }
