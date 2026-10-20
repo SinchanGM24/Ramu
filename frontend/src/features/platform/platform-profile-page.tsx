@@ -3,10 +3,10 @@
 import { FormEvent, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { KeyRound, UserRound } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { PlatformPageHeader } from "./components/platform-page-header";
 
 type PlatformProfile = { id: string; name: string; email: string; phone: string | null };
 
@@ -64,8 +64,7 @@ export function PlatformProfilePage() {
 
 	return (
 		<>
-			<PageHeader
-				eyebrow="Akun platform"
+			<PlatformPageHeader
 				title="Profil Super Admin"
 				description="Perbarui identitas dan kata sandi akun platform Anda. Perubahan ini tidak memberi akses ke data tenant."
 			/>

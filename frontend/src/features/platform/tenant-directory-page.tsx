@@ -4,13 +4,13 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { TenantCreateDialog } from "./components/tenant-create-dialog";
+import { PlatformPageHeader } from "./components/platform-page-header";
 import type { Paginated, Tenant } from "./types";
 
 const inputClass =
@@ -96,8 +96,7 @@ export function TenantDirectoryPage() {
 
 	return (
 		<>
-			<PageHeader
-				eyebrow="Operasional platform"
+			<PlatformPageHeader
 				title="Tenant sekolah"
 				description="Kelola status tenant dan akun Admin Sekolah tanpa membuka isi data tenant."
 				action={

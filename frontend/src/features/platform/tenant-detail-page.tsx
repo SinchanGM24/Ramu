@@ -4,11 +4,11 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { TenantAdminPasswordDialog } from "./components/tenant-admin-password-dialog";
+import { PlatformPageHeader } from "./components/platform-page-header";
 import type { TenantDetail } from "./types";
 
 export function TenantDetailPage({ id }: { id: string }) {
@@ -57,8 +57,7 @@ export function TenantDetailPage({ id }: { id: string }) {
 			>
 				<ArrowLeft size={16} /> Kembali ke tenant
 			</Link>
-			<PageHeader
-				eyebrow="Metadata tenant"
+			<PlatformPageHeader
 				title={data.name}
 				description="Informasi operasional tenant. Data murid, penilaian, raport, PDF, dan wali tidak tersedia di platform."
 			/>

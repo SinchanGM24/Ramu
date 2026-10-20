@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, LogOut, School, UserRound, Users } from "lucide-react";
+import { LayoutDashboard, School, Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import type { PlatformSession } from "./types";
 import { PlatformAccountCard } from "./platform-account-card";
+import { PlatformMobileNavigation } from "./components/platform-mobile-navigation";
 
 const navigation = [
 	{ href: "/platform", label: "Ringkasan", icon: LayoutDashboard },
@@ -65,36 +66,39 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 
 	return (
 		<div className="min-h-screen bg-[#eaf5ed] text-[#1d2921]">
-			<header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#68483a]/15 bg-[#765646] px-4 text-[#fff9f4] md:hidden">
-				<Link href="/platform" className="flex items-center gap-2 font-bold tracking-[-0.025em]">
-					<span className="grid size-9 place-items-center rounded-xl bg-[#f2daca] text-sm text-[#68483a]">
-						R
-					</span>
-					RAMU Platform
-				</Link>
-				<Link
-					href="/platform/profile"
-					aria-label="Buka profil akun"
-					className="flex max-w-40 items-center gap-1.5 truncate text-xs text-[#f0dcd0]"
-				>
-					<UserRound size={15} className="shrink-0" />
-					<span className="truncate">{session.data?.email}</span>
-				</Link>
-			</header>
-			<div className="mx-auto flex min-h-screen w-full max-w-[1440px] md:flex-row">
-				<aside className="hidden shrink-0 flex-col bg-[#765646] text-[#fff9f4] md:flex md:w-[228px]">
-					<header className="flex h-14 items-center justify-between px-4 md:px-5">
+			<PlatformMobileNavigation
+				pathname={pathname}
+				email={session.data?.email}
+				navigation={navigation}
+				isLoggingOut={isLoggingOut}
+				logoutError={logoutError}
+				onLogout={() => void logout()}
+			/>
+			<div className="flex min-h-screen w-full lg:flex-row">
+				<aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-[#765646] px-4 py-4 text-[#fff9f4] shadow-[12px_0_36px_rgba(80,54,39,0.12)] lg:flex">
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute -bottom-24 -left-24 size-72 rounded-full border border-white/10"
+					/>
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute -bottom-5 -left-8 size-52 rounded-full border border-white/10"
+					/>
+					<header className="relative flex h-11 items-center px-2">
 						<Link
 							href="/platform"
 							className="flex items-center gap-2.5 font-bold tracking-[-0.025em]"
 						>
-							<span className="grid size-7 place-items-center rounded-full bg-[#f2daca] text-xs text-[#68483a]">
+							<span className="grid size-11 place-items-center rounded-2xl bg-[#fff9f4] text-sm text-[#68483a] shadow-[0_10px_24px_rgba(0,0,0,0.17)]">
 								R
 							</span>
-							<span>RAMU Platform</span>
+							<span>
+								<strong className="block text-lg text-white">RAMU</strong>
+								<small className="text-xs text-[#f0dcd0]">Platform</small>
+							</span>
 						</Link>
 					</header>
-					<nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:px-4 md:pt-5">
+					<nav className="relative mt-5 flex flex-col gap-1 px-1" aria-label="Navigasi platform">
 						{navigation.map((item) => {
 							const Icon = item.icon;
 							const active = isNavigationActive(pathname, item.href);
@@ -102,14 +106,14 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 								<Link
 									key={item.href}
 									href={item.href}
-									className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${active ? "bg-[#fff8f1] text-[#68483a]" : "text-[#f7e8de] hover:bg-white/10 hover:text-white"}`}
+									className={`inline-flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${active ? "bg-[#fff9f4] text-[#68483a] shadow-[0_8px_20px_rgba(0,0,0,0.13)]" : "text-[#f7e8de] hover:bg-white/10 hover:text-white"}`}
 								>
 									<Icon size={17} /> {item.label}
 								</Link>
 							);
 						})}
 					</nav>
-					<div className="mt-auto hidden px-5 pb-5 md:block">
+					<div className="relative mt-auto px-1">
 						<PlatformAccountCard
 							email={session.data?.email}
 							isLoggingOut={isLoggingOut}
@@ -118,38 +122,10 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 						/>
 					</div>
 				</aside>
-				<main className="min-w-0 flex-1 bg-[#eff8f1]/80 px-4 py-6 pb-24 sm:px-7 md:m-2 md:ml-0 md:rounded-2xl md:border md:border-[#d7e7da] md:px-8 md:py-9 md:pb-9">
+				<main className="min-w-0 flex-1 bg-[#eff8f1] px-4 py-6 pb-24 sm:px-7 lg:ml-72 lg:px-10 lg:py-10 lg:pb-10">
 					{children}
 				</main>
 			</div>
-			<nav
-				aria-label="Navigasi platform"
-				className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-[#68483a]/15 bg-[#fff9f4]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(104,72,58,0.08)] backdrop-blur md:hidden"
-			>
-				{navigation.map((item) => {
-					const Icon = item.icon;
-					const active = isNavigationActive(pathname, item.href);
-					return (
-						<Link
-							key={item.href}
-							href={item.href}
-							className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium ${active ? "text-[#765646]" : "text-[#88756b]"}`}
-						>
-							<Icon size={20} strokeWidth={active ? 2.5 : 2} />
-							{item.label}
-						</Link>
-					);
-				})}
-				<button
-					type="button"
-					onClick={() => void logout()}
-					disabled={isLoggingOut}
-					className="flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-[#88756b]"
-				>
-					<LogOut size={20} />
-					Keluar
-				</button>
-			</nav>
 		</div>
 	);
 }

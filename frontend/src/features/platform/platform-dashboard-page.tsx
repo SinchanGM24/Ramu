@@ -2,9 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { PageHeader } from "@/components/shared/page-header";
 import { api } from "@/lib/api";
 import type { PlatformOverview } from "./types";
+import { PlatformPageHeader } from "./components/platform-page-header";
 
 const numberFormat = new Intl.NumberFormat("id-ID");
 
@@ -40,8 +40,7 @@ export function PlatformDashboardPage() {
 
 	return (
 		<>
-			<PageHeader
-				eyebrow="Operasional platform"
+			<PlatformPageHeader
 				title="Ringkasan RAMU"
 				description="Pantau tenant dan akun sekolah tanpa membuka data murid, penilaian, atau raport."
 			/>

@@ -4,13 +4,13 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import { PageHeader } from "@/components/shared/page-header";
 import { PaginationControls } from "@/components/shared/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { TenantAdminPasswordDialog } from "./components/tenant-admin-password-dialog";
+import { PlatformPageHeader } from "./components/platform-page-header";
 import type { Paginated, PlatformAccount } from "./types";
 
 const inputClass =
@@ -108,8 +108,7 @@ export function AccountDirectoryPage() {
 
 	return (
 		<>
-			<PageHeader
-				eyebrow="Operasional platform"
+			<PlatformPageHeader
 				title="Akun sekolah"
 				description="Tinjau metadata akun sekolah. Tindakan akun hanya tersedia untuk Admin Sekolah; sandi, token, PIN, serta data anak tidak ditampilkan di platform."
 			/>
