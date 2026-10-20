@@ -203,10 +203,9 @@ export class PlatformController {
       if (input.password) {
         await this.auth.revokeAllPlatformSessions(actor.userId, client);
         await this.auth.createPlatformSession(actor.userId, reply, client);
-        await client.query(
-          "INSERT INTO platform_audit_logs (actor_user_id, action, entity_type, entity_id) VALUES ($1, 'platform.password_changed', 'user', $1)",
-          [actor.userId],
-        );
+        await client.query("SELECT platform_record_self_password_change($1)", [
+          actor.userId,
+        ]);
       }
       return updated;
     });
