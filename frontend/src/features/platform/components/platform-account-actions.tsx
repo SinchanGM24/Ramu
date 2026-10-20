@@ -7,12 +7,10 @@ import { Button } from "@/components/ui/button";
 export function PlatformAccountActions({
 	isActive,
 	onSetPassword,
-	onRevokeSessions,
 	onChangeStatus,
 }: {
 	isActive: boolean;
 	onSetPassword: () => void;
-	onRevokeSessions: () => void;
 	onChangeStatus: () => void;
 }) {
 	const [open, setOpen] = useState(false);
@@ -32,16 +30,6 @@ export function PlatformAccountActions({
 						}}
 					>
 						Atur ulang sandi
-					</button>
-					<button
-						type="button"
-						className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[#4e3428] hover:bg-[#f5e9df]"
-						onClick={() => {
-							setOpen(false);
-							onRevokeSessions();
-						}}
-					>
-						Cabut seluruh sesi
 					</button>
 					<div className="my-1 border-t border-[#ead9cc]" />
 					<button

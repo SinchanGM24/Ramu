@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { PaginationControls } from "@/components/shared/pagination-controls";
@@ -36,7 +35,6 @@ export function AccountDirectoryPage() {
 	const [isSavingPassword, setIsSavingPassword] = useState(false);
 	const [confirmation, setConfirmation] = useState<{
 		account: PlatformAccount;
-		action: "revoke" | "status";
 	} | null>(null);
 	const [isConfirming, setIsConfirming] = useState(false);
 	const debouncedSearch = useDebouncedValue(search);
@@ -73,24 +71,11 @@ export function AccountDirectoryPage() {
 		}
 	}
 
-	async function revoke(account: PlatformAccount) {
-		if (account.role !== "SCHOOL_ADMIN") return;
-		setActionError("");
-		setActionMessage("");
-		try {
-			await api(`/platform/accounts/${account.id}/revoke-sessions`, { method: "POST" });
-			setActionMessage(`Seluruh sesi ${account.email} berhasil dicabut.`);
-		} catch (cause) {
-			setActionError(cause instanceof Error ? cause.message : "Sesi akun tidak dapat dicabut.");
-		}
-	}
-
 	async function confirmAccountAction() {
 		if (!confirmation) return;
 		setIsConfirming(true);
 		try {
-			if (confirmation.action === "status") await changeStatus(confirmation.account);
-			else await revoke(confirmation.account);
+			await changeStatus(confirmation.account);
 			setConfirmation(null);
 		} finally {
 			setIsConfirming(false);
@@ -160,29 +145,17 @@ export function AccountDirectoryPage() {
 			<ConfirmationDialog
 				open={Boolean(confirmation)}
 				title={
-					confirmation?.action === "revoke"
-						? "Cabut seluruh sesi"
-						: confirmation?.account.is_active
-							? "Tangguhkan akun Admin Sekolah"
-							: "Aktifkan akun Admin Sekolah"
+					confirmation?.account.is_active
+						? "Tangguhkan akun Admin Sekolah"
+						: "Aktifkan akun Admin Sekolah"
 				}
 				description={
-					confirmation?.action === "revoke"
-						? `Semua perangkat yang masuk sebagai ${confirmation.account.email} akan keluar dan perlu masuk kembali.`
-						: confirmation?.account.is_active
-							? `Akun ${confirmation?.account.email} tidak dapat masuk sampai diaktifkan kembali.`
-							: `Akun ${confirmation?.account.email} dapat masuk kembali. Keanggotaan sekolahnya tidak diubah.`
+					confirmation?.account.is_active
+						? `Akun ${confirmation?.account.email} tidak dapat masuk sampai diaktifkan kembali.`
+						: `Akun ${confirmation?.account.email} dapat masuk kembali. Keanggotaan sekolahnya tidak diubah.`
 				}
-				confirmLabel={
-					confirmation?.action === "revoke"
-						? "Cabut sesi"
-						: confirmation?.account.is_active
-							? "Tangguhkan akun"
-							: "Aktifkan akun"
-				}
-				confirmVariant={
-					confirmation?.action === "status" && confirmation.account.is_active ? "danger" : "primary"
-				}
+				confirmLabel={confirmation?.account.is_active ? "Tangguhkan akun" : "Aktifkan akun"}
+				confirmVariant={confirmation?.account.is_active ? "danger" : "primary"}
 				pending={isConfirming}
 				onCancel={() => setConfirmation(null)}
 				onConfirm={() => void confirmAccountAction()}
@@ -291,15 +264,8 @@ export function AccountDirectoryPage() {
 															setPasswordError("");
 															setSelectedAdmin(account);
 														}}
-														onRevokeSessions={() => setConfirmation({ account, action: "revoke" })}
-														onChangeStatus={() => setConfirmation({ account, action: "status" })}
+														onChangeStatus={() => setConfirmation({ account })}
 													/>
-													<Link
-														href={`/platform/tenants/${account.school_id}`}
-														className="mt-2 inline-block text-xs font-semibold text-[#765646] hover:underline"
-													>
-														Kelola tenant
-													</Link>
 												</div>
 											) : (
 												<span className="text-xs text-slate-500">Hanya baca</span>
@@ -343,15 +309,8 @@ export function AccountDirectoryPage() {
 											setPasswordError("");
 											setSelectedAdmin(account);
 										}}
-										onRevokeSessions={() => setConfirmation({ account, action: "revoke" })}
-										onChangeStatus={() => setConfirmation({ account, action: "status" })}
+										onChangeStatus={() => setConfirmation({ account })}
 									/>
-									<Link
-										href={`/platform/tenants/${account.school_id}`}
-										className="mt-3 inline-block text-xs font-semibold text-[#765646] hover:underline"
-									>
-										Kelola tenant
-									</Link>
 								</div>
 							) : (
 								<p className="mt-4 border-t border-[#ead9cc] pt-3 text-xs text-slate-500">
