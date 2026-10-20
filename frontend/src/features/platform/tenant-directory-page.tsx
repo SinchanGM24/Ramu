@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
+import { TenantCreateDialog } from "./components/tenant-create-dialog";
 import type { Paginated, Tenant } from "./types";
 
 const inputClass =
@@ -22,9 +23,11 @@ export function TenantDirectoryPage() {
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState("");
 	const [status, setStatus] = useState("");
-	const [showCreate, setShowCreate] = useState(false);
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 	const [temporaryPassword, setTemporaryPassword] = useState("");
 	const [error, setError] = useState("");
+	const [isCreating, setIsCreating] = useState(false);
+	const [copyFeedback, setCopyFeedback] = useState("");
 	const debouncedSearch = useDebouncedValue(search);
 	const tenants = useQuery({
 		queryKey: ["platform-tenants", page, debouncedSearch, status],
@@ -54,8 +57,10 @@ export function TenantDirectoryPage() {
 
 	async function createTenant(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (isCreating) return;
 		setError("");
 		const form = new FormData(event.currentTarget);
+		setIsCreating(true);
 		try {
 			const result = await api<{ temporaryPassword: string }>("/platform/tenants", {
 				method: "POST",
@@ -68,12 +73,24 @@ export function TenantDirectoryPage() {
 				}),
 			});
 			setTemporaryPassword(result.temporaryPassword);
-			setShowCreate(false);
+			setCopyFeedback("");
+			setIsCreateDialogOpen(false);
 			event.currentTarget.reset();
 			await queryClient.invalidateQueries({ queryKey: ["platform-tenants"] });
 			await queryClient.invalidateQueries({ queryKey: ["platform-overview"] });
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : "Tenant tidak dapat dibuat.");
+		} finally {
+			setIsCreating(false);
+		}
+	}
+
+	async function copyTemporaryPassword() {
+		try {
+			await navigator.clipboard.writeText(temporaryPassword);
+			setCopyFeedback("Sandi sementara berhasil disalin.");
+		} catch {
+			setCopyFeedback("Sandi sementara tidak dapat disalin. Salin secara manual.");
 		}
 	}
 
@@ -87,8 +104,8 @@ export function TenantDirectoryPage() {
 					<Button
 						className="bg-[#765646] hover:bg-[#68483a]"
 						onClick={() => {
-							setShowCreate((value) => !value);
-							setTemporaryPassword("");
+							setError("");
+							setIsCreateDialogOpen(true);
 						}}
 					>
 						Tambah tenant
@@ -96,54 +113,54 @@ export function TenantDirectoryPage() {
 				}
 			/>
 			{temporaryPassword ? (
-				<Card className="mb-6 border-amber-300 bg-amber-50">
-					<p className="font-bold text-amber-950">Sandi sementara Admin Sekolah</p>
-					<p className="mt-2 text-sm text-amber-900">
-						Salin dan kirimkan sekarang. Sandi ini tidak dapat dilihat kembali setelah halaman
-						ditutup.
-					</p>
-					<code className="mt-4 block rounded-xl bg-white px-4 py-3 text-lg font-bold tracking-widest text-slate-950">
+				<Card className="mb-6 border-[#d9baa3] bg-[#f8ece3] shadow-none">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+						<div>
+							<p role="status" className="font-bold text-[#5f4032]">
+								Tenant berhasil dibuat
+							</p>
+							<p className="mt-1 text-sm leading-6 text-[#745d51]">
+								Berikan sandi sementara ini kepada Admin Sekolah sekarang. Setelah kartu ditutup,
+								RAMU tidak dapat menampilkannya kembali.
+							</p>
+						</div>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => {
+								setTemporaryPassword("");
+								setCopyFeedback("");
+							}}
+						>
+							Saya sudah menyimpan
+						</Button>
+					</div>
+					<code className="mt-4 block rounded-xl border border-[#e4cdbd] bg-[#fffaf6] px-4 py-3 text-lg font-bold tracking-widest text-[#4e3428]">
 						{temporaryPassword}
 					</code>
+					<div className="mt-3 flex justify-end">
+						<Button type="button" variant="secondary" onClick={() => void copyTemporaryPassword()}>
+							Salin sandi
+						</Button>
+					</div>
+					{copyFeedback ? (
+						<p role="status" className="mt-2 text-right text-sm text-[#6b4534]">
+							{copyFeedback}
+						</p>
+					) : null}
 				</Card>
 			) : null}
-			{showCreate ? (
-				<Card className="mb-6 border-[#dfcdbf] bg-[#fffaf6] shadow-none">
-					<h2 className="font-bold text-slate-950">Buat tenant baru</h2>
-					<form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={createTenant}>
-						<label className="text-sm font-semibold">
-							Nama sekolah
-							<input required name="schoolName" className={`${inputClass} mt-1.5`} />
-						</label>
-						<label className="text-sm font-semibold">
-							Nama Admin Sekolah
-							<input required name="adminName" className={`${inputClass} mt-1.5`} />
-						</label>
-						<label className="text-sm font-semibold">
-							Email Admin Sekolah
-							<input required name="adminEmail" type="email" className={`${inputClass} mt-1.5`} />
-						</label>
-						<label className="text-sm font-semibold">
-							Telepon (opsional)
-							<input name="phone" className={`${inputClass} mt-1.5`} />
-						</label>
-						<label className="text-sm font-semibold md:col-span-2">
-							Alamat (opsional)
-							<input name="address" className={`${inputClass} mt-1.5`} />
-						</label>
-						{error ? (
-							<p role="alert" className="md:col-span-2 text-sm text-red-700">
-								{error}
-							</p>
-						) : null}
-						<div className="flex gap-2 md:col-span-2">
-							<Button type="submit">Buat tenant</Button>
-							<Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>
-								Batal
-							</Button>
-						</div>
-					</form>
-				</Card>
+			{isCreateDialogOpen ? (
+				<TenantCreateDialog
+					pending={isCreating}
+					error={error}
+					onClose={() => {
+						if (isCreating) return;
+						setError("");
+						setIsCreateDialogOpen(false);
+					}}
+					onSubmit={createTenant}
+				/>
 			) : null}
 			<Card className="rounded-xl border-[#dfcdbf] bg-[#fffaf6] p-4 shadow-none sm:p-5">
 				<div className="flex flex-col gap-3 pb-5 md:flex-row">
