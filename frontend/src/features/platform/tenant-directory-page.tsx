@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { PaginationControls } from "@/components/shared/pagination-controls";
+import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -28,6 +29,9 @@ export function TenantDirectoryPage() {
 	const [error, setError] = useState("");
 	const [isCreating, setIsCreating] = useState(false);
 	const [copyFeedback, setCopyFeedback] = useState("");
+	const [tenantForStatusChange, setTenantForStatusChange] = useState<Tenant | null>(null);
+	const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+	const [actionError, setActionError] = useState("");
 	const debouncedSearch = useDebouncedValue(search);
 	const tenants = useQuery({
 		queryKey: ["platform-tenants", page, debouncedSearch, status],
@@ -41,18 +45,23 @@ export function TenantDirectoryPage() {
 
 	async function setTenantStatus(tenant: Tenant) {
 		const next = tenant.tenant_status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-		if (
-			!window.confirm(
-				`${next === "SUSPENDED" ? "Tangguhkan" : "Aktifkan kembali"} tenant ${tenant.name}?`,
-			)
-		)
-			return;
-		await api(`/platform/tenants/${tenant.id}/status`, {
-			method: "PATCH",
-			body: JSON.stringify({ status: next }),
-		});
-		await queryClient.invalidateQueries({ queryKey: ["platform-tenants"] });
-		await queryClient.invalidateQueries({ queryKey: ["platform-overview"] });
+		setIsUpdatingStatus(true);
+		setActionError("");
+		try {
+			await api(`/platform/tenants/${tenant.id}/status`, {
+				method: "PATCH",
+				body: JSON.stringify({ status: next }),
+			});
+			await queryClient.invalidateQueries({ queryKey: ["platform-tenants"] });
+			await queryClient.invalidateQueries({ queryKey: ["platform-overview"] });
+			setTenantForStatusChange(null);
+		} catch (cause) {
+			setActionError(
+				cause instanceof Error ? cause.message : "Status tenant tidak dapat diperbarui.",
+			);
+		} finally {
+			setIsUpdatingStatus(false);
+		}
 	}
 
 	async function createTenant(event: FormEvent<HTMLFormElement>) {
@@ -161,6 +170,38 @@ export function TenantDirectoryPage() {
 					onSubmit={createTenant}
 				/>
 			) : null}
+			<ConfirmationDialog
+				open={Boolean(tenantForStatusChange)}
+				title={
+					tenantForStatusChange?.tenant_status === "ACTIVE"
+						? "Tangguhkan tenant"
+						: "Aktifkan tenant"
+				}
+				description={
+					tenantForStatusChange
+						? tenantForStatusChange.tenant_status === "ACTIVE"
+							? `Tenant ${tenantForStatusChange.name} tidak dapat diakses oleh staf, wali, atau tautan raport sampai diaktifkan kembali.`
+							: `Tenant ${tenantForStatusChange.name} kembali dapat diakses. Data dan versi raport tidak diubah.`
+						: ""
+				}
+				confirmLabel={
+					tenantForStatusChange?.tenant_status === "ACTIVE"
+						? "Tangguhkan tenant"
+						: "Aktifkan tenant"
+				}
+				confirmVariant={tenantForStatusChange?.tenant_status === "ACTIVE" ? "danger" : "primary"}
+				pending={isUpdatingStatus}
+				onCancel={() => setTenantForStatusChange(null)}
+				onConfirm={() => tenantForStatusChange && void setTenantStatus(tenantForStatusChange)}
+			/>
+			{actionError ? (
+				<p
+					role="alert"
+					className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700"
+				>
+					{actionError}
+				</p>
+			) : null}
 			<Card className="rounded-xl border-[#dfcdbf] bg-[#fffaf6] p-4 shadow-none sm:p-5">
 				<div className="flex flex-col gap-3 pb-5 md:flex-row">
 					<label className="relative flex-1">
@@ -257,7 +298,7 @@ export function TenantDirectoryPage() {
 										<td className="px-4 py-4 text-right">
 											<Button
 												variant={tenant.tenant_status === "ACTIVE" ? "danger" : "secondary"}
-												onClick={() => setTenantStatus(tenant)}
+												onClick={() => setTenantForStatusChange(tenant)}
 											>
 												{tenant.tenant_status === "ACTIVE" ? "Tangguhkan" : "Aktifkan"}
 											</Button>
@@ -300,7 +341,7 @@ export function TenantDirectoryPage() {
 							<Button
 								className="mt-4 w-full"
 								variant={tenant.tenant_status === "ACTIVE" ? "danger" : "secondary"}
-								onClick={() => setTenantStatus(tenant)}
+								onClick={() => setTenantForStatusChange(tenant)}
 							>
 								{tenant.tenant_status === "ACTIVE" ? "Tangguhkan" : "Aktifkan"}
 							</Button>
