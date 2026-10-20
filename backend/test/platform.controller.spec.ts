@@ -44,4 +44,39 @@ describe("PlatformController query filters", () => {
       0,
     ]);
   });
+
+  it("resets only through the tenant-admin password function", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const hashPassword = vi.fn().mockResolvedValue("hashed-password");
+    const controller = new PlatformController(
+      { query } as unknown as DatabaseService,
+      {
+        requirePlatform: () => ({
+          userId: "00000000-0000-4000-8000-000000000001",
+        }),
+        hashPassword,
+      } as unknown as AuthService,
+    );
+
+    await controller.updateTenantAdminPassword(
+      {} as never,
+      "00000000-0000-4000-8000-000000000002",
+      "00000000-0000-4000-8000-000000000003",
+      {
+        password: "sandi-baru-yang-aman",
+        passwordConfirmation: "sandi-baru-yang-aman",
+      },
+    );
+
+    expect(hashPassword).toHaveBeenCalledWith("sandi-baru-yang-aman");
+    expect(query).toHaveBeenCalledWith(
+      "SELECT platform_set_tenant_admin_password($1,$2,$3,$4)",
+      [
+        "00000000-0000-4000-8000-000000000001",
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000003",
+        "hashed-password",
+      ],
+    );
+  });
 });

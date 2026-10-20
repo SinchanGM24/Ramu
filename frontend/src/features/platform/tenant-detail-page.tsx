@@ -1,19 +1,51 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { TenantAdminPasswordDialog } from "./components/tenant-admin-password-dialog";
 import type { TenantDetail } from "./types";
 
 export function TenantDetailPage({ id }: { id: string }) {
+	const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+	const [isSavingPassword, setIsSavingPassword] = useState(false);
+	const [passwordError, setPasswordError] = useState("");
+	const [passwordSuccess, setPasswordSuccess] = useState("");
 	const tenant = useQuery({
 		queryKey: ["platform-tenant", id],
 		queryFn: () => api<TenantDetail>(`/platform/tenants/${id}`),
 	});
 	const data = tenant.data;
+
+	async function updateAdminPassword(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!data?.admin || isSavingPassword) return;
+		const form = new FormData(event.currentTarget);
+		setPasswordError("");
+		setIsSavingPassword(true);
+		try {
+			await api(`/platform/tenants/${data.id}/admin/${data.admin.id}/password`, {
+				method: "PATCH",
+				body: JSON.stringify({
+					password: form.get("password"),
+					passwordConfirmation: form.get("passwordConfirmation"),
+				}),
+			});
+			setIsPasswordDialogOpen(false);
+			setPasswordSuccess(
+				"Sandi Admin Sekolah berhasil diperbarui. Seluruh sesi aktifnya telah dicabut.",
+			);
+		} catch (cause) {
+			setPasswordError(cause instanceof Error ? cause.message : "Sandi tidak dapat diperbarui.");
+		} finally {
+			setIsSavingPassword(false);
+		}
+	}
 	if (tenant.isLoading) return <p className="text-sm text-slate-600">Memuat detail tenant…</p>;
 	if (!data) return <Card className="text-red-700">Detail tenant tidak dapat dimuat.</Card>;
 
@@ -30,6 +62,27 @@ export function TenantDetailPage({ id }: { id: string }) {
 				title={data.name}
 				description="Informasi operasional tenant. Data murid, penilaian, raport, PDF, dan wali tidak tersedia di platform."
 			/>
+			{passwordSuccess ? (
+				<p
+					role="status"
+					className="mb-5 rounded-xl border border-[#b9d8bf] bg-[#edf7ee] px-4 py-3 text-sm text-[#1d643e]"
+				>
+					{passwordSuccess}
+				</p>
+			) : null}
+			{isPasswordDialogOpen && data.admin ? (
+				<TenantAdminPasswordDialog
+					adminName={data.admin.name}
+					pending={isSavingPassword}
+					error={passwordError}
+					onClose={() => {
+						if (isSavingPassword) return;
+						setPasswordError("");
+						setIsPasswordDialogOpen(false);
+					}}
+					onSubmit={updateAdminPassword}
+				/>
+			) : null}
 			<div className="grid gap-5 lg:grid-cols-2">
 				<Card className="border-[#dfcdbf] bg-[#fffaf6] shadow-none">
 					<h2 className="font-bold text-slate-950">Profil sekolah</h2>
@@ -64,6 +117,26 @@ export function TenantDetailPage({ id }: { id: string }) {
 							<dd className="mt-1 font-medium">{data.admin?.name || "Belum tersedia"}</dd>
 							<dd className="text-slate-600">{data.admin?.email || ""}</dd>
 						</div>
+						{data.admin ? (
+							<div className="border-t border-[#ead9cc] pt-4">
+								<dt className="text-slate-500">Pemulihan akses</dt>
+								<dd className="mt-1 text-sm leading-6 text-slate-600">
+									Hanya sandi Admin Sekolah tenant ini yang dapat diatur ulang dari platform.
+								</dd>
+								<Button
+									type="button"
+									variant="secondary"
+									className="mt-3"
+									onClick={() => {
+										setPasswordError("");
+										setPasswordSuccess("");
+										setIsPasswordDialogOpen(true);
+									}}
+								>
+									Atur ulang sandi
+								</Button>
+							</div>
+						) : null}
 						<div>
 							<dt className="text-slate-500">Status tenant</dt>
 							<dd className="mt-1 font-medium">

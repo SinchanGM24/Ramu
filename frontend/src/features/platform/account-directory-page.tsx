@@ -38,6 +38,7 @@ export function AccountDirectoryPage() {
 	});
 
 	async function changeStatus(account: PlatformAccount) {
+		if (account.role !== "SCHOOL_ADMIN") return;
 		const isActive = !account.is_active;
 		if (!window.confirm(`${isActive ? "Aktifkan kembali" : "Tangguhkan"} akun ${account.email}?`))
 			return;
@@ -50,6 +51,7 @@ export function AccountDirectoryPage() {
 	}
 
 	async function revoke(account: PlatformAccount) {
+		if (account.role !== "SCHOOL_ADMIN") return;
 		if (!window.confirm(`Cabut seluruh sesi aktif ${account.email}?`)) return;
 		await api(`/platform/accounts/${account.id}/revoke-sessions`, { method: "POST" });
 	}
@@ -59,7 +61,7 @@ export function AccountDirectoryPage() {
 			<PageHeader
 				eyebrow="Operasional platform"
 				title="Akun sekolah"
-				description="Tinjau metadata akun sekolah. Sandi, token, PIN, serta data anak tidak ditampilkan di platform."
+				description="Tinjau metadata akun sekolah. Tindakan akun hanya tersedia untuk Admin Sekolah; sandi, token, PIN, serta data anak tidak ditampilkan di platform."
 			/>
 			<Card className="rounded-xl border-[#dfcdbf] bg-[#fffaf6] p-4 shadow-none sm:p-5">
 				<div className="grid gap-3 pb-5 md:grid-cols-[minmax(0,1fr)_180px_190px]">
@@ -154,18 +156,22 @@ export function AccountDirectoryPage() {
 												{account.is_active ? "Aktif" : "Ditangguhkan"}
 											</span>
 										</td>
-										<td className="px-4 py-4">
-											<div className="flex justify-end gap-2">
-												<Button variant="secondary" onClick={() => revoke(account)}>
-													Cabut sesi
-												</Button>
-												<Button
-													variant={account.is_active ? "danger" : "secondary"}
-													onClick={() => changeStatus(account)}
-												>
-													{account.is_active ? "Tangguhkan" : "Aktifkan"}
-												</Button>
-											</div>
+										<td className="px-4 py-4 text-right">
+											{account.role === "SCHOOL_ADMIN" ? (
+												<div className="flex justify-end gap-2">
+													<Button variant="secondary" onClick={() => revoke(account)}>
+														Cabut sesi
+													</Button>
+													<Button
+														variant={account.is_active ? "danger" : "secondary"}
+														onClick={() => changeStatus(account)}
+													>
+														{account.is_active ? "Tangguhkan" : "Aktifkan"}
+													</Button>
+												</div>
+											) : (
+												<span className="text-xs text-slate-500">Hanya baca</span>
+											)}
 										</td>
 									</tr>
 								))
@@ -193,17 +199,23 @@ export function AccountDirectoryPage() {
 							<p className="mt-1 text-sm font-semibold">
 								{account.is_active ? "Aktif" : "Ditangguhkan"}
 							</p>
-							<div className="mt-4 grid grid-cols-2 gap-2">
-								<Button variant="secondary" onClick={() => revoke(account)}>
-									Cabut sesi
-								</Button>
-								<Button
-									variant={account.is_active ? "danger" : "secondary"}
-									onClick={() => changeStatus(account)}
-								>
-									{account.is_active ? "Tangguhkan" : "Aktifkan"}
-								</Button>
-							</div>
+							{account.role === "SCHOOL_ADMIN" ? (
+								<div className="mt-4 grid grid-cols-2 gap-2">
+									<Button variant="secondary" onClick={() => revoke(account)}>
+										Cabut sesi
+									</Button>
+									<Button
+										variant={account.is_active ? "danger" : "secondary"}
+										onClick={() => changeStatus(account)}
+									>
+										{account.is_active ? "Tangguhkan" : "Aktifkan"}
+									</Button>
+								</div>
+							) : (
+								<p className="mt-4 border-t border-[#ead9cc] pt-3 text-xs text-slate-500">
+									Akun ini hanya dapat ditinjau dari platform.
+								</p>
+							)}
 						</article>
 					))}
 				</div>

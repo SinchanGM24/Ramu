@@ -63,6 +63,15 @@ const createTenantSchema = z.object({
   adminName: z.string().trim().min(2).max(120),
   adminEmail: z.string().trim().email().max(320),
 });
+const tenantAdminPasswordSchema = z
+  .object({
+    password: z.string().min(12).max(128),
+    passwordConfirmation: z.string().min(12).max(128),
+  })
+  .refine((input) => input.password === input.passwordConfirmation, {
+    path: ["passwordConfirmation"],
+    message: "Konfirmasi kata sandi baru tidak sama.",
+  });
 const optionalQueryValue = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess(
     (value) => (value === "" ? undefined : value),
@@ -298,6 +307,25 @@ export class PlatformController {
       z.string().uuid().parse(id),
       input.status,
     ]);
+  }
+
+  @Patch("tenants/:id/admin/:adminUserId/password")
+  @HttpCode(204)
+  async updateTenantAdminPassword(
+    @Req() request: FastifyRequest,
+    @Param("id") id: string,
+    @Param("adminUserId") adminUserId: string,
+    @Body() body: unknown,
+  ) {
+    const actor = this.auth.requirePlatform(request);
+    const input = tenantAdminPasswordSchema.parse(body);
+    const schoolId = z.string().uuid().parse(id);
+    const parsedAdminUserId = z.string().uuid().parse(adminUserId);
+    const passwordHash = await this.auth.hashPassword(input.password);
+    await this.db.query(
+      "SELECT platform_set_tenant_admin_password($1,$2,$3,$4)",
+      [actor.userId, schoolId, parsedAdminUserId, passwordHash],
+    );
   }
 
   @Get("accounts")
