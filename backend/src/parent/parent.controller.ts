@@ -38,7 +38,11 @@ export class ParentController {
     @Req() request: FastifyRequest = {} as FastifyRequest,
   ) {
     const input = z
-      .object({ token: z.string().min(20), pin: z.string().regex(/^\d{6}$/) })
+      // Seed data development lama menggunakan token 18 karakter. Token akses
+      // produksi tetap dibuat secara acak oleh layanan pengiriman, sedangkan
+      // batas ini menjaga agar tautan seed yang sudah tersimpan tetap dapat
+      // diverifikasi pada aplikasi utama.
+      .object({ token: z.string().min(18), pin: z.string().regex(/^\d{6}$/) })
       .parse(body);
     const ip = rateLimitFingerprint(request.ip ?? "unknown");
     const token = rateLimitFingerprint(input.token);

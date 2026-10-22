@@ -80,6 +80,29 @@ describe("ParentController", () => {
     ).toBe(true);
   });
 
+  it("accepts the 18-character token format used by existing seed report access", async () => {
+    const controller = new ParentController(
+      {
+        query: async (sql: string) => {
+          if (sql.includes("verify_parent_report")) {
+            return {
+              rows: [{ verify_parent_report: { reportVersionId: "version-a" } }],
+            };
+          }
+          return { rows: [] };
+        },
+      } as never,
+      {} as never,
+    );
+
+    await expect(
+      controller.verify(
+        { pin: "123456", token: "demo-raport-tk-001" },
+        { setCookie: () => undefined } as never,
+      ),
+    ).resolves.toMatchObject({ expiresAt: expect.any(Date) });
+  });
+
   it("retrieves the report and PDF key only through scoped parent-session functions", async () => {
     const queries: Array<{ sql: string; values: unknown[] }> = [];
     const db = {
