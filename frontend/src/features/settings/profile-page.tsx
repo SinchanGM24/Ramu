@@ -1,23 +1,35 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { KeyRound, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { authSessionQueryOptions } from "@/features/auth/session";
 
 type Profile = { id: string; name: string; email: string; phone: string | null };
 const inputClass =
 	"w-full rounded-xl border border-[#dfe3d9] bg-[#fffefa] px-3 py-2.5 text-sm text-[#17251b] outline-none transition placeholder:text-[#8b948b] focus:border-brand-500 focus:ring-2 focus:ring-brand-100";
 
 export function ProfilePage() {
+	const router = useRouter();
+	const queryClient = useQueryClient();
 	const profile = useQuery({ queryKey: ["profile"], queryFn: () => api<Profile>("/auth/profile") });
+	const [mustChangePassword, setMustChangePassword] = useState(false);
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState("");
 	const [saving, setSaving] = useState(false);
 	const [sensitiveFieldsUnlocked, setSensitiveFieldsUnlocked] = useState(false);
+
+	useEffect(() => {
+		const forcedPasswordChange =
+			new URLSearchParams(window.location.search).get("gantiSandi") === "1";
+		setMustChangePassword(forcedPasswordChange);
+		setSensitiveFieldsUnlocked(forcedPasswordChange);
+	}, []);
 
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -48,9 +60,17 @@ export function ProfilePage() {
 					passwordConfirmation: passwordConfirmation || undefined,
 				}),
 			});
-			setMessage("Profil berhasil diperbarui.");
+			await queryClient.fetchQuery(authSessionQueryOptions);
+			setMessage(
+				password
+					? "Kata sandi berhasil diganti. Anda dapat melanjutkan menggunakan RAMU."
+					: "Profil berhasil diperbarui.",
+			);
 			event.currentTarget.reset();
 			await profile.refetch();
+			if (mustChangePassword && password) {
+				router.replace("/app/dashboard");
+			}
 		} catch (reason) {
 			setError(reason instanceof Error ? reason.message : "Profil tidak dapat diperbarui.");
 		} finally {
@@ -65,6 +85,18 @@ export function ProfilePage() {
 				title="Profil akun"
 				description="Perbarui nama, nomor telepon, atau kata sandi akun yang sedang digunakan."
 			/>
+			{mustChangePassword && (
+				<div
+					role="alert"
+					className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+				>
+					<p className="font-semibold">Kata sandi sementara harus diganti</p>
+					<p className="mt-1 leading-6">
+						Anda sudah berhasil masuk. Gunakan kata sandi sementara saat ini pada kolom “Kata sandi
+						saat ini”, lalu buat kata sandi baru untuk melanjutkan.
+					</p>
+				</div>
+			)}
 			<Card className="overflow-hidden p-0">
 				<div className="flex items-start gap-3 border-b border-[#e7e7dc] bg-[linear-gradient(112deg,#f4f7ed_0%,#fffdf8_62%,#edf5ec_100%)] px-5 py-5 sm:px-6">
 					<span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">

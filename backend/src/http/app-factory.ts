@@ -85,6 +85,7 @@ export async function createHttpApplication() {
   fastify.addHook("preHandler", async (request, reply) => {
     if (!request.auth?.mustChangePassword) return;
     const allowed = new Set([
+      "/api/auth/login",
       "/api/auth/session",
       "/api/auth/profile",
       "/api/auth/logout",

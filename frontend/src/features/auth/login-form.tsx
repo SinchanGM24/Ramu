@@ -23,8 +23,10 @@ export function LoginForm() {
 				body: JSON.stringify({ email: data.get("email"), password: data.get("password") }),
 			});
 			queryClient.clear();
-			await queryClient.fetchQuery(authSessionQueryOptions);
-			router.replace("/app/dashboard");
+			const session = await queryClient.fetchQuery(authSessionQueryOptions);
+			router.replace(
+				session.mustChangePassword ? "/app/settings/profile?gantiSandi=1" : "/app/dashboard",
+			);
 			router.refresh();
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "Tidak dapat masuk");
