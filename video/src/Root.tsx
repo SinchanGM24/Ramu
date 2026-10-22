@@ -1,7 +1,8 @@
 import { Composition } from "remotion";
 import { PromoVideo } from "./PromoVideo";
-
-const durationInFrames = 60 * 30;
+import { PromoReels } from "./PromoReels";
+import { VIDEO_CONFIG } from "./config";
+import { FPS, TOTAL_DURATION_SECONDS } from "./data/workflow-script";
 
 export function RemotionRoot() {
   return (
@@ -9,20 +10,20 @@ export function RemotionRoot() {
       <Composition
         id="RamuPromoDesktop"
         component={PromoVideo}
-        durationInFrames={durationInFrames}
-        fps={30}
-        width={1920}
-        height={1080}
-        defaultProps={{ format: "desktop" as const }}
+        durationInFrames={TOTAL_DURATION_SECONDS * FPS}
+        fps={FPS}
+        width={VIDEO_CONFIG.width}
+        height={VIDEO_CONFIG.height}
+        defaultProps={{}}
       />
       <Composition
         id="RamuPromoReels"
-        component={PromoVideo}
-        durationInFrames={durationInFrames}
-        fps={30}
-        width={1080}
+        component={PromoReels}
+        durationInFrames={TOTAL_DURATION_SECONDS * FPS}
+        fps={FPS}
         height={1920}
-        defaultProps={{ format: "reels" as const }}
+        width={1080}
+        defaultProps={{}}
       />
     </>
   );

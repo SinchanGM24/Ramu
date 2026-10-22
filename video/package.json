@@ -4,16 +4,24 @@
   "version": "0.1.0",
   "scripts": {
     "studio": "remotion studio src/index.ts",
-    "render:desktop": "remotion render src/index.ts RamuPromoDesktop out/ramu-promo-desktop.mp4",
-    "render:reels": "remotion render src/index.ts RamuPromoReels out/ramu-promo-reels.mp4",
+    "capture:main": "tsx scripts/capture-main.ts",
+    "render:desktop": "remotion render src/index.ts RamuPromoDesktop out/ramu-promo-premium-v7-hd.mp4 --crf=12 --audio-bitrate=320k",
+    "render:reels": "remotion render src/index.ts RamuPromoReels out/ramu-promo-reels-v23-hd.mp4 --crf=12 --audio-bitrate=320k --concurrency=1",
+    "validate:final": "tsx scripts/validate-final.ts",
+    "validate:reels": "tsx scripts/validate-final.ts reels",
+    "generate:voice": "tsx scripts/generate-voiceover.ts",
+    "generate:music": "node scripts/generate-music.mjs",
+    "generate:sfx": "node scripts/generate-sfx.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "node-edge-tts": "^1.2.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "remotion": "^4.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@remotion/cli": "^4.0.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
