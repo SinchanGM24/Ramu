@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { PlatformPageHeader } from "./components/platform-page-header";
+import type { PlatformSession } from "./types";
 
 type PlatformProfile = { id: string; name: string; email: string; phone: string | null };
 
@@ -14,6 +16,8 @@ const inputClass =
 	"w-full rounded-xl border border-[#dcc5b5] bg-[#fffdf9] px-3 py-2.5 text-sm text-[#3c2a20] outline-none transition placeholder:text-[#9d8679] focus:border-[#765646] focus:ring-2 focus:ring-[#f2daca]";
 
 export function PlatformProfilePage() {
+	const router = useRouter();
+	const queryClient = useQueryClient();
 	const profile = useQuery({
 		queryKey: ["platform-profile"],
 		queryFn: () => api<PlatformProfile>("/platform/profile"),
@@ -21,6 +25,15 @@ export function PlatformProfilePage() {
 	const [message, setMessage] = useState("");
 	const [error, setError] = useState("");
 	const [saving, setSaving] = useState(false);
+	const [mustChangePassword, setMustChangePassword] = useState(false);
+	const [sensitiveFieldsUnlocked, setSensitiveFieldsUnlocked] = useState(false);
+
+	useEffect(() => {
+		const forcedPasswordChange =
+			new URLSearchParams(window.location.search).get("gantiSandi") === "1";
+		setMustChangePassword(forcedPasswordChange);
+		setSensitiveFieldsUnlocked(forcedPasswordChange);
+	}, []);
 
 	async function save(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -52,9 +65,19 @@ export function PlatformProfilePage() {
 					passwordConfirmation: confirmation || undefined,
 				}),
 			});
-			setMessage("Profil Super Admin berhasil diperbarui.");
+			await queryClient.fetchQuery({
+				queryKey: ["platform-session"],
+				queryFn: () => api<PlatformSession>("/platform/auth/session"),
+				retry: false,
+			});
+			setMessage(
+				password
+					? "Kata sandi berhasil diganti. Anda dapat melanjutkan menggunakan RAMU."
+					: "Profil Super Admin berhasil diperbarui.",
+			);
 			form.reset();
 			await profile.refetch();
+			if (mustChangePassword && password) router.replace("/platform");
 		} catch (reason) {
 			setError(reason instanceof Error ? reason.message : "Profil tidak dapat diperbarui.");
 		} finally {
@@ -68,6 +91,18 @@ export function PlatformProfilePage() {
 				title="Profil Super Admin"
 				description="Perbarui identitas dan kata sandi akun platform Anda. Perubahan ini tidak memberi akses ke data tenant."
 			/>
+			{mustChangePassword ? (
+				<div
+					role="alert"
+					className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+				>
+					<p className="font-semibold">Kata sandi sementara harus diganti</p>
+					<p className="mt-1 leading-6">
+						Anda sudah berhasil masuk. Gunakan kata sandi sementara saat ini pada kolom “Kata sandi
+						saat ini”, lalu buat kata sandi baru untuk melanjutkan.
+					</p>
+				</div>
+			) : null}
 			<Card className="overflow-hidden border-[#dfcdbf] bg-[#fffaf6] p-0 shadow-none">
 				<div className="flex items-start gap-3 border-b border-[#ead9cc] bg-[#f5e9df] px-5 py-5 sm:px-6">
 					<span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#765646] text-[#fff9f4]">
@@ -155,6 +190,8 @@ export function PlatformProfilePage() {
 										name="currentPassword"
 										type="password"
 										autoComplete="current-password"
+										readOnly={!sensitiveFieldsUnlocked}
+										onFocus={() => setSensitiveFieldsUnlocked(true)}
 										className={`${inputClass} mt-1`}
 									/>
 								</label>
@@ -165,6 +202,8 @@ export function PlatformProfilePage() {
 										minLength={8}
 										type="password"
 										autoComplete="new-password"
+										readOnly={!sensitiveFieldsUnlocked}
+										onFocus={() => setSensitiveFieldsUnlocked(true)}
 										className={`${inputClass} mt-1`}
 									/>
 								</label>
@@ -175,6 +214,8 @@ export function PlatformProfilePage() {
 										minLength={8}
 										type="password"
 										autoComplete="new-password"
+										readOnly={!sensitiveFieldsUnlocked}
+										onFocus={() => setSensitiveFieldsUnlocked(true)}
 										className={`${inputClass} mt-1`}
 									/>
 								</label>

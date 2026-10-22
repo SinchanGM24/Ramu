@@ -153,6 +153,7 @@ export class PlatformController {
       userId: actor.userId,
       email: actor.email,
       role: "SUPER_ADMIN" as const,
+      mustChangePassword: actor.mustChangePassword,
     };
   }
 
@@ -203,6 +204,10 @@ export class PlatformController {
       if (input.password) {
         await this.auth.revokeAllPlatformSessions(actor.userId, client);
         await this.auth.createPlatformSession(actor.userId, reply, client);
+        await client.query(
+          "UPDATE users SET must_change_password=false WHERE id=$1",
+          [actor.userId],
+        );
         await client.query("SELECT platform_record_self_password_change($1)", [
           actor.userId,
         ]);

@@ -18,6 +18,7 @@ export type PlatformAuthContext = {
   userId: string;
   email: string;
   sessionId: string;
+  mustChangePassword: boolean;
 };
 
 const cookieName = () => process.env.SESSION_COOKIE_NAME || "ramu_session";
@@ -160,8 +161,10 @@ export class AuthService {
       user_id: string;
       session_id: string;
       email: string;
+      must_change_password: boolean;
     }>(
-      `SELECT session.user_id, session.id AS session_id, account.email
+      `SELECT session.user_id, session.id AS session_id, account.email,
+              account.must_change_password
        FROM platform_sessions session
        JOIN platform_administrators administrator ON administrator.user_id=session.user_id
        JOIN users account ON account.id=session.user_id AND account.is_active
@@ -174,6 +177,7 @@ export class AuthService {
       userId: row.user_id,
       email: row.email,
       sessionId: row.session_id,
+      mustChangePassword: row.must_change_password,
     };
   }
 

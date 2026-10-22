@@ -1,6 +1,8 @@
 export type PlatformSession = {
 	userId: string;
 	email: string;
+	role: "SUPER_ADMIN";
+	mustChangePassword: boolean;
 };
 
 export type PlatformActivity = {

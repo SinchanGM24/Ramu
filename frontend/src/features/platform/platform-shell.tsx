@@ -39,8 +39,16 @@ export function PlatformShell({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		if (pathname !== "/platform/login" && session.isError) {
 			router.replace("/platform/login");
+			return;
 		}
-	}, [pathname, router, session.isError]);
+		if (
+			pathname !== "/platform/login" &&
+			session.data?.mustChangePassword &&
+			pathname !== "/platform/profile"
+		) {
+			router.replace("/platform/profile?gantiSandi=1");
+		}
+	}, [pathname, router, session.data?.mustChangePassword, session.isError]);
 
 	if (pathname === "/platform/login") return <>{children}</>;
 	if (session.isError) return null;

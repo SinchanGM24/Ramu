@@ -23,12 +23,12 @@ export function PlatformLoginForm() {
 				method: "POST",
 				body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
 			});
-			await queryClient.fetchQuery({
+			const session = await queryClient.fetchQuery({
 				queryKey: ["platform-session"],
 				queryFn: () => api<PlatformSession>("/platform/auth/session"),
 				retry: false,
 			});
-			router.replace("/platform");
+			router.replace(session.mustChangePassword ? "/platform/profile?gantiSandi=1" : "/platform");
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : "Tidak dapat masuk ke platform.");
 		} finally {

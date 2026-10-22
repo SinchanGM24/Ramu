@@ -83,12 +83,20 @@ export async function createHttpApplication() {
     auth.attachPlatform(request),
   );
   fastify.addHook("preHandler", async (request, reply) => {
-    if (!request.auth?.mustChangePassword) return;
+    if (
+      !request.auth?.mustChangePassword &&
+      !request.platformAuth?.mustChangePassword
+    )
+      return;
     const allowed = new Set([
       "/api/auth/login",
       "/api/auth/session",
       "/api/auth/profile",
       "/api/auth/logout",
+      "/api/platform/auth/login",
+      "/api/platform/auth/session",
+      "/api/platform/profile",
+      "/api/platform/auth/logout",
     ]);
     if (allowed.has(request.url.split("?")[0])) return;
     return reply
