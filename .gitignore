@@ -31,3 +31,7 @@ docs/
 video/public/audio/music-calm-corporate.wav
 video/public/audio/ramu-workflow.srt
 video/public/audio/voice-[0-9][0-9].mp3
+
+# Catatan produksi dari iterasi video sebelumnya disimpan lokal saja.
+video/ASSET_CREDITS.md
+video/VOICE_OVER.md
