@@ -11,3 +11,7 @@ RAMU (_Raport Murid_) is a multi-tenant SaaS for TK/PAUD schools to prepare, rev
 Ikuti [panduan lokal](docs/LOCAL_DEVELOPMENT.md) untuk menjalankan proyek.
 
 Product and delivery guidance lives in [docs/PRD.md](docs/PRD.md). Deterministic report-narrative rules live in [docs/SmartNarrativeEngine.md](docs/SmartNarrativeEngine.md). Repository-level implementation rules are in [AGENTS.md](AGENTS.md). Codex can use the local [`ramu-saas` skill](.codex/skills/ramu-saas/SKILL.md) for feature work.
+
+## Lisensi
+
+RAMU adalah perangkat lunak proprietary dan rahasia. Hak cipta dilindungi; kode sumber, dokumentasi, desain, dan materi terkait tidak boleh disalin, dimodifikasi, didistribusikan, disublisensikan, dipublikasikan, atau digunakan untuk membuat karya turunan tanpa izin tertulis dari pemegang hak cipta. Lihat [LICENSE](LICENSE) untuk ketentuan lengkap. Komponen pihak ketiga tetap tunduk pada lisensi masing-masing.
