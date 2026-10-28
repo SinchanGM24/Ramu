@@ -1,16 +1,33 @@
 # RAMU
 
-RAMU (_Raport Murid_) is a multi-tenant SaaS for TK/PAUD schools to prepare, review, publish, and securely distribute student reports.
+RAMU (_Raport Murid_) adalah platform SaaS multi-tenant untuk TK/PAUD yang membantu sekolah menyusun, meninjau, menerbitkan, dan membagikan raport murid secara aman.
 
-## Struktur
+## Tujuan
 
-- `frontend/` — Next.js App Router, Tailwind, komponen UI reusable, dan layout responsif.
-- `backend/` — NestJS/Fastify REST API, PostgreSQL migration, RLS, RBAC, serta audit log.
-- `docker-compose.yml` — PostgreSQL, Redis, MinIO, API, dan web untuk pengembangan lokal.
+RAMU mengurangi pekerjaan administratif dalam penyusunan raport sambil mempertahankan peran guru dan sekolah atas seluruh keputusan penilaian, peninjauan, dan publikasi.
 
-Ikuti [panduan lokal](docs/LOCAL_DEVELOPMENT.md) untuk menjalankan proyek.
+## Kemampuan utama
 
-Panduan produk, aturan implementasi internal, dan konfigurasi agent disimpan hanya pada workspace pengembangan. Materi tersebut tidak termasuk dalam repository publik maupun distribusi aplikasi.
+- Mengelola profil sekolah, tahun ajaran, kelas, staf, murid, serta kontak wali.
+- Mendukung penilaian individual per murid dengan skala perkembangan PAUD.
+- Menyediakan alur raport dari draf, pengajuan, peninjauan, persetujuan, hingga publikasi.
+- Membuat versi raport dan PDF yang immutable setelah diterbitkan.
+- Membagikan raport terbit kepada wali melalui tautan aman dan PIN tanpa membuat akun wali.
+- Menyediakan riwayat pengiriman, audit trail, serta analitik agregat internal sekolah tanpa pemeringkatan murid.
+
+## Prinsip produk
+
+- Setiap sekolah adalah tenant yang terisolasi.
+- Penilaian dilakukan per murid, bukan secara massal.
+- Raport yang telah dipublikasikan tidak diubah; koreksi dibuat sebagai versi baru.
+- Akses wali bersifat terbatas, sementara, dan hanya-baca.
+- Bantuan AI hanya dapat membantu draf narasi atau pemeriksaan kelengkapan/konsistensi; AI tidak menilai, menyetujui, menerbitkan, memberi peringkat, atau mendiagnosis murid.
+
+## Fondasi teknologi
+
+- Frontend: Next.js, React, TypeScript, dan Tailwind CSS.
+- Backend: NestJS/Fastify, TypeScript, dan PostgreSQL.
+- Infrastruktur pendukung: Redis, penyimpanan objek yang kompatibel S3, serta proses latar belakang untuk pekerjaan pengiriman.
 
 ## Lisensi
 
